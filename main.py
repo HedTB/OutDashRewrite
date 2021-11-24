@@ -19,7 +19,7 @@ import bot_info
 ## -- VARIABLES / FUNCTIONS -- ##
 
 # TOKENS
-bot_token = os.getenv("TEST_BOT_TOKEN")
+bot_token = str(os.getenv("TEST_BOT_TOKEN"))
 mongo_token = os.getenv("MONGO_LOGIN")
 
 
@@ -139,4 +139,5 @@ async def unloadcogs(ctx):
 ## -- RUNNING BOT -- ##
 
 bot.loop.create_task(bot_loop())
-bot.run(str(bot_token))
+print(bot_token)
+bot.run(bot_token)
