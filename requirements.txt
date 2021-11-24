@@ -26,7 +26,7 @@ h11==0.12.0
 h2==4.0.0
 hpack==4.0.0
 httpcore==0.13.7
-httpx==0.20.0
+httpx
 Hypercorn==0.11.2
 hyperframe==6.0.1
 idna==3.2
