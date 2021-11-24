@@ -22,8 +22,6 @@ dnspython==1.16.0
 Flask==2.0.1
 fonttools==4.27.0
 GPUtil==1.4.0
-guilded.py==0.0.5
-gunicorn==20.1.0
 h11==0.12.0
 h2==4.0.0
 hpack==4.0.0
@@ -48,7 +46,7 @@ prettytable==2.2.1
 priority==2.0.0
 prsaw==0.4.0
 psutil==5.8.0
-py-cord==2.0.0a4448+ge00b272d
+git+git://github.com/Pycord-Development/pycord
 pycparser==2.20
 pygame==2.0.1
 PyJWT==2.1.0
