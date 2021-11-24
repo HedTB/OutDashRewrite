@@ -139,4 +139,4 @@ async def unloadcogs(ctx):
 ## -- RUNNING BOT -- ##
 
 bot.loop.create_task(bot_loop())
-bot.run(bot_token)
+bot.run(str(bot_token))
