@@ -63,7 +63,6 @@ Quart-Discord==2.1.4
 random2==1.0.1
 requests==2.26.0
 rfc3986==1.5.0
-ro.py==2.0.0
 six==1.16.0
 sniffio==1.2.0
 statcord.py==3.1.0
