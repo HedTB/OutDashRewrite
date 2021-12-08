@@ -98,8 +98,9 @@ def index():
     ).json()
     
     for guild in guilds:
-        print(guild)
-        if guild.get("administrator") == False:
+        print(guild.permissions.manage_guild)
+        print(guild.permissions.administrator)
+        if guild.permissions.manage_guild == False:
             del guilds[guild]
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds) 
