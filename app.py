@@ -92,12 +92,16 @@ def index():
         """
     
     access_token = discord.get_authorization_token().get("access_token")
-    servers = requests.get(
+    guilds = requests.get(
         url=f'https://discord.com/api/v9/users/@me/guilds',
         headers={'Authorization': 'Bearer %s' % access_token}
     ).json()
+    
+    for guild in guilds:
+        if not guild.administrator:
+            del guilds[guild]
 
-    return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=servers) 
+    return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds) 
     # return f"""
     # {HYPERLINK.format(url_for(".me"), "@ME")}<br />
     # {HYPERLINK.format(url_for(".logout"), "Logout")}<br />
