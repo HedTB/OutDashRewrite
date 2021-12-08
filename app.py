@@ -175,12 +175,12 @@ def me():
 """
 
 
-@app.route("/me/guilds/")
-def get_permission_guilds():
+def get_permission_guilds(permission: str):
     guilds = discord.fetch_guilds()
     for g in guilds:
-        print(g.permissions)
-        print(g.permissions.manage_guild)
+        has_permission = g.permissions[permission]
+        print(has_permission)
+get_permission_guilds("manage_guild")
         
     # return str.join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else None for g in guilds])
 
