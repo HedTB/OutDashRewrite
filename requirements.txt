@@ -3,7 +3,6 @@ git+git://github.com/Pycord-Development/pycord
 pymongo
 dnspython
 praw
-flask_discord
 flask
 requests_oauthlib
 cachetools

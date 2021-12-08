@@ -1,4 +1,5 @@
 import os
+
 from flask import Flask, request, redirect, render_template, url_for
 from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthorized
 from dotenv import load_dotenv
@@ -78,11 +79,9 @@ def welcome_user(user):
 @app.route("/")
 def index():
     user = discord.fetch_user()
-    servers = discord.fetch_guilds()
-    guilds = {}
-    for guild in servers:
-        guilds[guild]["icon_url"] = guild.icon_url
-        print(guilds[guild]["icon_url"])
+    guilds = discord.fetch_guilds()
+    for i in guilds: 
+        print(i)
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
