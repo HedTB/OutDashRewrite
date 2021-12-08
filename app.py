@@ -1,6 +1,5 @@
 import os
 from flask import Flask, request, redirect, render_template, url_for
-# from routes.discord_oauth import DiscordOauth
 from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthorized
 from dotenv import load_dotenv
 
@@ -79,7 +78,9 @@ def welcome_user(user):
 @app.route("/")
 def index():
     user = discord.fetch_user()
-    user_guild_object = discord.fetch_guilds()
+    guilds = discord.fetch_guilds()
+    for i in guilds:
+        print(i)
     
     if not discord.authorized:
         return f"""
@@ -89,8 +90,7 @@ def index():
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
 
-    return render_template("dashboard.html", render_user_avatar=user.avatar_url,
-                           render_username=f'{user.username}#{user.discriminator}', render_guild=user_guild_object)
+    return render_template("servers.html", avatar=user.avatar_url, username=f'{user.username}#{user.discriminator}', servers=guilds)
     # return f"""
     # {HYPERLINK.format(url_for(".me"), "@ME")}<br />
     # {HYPERLINK.format(url_for(".logout"), "Logout")}<br />
