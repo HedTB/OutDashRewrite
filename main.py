@@ -21,8 +21,8 @@ import bot_info
 ## -- VARIABLES / FUNCTIONS -- ##
 
 # TOKENS
-bot_token = str(os.environ.get("TEST_BOT_TOKEN", "ODQ0OTM3OTU3MTg1MTU5MTk4.YKZryw.0p5TlM-2-80EKDoTref4CgcC14I"))
-mongo_token = os.environ.get("MONGO_LOGIN", "mongodb+srv://hedtb:HugoBack09@outdashcluster.demfx.mongodb.net/db2?retryWrites=true&w=majority")
+bot_token = str(os.environ.get("TEST_BOT_TOKEN"))
+mongo_token = os.environ.get("MONGO_LOGIN")
 
 
 # DATABASE VARIABLES
