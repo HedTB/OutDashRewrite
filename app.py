@@ -94,11 +94,14 @@ def index():
     
     guilds = {}
     for i in servers: 
-        access_token = discord.get_authorization_token()["access_token"]
+        access_token = discord.get_authorization_token().get("access_token")
+        print(access_token)
+        
         response = requests.get(
             url=f"https://discord.com/api/v6/guilds/{i.id}", 
             headers={"Authorization": f"Bearer {access_token}"}
         ).json()
+        
         print(response)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=servers) 
