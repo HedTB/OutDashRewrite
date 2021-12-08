@@ -1,9 +1,13 @@
+## -- IMPORTANT -- ##
+
 import os
 import requests
 
 from flask import Flask, request, redirect, render_template, url_for
 from flask_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
 from dotenv import load_dotenv
+
+## -- VARIABLES -- ##
 
 app = Flask(__name__)
 load_dotenv()
@@ -20,17 +24,27 @@ app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 discord = DiscordOAuth2Session(app)
 HYPERLINK = '<a href="{}">{}</a>'
 
-
-@app.route('/test_button')
-def background_process_test():
-    print("YO")
-    return("nothing")
+## -- FUNCTIONS -- ##
 
 def welcome_user(user):
     dm_channel = discord.bot_request("/users/@me/channels", "POST", json={"recipient_id": user.id})
     return discord.bot_request(
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
+def get_guilds_with_permission(permission: str):
+    guilds = discord.fetch_guilds()
+    for g in guilds:
+        if not g.permissions.permission:
+            del guilds[g]
+    
+    return guilds
+
+## -- METHODS -- ##
+
+@app.route('/test_button')
+def background_process_test():
+    print("YO")
+    return("nothing")
 
 @app.route("/")
 def index():
@@ -47,11 +61,7 @@ def index():
         """
     
     access_token = discord.get_authorization_token().get("access_token")
-    guilds = discord.fetch_guilds()
-    
-    for g in guilds:
-        has_permission = g.permissions.manage_guild
-        print(has_permission)
+    guilds = get_guilds_with_permission("manage_guild")
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
 
