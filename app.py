@@ -9,7 +9,7 @@ app = Flask(__name__)
 load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "false"
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
 app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
 app.config["DISCORD_CLIENT_ID"] = 844937957185159198
@@ -20,55 +20,11 @@ app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 discord = DiscordOAuth2Session(app)
 HYPERLINK = '<a href="{}">{}</a>'
 
-"""
-
-@app.route("/me/")
-@requires_authorization
-def me():
-    user = discord.fetch_user()
-    return f
-    <html>
-        <head>
-            <title>{user.name}</title>
-        </head>
-        <body>
-            <img src='{user.avatar_url}' />
-        </body>
-    </html>
-    
-    # return render_template('dashboard.html', render_user_avatar=user.avatar_url,
-    #                        render_username=f'{user.username}#{user.discriminator}', render_guild=discord.fetch_guilds())
-
-
-@app.errorhandler(Unauthorized)
-def redirect_unauthorized(e):
-    return redirect(url_for("login"))
-
-
-# Route for dashboard
-@app.route('/', methods=['GET'])
-def dashboard():
-
-    code = request.args.get('code')
-    access_token = DiscordOauth.get_access_token(code)
-    if not access_token:
-        return redirect(DiscordOauth.login_url)
-
-    user_object = DiscordOauth.get_user(access_token)
-    user_guild_object = DiscordOauth.get_user_current_guild(access_token)
-
-    id, avatar, username, usertag = user_object.get('id'), user_object.get('avatar'), user_object.get('username'), \
-                                    user_object.get('discriminator')
-
-    return render_template('dashboard.html', render_user_avatar=f'https://cdn.discordapp.com/avatars/{id}/{avatar}.png',
-                           render_username=f'{username}#{usertag}', render_guild=user_guild_object) 
-"""
 
 @app.route('/test_button')
 def background_process_test():
     print("YO")
     return("nothing")
-
 
 def welcome_user(user):
     dm_channel = discord.bot_request("/users/@me/channels", "POST", json={"recipient_id": user.id})
@@ -91,22 +47,14 @@ def index():
         """
     
     access_token = discord.get_authorization_token().get("access_token")
-    guilds = requests.get(
-        url=f'https://discord.com/api/v9/users/@me/guilds',
-        headers={'Authorization': 'Bearer %s' % access_token}
-    ).json()
+    guilds = discord.fetch_guilds()
     
     for g in guilds:
         has_permission = g.permissions.manage_guild
         print(has_permission)
 
-    return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds) 
-    # return f"""
-    # {HYPERLINK.format(url_for(".me"), "@ME")}<br />
-    # {HYPERLINK.format(url_for(".logout"), "Logout")}<br />
-    # {HYPERLINK.format(url_for(".user_guilds"), "My Servers")}<br />
-    # {HYPERLINK.format(url_for(".add_to_guild", guild_id=475549041741135881), "Add me to 475549041741135881.")}    
-    # """
+    return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
+
     
 @app.route('/servers', methods=['GET'])
 def dashboard():
