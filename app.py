@@ -76,6 +76,10 @@ def welcome_user(user):
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
 
+@app.route("/me/guilds/")
+def user_guilds():
+    guilds = discord.fetch_guilds()
+    return "<br />".join([f"[ADMIN] {g.name}" if g.permissions.administrator else g.name for g in guilds])
 
 @app.route("/")
 def index():
