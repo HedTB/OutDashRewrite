@@ -98,6 +98,7 @@ def index():
     ).json()
     
     for guild in guilds:
+        print(guild.get("administrator"))
         if guild.get("administrator") == False:
             del guilds[guild]
 
