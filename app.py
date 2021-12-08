@@ -80,7 +80,7 @@ def index():
     user = discord.fetch_user()
     servers = discord.fetch_guilds()
     guilds = {}
-    for guild in guilds:
+    for guild in servers:
         guilds[guild]["icon_url"] = guild.icon_url
         print(guilds[guild]["icon_url"])
 
