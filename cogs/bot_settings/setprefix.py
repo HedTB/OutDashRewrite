@@ -34,17 +34,20 @@ class SetPrefix(commands.Cog):
         
 
     @commands.command(aliases=["changeprefix", "prefix"])
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.member)
+    @commands.cooldown(rate=1, per=bot_info.cooldown_time, type=commands.BucketType.member)
     @commands.has_permissions(manage_guild=True)
     async def setprefix(self, ctx, newPrefix:str):
         
-        query = {'guild_id' : str(ctx.guild.id)}
+        query = {"guild_id" : str(ctx.guild.id)}
         replacement = {"guild_id": str(ctx.guild.id), "prefix": str(newPrefix)}
-        update = { "$set": { 'guild_id' : str(ctx.guild.id), 'prefix' : str(newPrefix) } }
+        update = { "$set": { "guild_id" : str(ctx.guild.id), "prefix" : str(newPrefix) } }
         
-        prefixes_col.replace_one(query, replacement)
+        prefixes_col.update_one(query, update)
         
         embed = discord.Embed(description=f"{bot_info.yes} Changed the prefix to `{newPrefix}` successfully.", color=bot_info.success_embed_color)
+        embed.set_footer(text=f"Requested by {ctx.author}")
+        embed.timestamp = datetime.datetime.utcnow()
+        
         await ctx.send(embed=embed)
     
     @setprefix.error 

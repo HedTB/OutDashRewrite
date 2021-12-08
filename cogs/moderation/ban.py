@@ -22,7 +22,7 @@ class Ban(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.member)
+    @commands.cooldown(rate=1, per=bot_info.cooldown_time, type=commands.BucketType.member)
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member:discord.Member, *, reason="No reason provided."):
         
@@ -54,7 +54,7 @@ class Ban(commands.Cog):
             
         
     
-    @commands.slash_command(name="ban", description="Ban a member from the guild.", guild_ids=[bot_info.bot_server])
+    @commands.slash_command(name="ban", description="Ban a member from the guild.", guild_ids=[836495137651294258])
     @commands.has_permissions(ban_members=True)
     async def slash_ban(self, ctx,
                   member:Option(discord.Member, "The user you want to ban.", required=True),
@@ -71,20 +71,21 @@ class Ban(commands.Cog):
         except HTTPException as e:
             if e.status == 400:
                 await member.ban(reason=reason)
-                await ctx.send(embed=embed2)
-                
+                await ctx.respond(embed=embed2)
     
+    """
     @slash_ban.error 
     async def slash_ban_error(self, ctx, error):
         if isinstance(error, errors.MissingPermissions):
             embed = discord.Embed(description=f"{bot_info.no} You're missing the `Ban Members` permission.", color=bot_info.error_embed_color)
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = discord.Embed(description=f"{bot_info.no} You need to specify who you want to ban.", color=bot_info.error_embed_color)
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
         elif isinstance(error, errors.CommandInvokeError) or isinstance(error, Forbidden):
             embed = discord.Embed(description=f"{bot_info.no} You don't have permission to ban this member.", color=bot_info.error_embed_color)
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
+    """
     
         
     

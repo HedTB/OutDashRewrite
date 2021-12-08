@@ -7,6 +7,7 @@ import random
 import asyncio
 import datetime
 import certifi
+from discord.errors import ClientException
 
 from discord.ext import commands
 from pymongo import MongoClient
@@ -55,14 +56,25 @@ def load_cogs():
     for foldername in os.listdir("./cogs"):
         for filename in os.listdir(f"./cogs/{foldername}"):
             if filename.endswith(".py"):
+                # try:
                 bot.load_extension(f"cogs.{foldername}.{filename[:-3]}")
+                """
+                except Exception as e:
+                    print(e)
+                    return
+                """
                 
 def unload_cogs():
     for foldername in os.listdir("./cogs"):
         for filename in os.listdir(f"./cogs/{foldername}"):
             if filename.endswith(".py"):
-                #bot.unload_extension(filename[:-3])
+                # try:
                 bot.unload_extension(f"cogs.{foldername}.{filename[:-3]}")
+                """
+                except Exception as e:
+                    print(e)
+                    return
+                """
  
 
 # BOT
@@ -84,7 +96,6 @@ async def on_ready():
                         description=f"Bot started in `{str(len(bot.guilds))}` server(s), with total of `{len(bot.users)}` member(s), on an average latency of `{round(bot.latency * 1000)} ms`.", 
                         color=bot_info.success_embed_color)
     
-    load_cogs()
     await status_channel.send(embed=embed)
 
     print(f"Signed In As: {bot.user.name} ({bot.user.id})")
@@ -96,6 +107,7 @@ async def on_ready():
 async def bot_loop():
     
     await bot.wait_until_ready()
+    load_cogs()
     await asyncio.sleep(5)
     
     while not bot.is_closed():
@@ -139,4 +151,4 @@ async def unloadcogs(ctx):
 ## -- RUNNING BOT -- ##
 
 bot.loop.create_task(bot_loop())
-bot.run("ODQ0OTM3OTU3MTg1MTU5MTk4.YKZryw.76exNN3uBBtm1OaYAVWmAMq-Cgg")
+bot.run(bot_token)

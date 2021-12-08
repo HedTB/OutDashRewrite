@@ -23,7 +23,7 @@ class Cog(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.member)
+    @commands.cooldown(rate=1, per=bot_info.cooldown_time, type=commands.BucketType.member)
     @commands.has_permissions(ban_members=True)
     async def command(self, ctx):
                 

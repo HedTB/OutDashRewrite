@@ -13,7 +13,7 @@ messages_channel = 876162144092192808
 
 yes = "<:yes:872843660314685440>"
 no = "<:no:872843057110867978>"
-loading = "<a:loading:868630493762031666>"
+loading = "<a:loading:913452981070987285>"
 partner = "<:partner:868630493078388746>"
 server = "<:server:868630493107748885>"
 upvote = "<:upvote:868630493086777394>"

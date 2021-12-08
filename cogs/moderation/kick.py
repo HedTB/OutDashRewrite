@@ -22,7 +22,7 @@ class Kick(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.member)
+    @commands.cooldown(rate=1, per=bot_info.cooldown_time, type=commands.BucketType.member)
     @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member:discord.Member, *, reason="No reason provided."):
         
@@ -71,20 +71,20 @@ class Kick(commands.Cog):
         except HTTPException as e:
             if e.status == 400:
                 await member.kick(reason=reason)
-                await ctx.send(embed=embed2)
+                await ctx.respond(embed=embed2)
                 
     
     @slash_kick.error 
     async def slash_kick_error(self, ctx, error):
         if isinstance(error, errors.MissingPermissions):
             embed = discord.Embed(description=f"{bot_info.no} You're missing the `Kick Members` permission.", color=bot_info.error_embed_color)
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = discord.Embed(description=f"{bot_info.no} You need to specify who you want to kick.", color=bot_info.error_embed_color)
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
         elif isinstance(error, errors.CommandInvokeError) or isinstance(error, Forbidden):
             embed = discord.Embed(description=f"{bot_info.no} You don't have permission to kick this member.", color=bot_info.error_embed_color)
-            await ctx.send(embed=embed)
+            await ctx.channel.send(embed=embed)
     
         
     
