@@ -1,4 +1,5 @@
 import os
+import requests
 
 from flask import Flask, request, redirect, render_template, url_for
 from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthorized
@@ -79,9 +80,11 @@ def welcome_user(user):
 @app.route("/")
 def index():
     user = discord.fetch_user()
-    guilds = discord.fetch_guilds()
-    for i in guilds: 
-        print(i.id)
+    servers = discord.fetch_guilds()
+    guilds = {}
+    for i in servers: 
+        response = requests.get(f"https://discord.com/api/v9/guilds/{i.id}")
+        print(response.json())
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
@@ -93,7 +96,7 @@ def index():
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
 
-    return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds) 
+    return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=servers) 
     # return f"""
     # {HYPERLINK.format(url_for(".me"), "@ME")}<br />
     # {HYPERLINK.format(url_for(".logout"), "Logout")}<br />
