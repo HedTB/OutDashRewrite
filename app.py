@@ -103,7 +103,7 @@ def index():
         except Exception as e:
             print("nope")
             
-        print(guild.get("permissions")["administrator"])
+        print(guild.permissions.administrator)
         if guild.permissions.manage_guild == False:
             del guilds[guild]
 
