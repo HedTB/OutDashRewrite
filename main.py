@@ -20,7 +20,7 @@ import bot_info
 ## -- VARIABLES / FUNCTIONS -- ##
 
 # TOKENS
-bot_token = str(os.getenv("TEST_BOT_TOKEN"), "ODQ0OTM3OTU3MTg1MTU5MTk4.YKZryw.0p5TlM-2-80EKDoTref4CgcC14I")
+bot_token = str(os.getenv("TEST_BOT_TOKEN", "ODQ0OTM3OTU3MTg1MTU5MTk4.YKZryw.0p5TlM-2-80EKDoTref4CgcC14I"))
 mongo_token = os.getenv("MONGO_LOGIN")
 
 
