@@ -76,7 +76,6 @@ def welcome_user(user):
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
 
-
 @app.route("/")
 def index():
     user = discord.fetch_user()
@@ -97,15 +96,9 @@ def index():
         headers={'Authorization': 'Bearer %s' % access_token}
     ).json()
     
-    for guild in guilds:
-        try:
-            print(guild.get("permissions").manage_guild)
-        except Exception as e:
-            print("nope")
-            
-        print(guild.permissions.administrator)
-        if guild.permissions.manage_guild == False:
-            del guilds[guild]
+    for g in guilds:
+        has_permission = g.permissions.manage_guild
+        print(has_permission)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds) 
     # return f"""
@@ -175,10 +168,12 @@ def me():
 </html>
 """
 
-def get_permission_guilds(permission: str):
+
+@app.route("/me/guilds/")
+def get_permission_guilds():
     guilds = discord.fetch_guilds()
     for g in guilds:
-        has_permission = g.permissions[permission]
+        has_permission = g.permissions.manage_guild
         print(has_permission)
         
     # return str.join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else None for g in guilds])
@@ -186,7 +181,6 @@ def get_permission_guilds(permission: str):
 
 @app.route("/add_to/<int:guild_id>/")
 def add_to_guild(guild_id):
-    get_permission_guilds("manage_guild")
     user = discord.fetch_user()
     return user.add_to_guild(guild_id)
 
