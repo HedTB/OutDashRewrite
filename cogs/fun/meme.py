@@ -14,14 +14,16 @@ from discord.commands.commands import Option
 from discord.errors import Forbidden, HTTPException
 from discord.ext.commands import errors
 from pymongo import MongoClient
+from dotenv import load_dotenv
 
 # FILES
 import bot_info
 
 ## -- REDDIT CLIENT -- ##
 
-reddit = praw.Reddit(client_id=os.getenv("REDDIT_CLIENT_ID"),
-                     client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
+load_dotenv()
+reddit = praw.Reddit(client_id=os.environ.get("REDDIT_CLIENT_ID"),
+                     client_secret=os.environ.get("REDDIT_CLIENT_SECRET"),
                      user_agent="Python outdash discordbot v2.0 (by /u/HedTB )",
                      check_for_async=False)
 

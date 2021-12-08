@@ -11,6 +11,7 @@ from discord.errors import ClientException
 
 from discord.ext import commands
 from pymongo import MongoClient
+from dotenv import load_dotenv
 
 
 # FILES
@@ -78,6 +79,7 @@ def unload_cogs():
  
 
 # BOT
+load_dotenv()
 bot = commands.Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
 #bot.remove_command("help")
 

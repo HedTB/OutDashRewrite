@@ -2,17 +2,19 @@ import os
 from flask import Flask, request, redirect, render_template, url_for
 # from routes.discord_oauth import DiscordOauth
 from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthorized
+from dotenv import load_dotenv
 
 app = Flask(__name__)
+load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
 app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
 app.config["DISCORD_CLIENT_ID"] = 844937957185159198
-app.config["DISCORD_CLIENT_SECRET"] = str(os.getenv("CLIENT_SECRET"))
+app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
 app.config["DISCORD_REDIRECT_URI"] = "https://outdash-test-bot.herokuapp.com/callback"
-app.config["DISCORD_BOT_TOKEN"] = str(os.getenv("TEST_BOT_TOKEN"))
+app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
 HYPERLINK = '<a href="{}">{}</a>'
