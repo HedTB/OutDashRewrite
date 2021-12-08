@@ -11,7 +11,7 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
 app.config["DISCORD_CLIENT_ID"] = 844937957185159198
 app.config["DISCORD_CLIENT_SECRET"] = str(os.getenv("CLIENT_SECRET"))
-app.config["DISCORD_REDIRECT_URI"] = "http://127.0.0.1:5000/callback"
+app.config["DISCORD_REDIRECT_URI"] = "https://outdash-test-bot.herokuapp.com/callback"
 app.config["DISCORD_BOT_TOKEN"] = str(os.getenv("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
