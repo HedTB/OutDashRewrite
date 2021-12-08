@@ -180,8 +180,9 @@ def get_permission_guilds():
     guilds = discord.fetch_guilds()
     for g in guilds:
         print(g.permissions)
+        print(g.permissions.manage_guild)
         
-    return str.join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else None for g in guilds])
+    # return str.join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else None for g in guilds])
 
 
 @app.route("/add_to/<int:guild_id>/")
