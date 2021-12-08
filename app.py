@@ -2,14 +2,14 @@ import os
 import requests
 
 from flask import Flask, request, redirect, render_template, url_for
-from flask_discord import DiscordOAuth2Session, requires_authorization, Unauthorized
+from flask_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
 from dotenv import load_dotenv
 
 app = Flask(__name__)
 load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "false"
 
 app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
 app.config["DISCORD_CLIENT_ID"] = 844937957185159198
@@ -178,7 +178,10 @@ def me():
 @app.route("/me/guilds/")
 def get_permission_guilds():
     guilds = discord.fetch_guilds()
-    return [f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else None for g in guilds]
+    for g in guilds:
+        print(g.permissions)
+        
+    return str.join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else None for g in guilds])
 
 
 @app.route("/add_to/<int:guild_id>/")
