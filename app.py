@@ -89,7 +89,7 @@ def index():
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
 
-    return render_template("dashboard.html", render_user_avatar=f'https://cdn.discordapp.com/avatars/{id}/{avatar}.png',
+    return render_template("dashboard.html", render_user_avatar=user.avatar_url,
                            render_username=f'{user.username}#{user.discriminator}', render_guild=user_guild_object)
     # return f"""
     # {HYPERLINK.format(url_for(".me"), "@ME")}<br />
