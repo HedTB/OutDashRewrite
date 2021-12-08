@@ -31,10 +31,10 @@ def welcome_user(user):
     return discord.bot_request(
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
-def get_guilds_with_permission(permission: str):
+def get_guilds_with_permission():
     guilds = discord.fetch_guilds()
     for g in guilds:
-        if not g.permissions[permission]:
+        if not g.permissions.manage_guild:
             del guilds[g]
     
     return guilds
@@ -61,7 +61,7 @@ def index():
         """
     
     access_token = discord.get_authorization_token().get("access_token")
-    guilds = get_guilds_with_permission("manage_guild")
+    guilds = get_guilds_with_permission()
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
 
