@@ -8,3 +8,4 @@ flask
 requests_oauthlib
 cachetools
 python-dotenv
+gunicorn
