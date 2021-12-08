@@ -96,9 +96,8 @@ def index():
     for i in servers: 
         response = requests.get(
             url=f"https://discord.com/api/v6/guilds/{i.id}", 
-            headers={"Authorization": f"Bearer {discord.get_authorization_token()}"}
+            headers={"Authorization": f"Bearer {discord.get_authorization_token().access_token}"}
         ).json()
-        print(discord.get_authorization_token())
         print(response)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=servers) 
