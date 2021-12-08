@@ -19,6 +19,7 @@ import bot_info
 
 
 ## -- VARIABLES / FUNCTIONS -- ##
+load_dotenv()
 
 # TOKENS
 bot_token = str(os.environ.get("TEST_BOT_TOKEN"))
@@ -79,7 +80,6 @@ def unload_cogs():
  
 
 # BOT
-load_dotenv()
 bot = commands.Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
 #bot.remove_command("help")
 
