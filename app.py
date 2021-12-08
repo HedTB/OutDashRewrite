@@ -78,7 +78,11 @@ def welcome_user(user):
 @app.route("/")
 def index():
     user = discord.fetch_user()
-    guilds = discord.fetch_guilds()
+    servers = discord.fetch_guilds()
+    guilds = {}
+    for guild in guilds:
+        guilds[guild]["icon_url"] = guild.icon_url
+        print(guilds[guild]["icon_url"])
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
