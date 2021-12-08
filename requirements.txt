@@ -7,3 +7,4 @@ flask_discord
 flask
 requests_oauthlib
 cachetools
+python-dotenv
