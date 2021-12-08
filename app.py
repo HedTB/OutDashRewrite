@@ -96,9 +96,6 @@ def index():
         url=f'https://discord.com/api/v9/users/@me/guilds',
         headers={'Authorization': 'Bearer %s' % access_token}
     ).json()
-    
-    for i in servers: 
-        print(i)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=servers) 
     # return f"""
