@@ -98,8 +98,12 @@ def index():
     ).json()
     
     for guild in guilds:
-        print(guild["permissions"]["manage_guild"])
-        print(guild["permissions"]["administrator"])
+        try:
+            print(guild.get("permissions").manage_guild)
+        except Exception as e:
+            print("nope")
+            
+        print(guild.get("permissions")["administrator"])
         if guild.permissions.manage_guild == False:
             del guilds[guild]
 
