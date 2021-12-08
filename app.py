@@ -99,7 +99,7 @@ def index():
         
         response = requests.get(
             url=f"https://discord.com/api/v6/guilds/{i.id}", 
-            headers={"Authorization": f"Bearer {access_token}"}
+            headers={'Authorization': 'Bearer %s' % access_token}
         ).json()
         
         print(response)
