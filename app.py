@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
-app.config['SERVER_NAME'] = 'domain.com'
+app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
 app.config["DISCORD_CLIENT_ID"] = 844937957185159198
 app.config["DISCORD_CLIENT_SECRET"] = str(os.getenv("CLIENT_SECRET"))
 app.config["DISCORD_REDIRECT_URI"] = "http://127.0.0.1:5000/callback"
