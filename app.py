@@ -20,22 +20,6 @@ app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 discord = DiscordOAuth2Session(app)
 HYPERLINK = '<a href="{}">{}</a>'
 
-def get_access_token(code):
-    access_token_url = "https://discord.com/api/oauth2/token"
-
-    access_token = requests.post(
-        access_token_url,
-        data={
-            'client_id': os.environ.get("CLIENT_ID"),
-            'client_secret': os.environ.get("CLIENT_SECRET"),
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': app.config["DISCORD_REDIRECT_URI"]
-        }
-    ).json()
-
-    return access_token.get('access_token')
-
 """
 
 @app.route("/me/")
@@ -96,7 +80,6 @@ def welcome_user(user):
 @app.route("/")
 def index():
     user = discord.fetch_user()
-    servers = discord.fetch_guilds()
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
@@ -108,19 +91,14 @@ def index():
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
     
-    guilds = {}
+    access_token = discord.get_authorization_token().get("access_token")
+    servers = requests.get(
+        url=f'https://discord.com/api/v9/users/@me/guilds',
+        headers={'Authorization': 'Bearer %s' % access_token}
+    ).json()
+    
     for i in servers: 
-        access_token = discord.get_authorization_token().get("access_token")
-        headers = {'Authorization: Bearer %s' % access_token}
-        
-        # response = requests.get(
-        #     url=f"https://discord.com/api/v6/guilds/{i.id}", 
-        #     headers=headers
-        # ).json()
-        # print(response)
-        
-        response = discord.request(f"https://discord.com/api/v6/guilds/{i.id}")
-        print(response)
+        print(i)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=servers) 
     # return f"""
