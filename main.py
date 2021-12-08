@@ -151,4 +151,5 @@ async def unloadcogs(ctx):
 ## -- RUNNING BOT -- ##
 
 bot.loop.create_task(bot_loop())
+print(bot_token)
 bot.run(bot_token)
