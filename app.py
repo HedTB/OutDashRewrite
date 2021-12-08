@@ -178,7 +178,7 @@ def me():
 @app.route("/me/guilds/")
 def get_permission_guilds():
     guilds = discord.fetch_guilds()
-    return "<br />".join([f"[SERVER MANAGER] {g.name}" if g.permissions.send_messages else g.name for g in guilds])
+    return "<br />".join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else None for g in guilds])
 
 
 @app.route("/add_to/<int:guild_id>/")
