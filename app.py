@@ -76,14 +76,6 @@ def welcome_user(user):
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
 
-def get_permission_guilds(permission: str):
-    guilds = discord.fetch_guilds()
-    for g in guilds:
-        if not g.permissions[permission]:
-            del guilds[g]
-            
-    return guilds
-
 @app.route("/")
 def index():
     user = discord.fetch_user()
@@ -104,8 +96,6 @@ def index():
         headers={'Authorization': 'Bearer %s' % access_token}
     ).json()
     
-    guilds2 = get_permission_guilds("manage_guild")
-    print(guilds2)
     for guild in guilds:
         try:
             print(guild.get("permissions").manage_guild)
@@ -184,6 +174,11 @@ def me():
 </html>
 """
 
+
+@app.route("/me/guilds/")
+def get_permission_guilds(permission: str):
+    guilds = discord.fetch_guilds()
+    return "<br />".join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else g.name for g in guilds])
 
 
 @app.route("/add_to/<int:guild_id>/")
