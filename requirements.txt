@@ -4,6 +4,7 @@ pymongo
 dnspython
 praw
 flask
+flask_discord
 requests_oauthlib
 cachetools
 python-dotenv
