@@ -81,8 +81,6 @@ def index():
     guilds = discord.fetch_guilds()
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
-    for i in guilds:
-        print(i.icon_url)
     
     if not discord.authorized:
         return f"""
