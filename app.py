@@ -81,7 +81,7 @@ def index():
     user = discord.fetch_user()
     guilds = discord.fetch_guilds()
     for i in guilds: 
-        print(i)
+        print(i.id)
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
