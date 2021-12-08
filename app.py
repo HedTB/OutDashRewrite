@@ -79,8 +79,10 @@ def welcome_user(user):
 def index():
     user = discord.fetch_user()
     guilds = discord.fetch_guilds()
+
+    id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     for i in guilds:
-        print(i)
+        print(i.icon_url)
     
     if not discord.authorized:
         return f"""
@@ -90,7 +92,7 @@ def index():
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
 
-    return render_template("servers.html", avatar=user.avatar_url, username=f'{user.username}#{user.discriminator}', servers=guilds)
+    return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds) 
     # return f"""
     # {HYPERLINK.format(url_for(".me"), "@ME")}<br />
     # {HYPERLINK.format(url_for(".logout"), "Logout")}<br />
@@ -104,12 +106,11 @@ def dashboard():
         return discord.create_session()
 
     user = discord.fetch_user()
-    user_guild_object = discord.fetch_guilds()
+    guilds = discord.fetch_guilds()
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
 
-    return render_template('dashboard.html', render_user_avatar=f'https://cdn.discordapp.com/avatars/{id}/{avatar}.png',
-                           render_username=f'{username}#{usertag}', render_guild=user_guild_object) 
+    return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds) 
 
 
 @app.route("/login/")
