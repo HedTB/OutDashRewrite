@@ -76,6 +76,12 @@ def welcome_user(user):
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
 
+def get_permission_guilds(permission: str):
+    guilds = discord.fetch_guilds()
+    for g in guilds:
+        has_permission = g.permissions[permission]
+        print(has_permission)
+
 @app.route("/")
 def index():
     user = discord.fetch_user()
@@ -90,6 +96,7 @@ def index():
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
     
+    get_permission_guilds("manage_guild")
     access_token = discord.get_authorization_token().get("access_token")
     guilds = requests.get(
         url=f'https://discord.com/api/v9/users/@me/guilds',
@@ -173,14 +180,6 @@ def me():
 </body>
 </html>
 """
-
-
-def get_permission_guilds(permission: str):
-    guilds = discord.fetch_guilds()
-    for g in guilds:
-        has_permission = g.permissions[permission]
-        print(has_permission)
-get_permission_guilds("manage_guild")
         
     # return str.join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else None for g in guilds])
 
