@@ -20,15 +20,6 @@ discord = DiscordOAuth2Session(app)
 HYPERLINK = '<a href="{}">{}</a>'
 
 """
-@app.route("/login/")
-def login():
-    return discord.create_session()
-	
-
-@app.route("/callback/")
-def callback():
-    discord.callback()
-    return redirect(url_for(".me"))
 
 @app.route("/me/")
 @requires_authorization
@@ -69,14 +60,13 @@ def dashboard():
                                     user_object.get('discriminator')
 
     return render_template('dashboard.html', render_user_avatar=f'https://cdn.discordapp.com/avatars/{id}/{avatar}.png',
-                           render_username=f'{username}#{usertag}', render_guild=user_guild_object)
-    
-    
+                           render_username=f'{username}#{usertag}', render_guild=user_guild_object) 
+"""
+
 @app.route('/test_button')
 def background_process_test():
     print("YO")
     return("nothing")
-"""
 
 
 def welcome_user(user):
@@ -88,6 +78,9 @@ def welcome_user(user):
 
 @app.route("/")
 def index():
+    user = discord.fetch_user()
+    user_guild_object = discord.fetch_guilds()
+    
     if not discord.authorized:
         return f"""
         {HYPERLINK.format(url_for(".login"), "Login")} <br />
@@ -96,12 +89,27 @@ def index():
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
 
-    return f"""
-    {HYPERLINK.format(url_for(".me"), "@ME")}<br />
-    {HYPERLINK.format(url_for(".logout"), "Logout")}<br />
-    {HYPERLINK.format(url_for(".user_guilds"), "My Servers")}<br />
-    {HYPERLINK.format(url_for(".add_to_guild", guild_id=475549041741135881), "Add me to 475549041741135881.")}    
-    """
+    return render_template("dashboard.html", render_user_avatar=f'https://cdn.discordapp.com/avatars/{id}/{avatar}.png',
+                           render_username=f'{user.username}#{user.discriminator}', render_guild=user_guild_object)
+    # return f"""
+    # {HYPERLINK.format(url_for(".me"), "@ME")}<br />
+    # {HYPERLINK.format(url_for(".logout"), "Logout")}<br />
+    # {HYPERLINK.format(url_for(".user_guilds"), "My Servers")}<br />
+    # {HYPERLINK.format(url_for(".add_to_guild", guild_id=475549041741135881), "Add me to 475549041741135881.")}    
+    # """
+    
+@app.route('/servers', methods=['GET'])
+def dashboard():
+    if not discord.authorized:
+        return discord.create_session()
+
+    user = discord.fetch_user()
+    user_guild_object = discord.fetch_guilds()
+
+    id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
+
+    return render_template('dashboard.html', render_user_avatar=f'https://cdn.discordapp.com/avatars/{id}/{avatar}.png',
+                           render_username=f'{username}#{usertag}', render_guild=user_guild_object) 
 
 
 @app.route("/login/")
@@ -116,7 +124,7 @@ def login_with_data():
 
 @app.route("/invite-bot/")
 def invite_bot():
-    return discord.create_session(scope=["bot"], permissions=8, guild_id=464488012328468480, disable_guild_select=True)
+    return discord.create_session(scope=["bot"], permissions=8, guild_id=859482895009579039, disable_guild_select=True)
 
 
 @app.route("/invite-oauth/")
