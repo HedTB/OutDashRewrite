@@ -81,10 +81,6 @@ def welcome_user(user):
 def index():
     user = discord.fetch_user()
     servers = discord.fetch_guilds()
-    guilds = {}
-    for i in servers: 
-        response = requests.get(f"https://discord.com/api/v9/guilds/{i.id}")
-        print(response.json())
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
@@ -95,6 +91,14 @@ def index():
         {HYPERLINK.format(url_for(".invite_bot"), "Invite Bot with permissions 8")} <br />
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
+    
+    guilds = {}
+    for i in servers: 
+        response = requests.get(
+            url=f"https://discord.com/api/v9/guilds/{i.id}", 
+            headers={'Authorization': 'Bearer %s' % discord.get_authorization_token()}
+        ).json()
+        print(response)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=servers) 
     # return f"""
