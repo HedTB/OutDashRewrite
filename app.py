@@ -35,7 +35,7 @@ def get_guilds_with_permission():
     guilds = discord.fetch_guilds()
     for g in guilds:
         if not g.permissions.manage_guild:
-            guilds.pop(g.name)
+            del guilds[g.name]
     
     return guilds
 
