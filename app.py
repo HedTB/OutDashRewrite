@@ -191,6 +191,9 @@ def import_bot(bot):
     app.bot = bot
     print("Bot received in app successfully.")
 
+def setBotAttribute(bot):
+    setattr(app, "bot", bot)
+
 if __name__ == "__main__":    
     # from waitress import serve
     # serve(app, host="0.0.0.0", port=5000

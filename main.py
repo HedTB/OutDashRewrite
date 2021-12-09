@@ -11,7 +11,7 @@ import certifi
 from discord.ext import commands
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from app import app, import_bot
+from app import app, import_bot, setBotAttribute
 
 
 # FILES
@@ -80,7 +80,25 @@ def unload_cogs():
  
 
 # BOT
-bot = commands.Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
+class Bot(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # self.ipc = ipc.Server(self, secret_key="HedTBIsHandsome")
+        
+    async def on_ready(self):
+        
+        status_channel = bot.get_channel(bot_info.messages_channel)
+        embed = discord.Embed(title=f"Singed In As: {bot.user.name} ({bot.user.id})", 
+                            description=f"Bot started in `{str(len(bot.guilds))}` server(s), with total of `{len(bot.users)}` member(s), on an average latency of `{round(bot.latency * 1000)} ms`.", 
+                            color=bot_info.success_embed_color)
+        
+        await status_channel.send(embed=embed)
+
+        print(f"Signed In As: {bot.user.name} ({bot.user.id})")
+        print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
+        
+        
+bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
 #bot.remove_command("help")
 
 
@@ -88,31 +106,18 @@ bot = commands.Bot(command_prefix=get_prefix, intents=discord.Intents.all(), sta
 activities = ['Minecraft | ?help', f'in {len(bot.guilds)} servers | ?help', 'Roblox | ?help', f'with {len(bot.users)} users | ?help']
 
 
-# APP FUNCTIONS
-def check_for_bot_in_server(guild_id: int):
+# IPC
+"""
+@bot.ipc.route()
+async def check_for_bot_in_server(guild_id: int):
     guild = bot.get_guild(guild_id)
-    print(guild)
+    
     if guild:
         return guild
     else:
         return None
+"""
 
-
-## -- STARTING BOT -- ##
-
-@bot.event
-async def on_ready():
-    
-    status_channel = bot.get_channel(bot_info.messages_channel)
-    embed = discord.Embed(title=f"Singed In As: {bot.user.name} ({bot.user.id})", 
-                        description=f"Bot started in `{str(len(bot.guilds))}` server(s), with total of `{len(bot.users)}` member(s), on an average latency of `{round(bot.latency * 1000)} ms`.", 
-                        color=bot_info.success_embed_color)
-    
-    await status_channel.send(embed=embed)
-
-    print(f"Signed In As: {bot.user.name} ({bot.user.id})")
-    print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
-    
 
 ## -- LOOPS -- ##
 
@@ -120,8 +125,8 @@ async def bot_loop():
     
     await bot.wait_until_ready()
     load_cogs()
-    app.bot = bot
-    import_bot(bot)
+    setBotAttribute(bot)
+    print(hasattr(app, "bot"))
     await asyncio.sleep(5)
     
     while not bot.is_closed():
