@@ -16,10 +16,10 @@ load_dotenv()
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
-app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
+app.config['SERVER_NAME'] = 'localhost:5000'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
-app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_NAME"]
+app.config["DISCORD_REDIRECT_URI"] = "http://%s/callback" % app.config["SERVER_NAME"]
 app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
@@ -63,8 +63,8 @@ def index():
     
     guilds = get_guilds_with_permission()
     
-    print(app.config["bot"].get_guild(836495137651294258))
-    print(app.config["bot"].users)
+    print(app.bot.get_guild(836495137651294258))
+    print(app.bot.users)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
 
@@ -188,7 +188,7 @@ async def redirect_unauthorized(e):
 
 
 def import_bot(bot):
-    app.config["bot"] = bot
+    app.bot = bot
     print("Bot received in app successfully.")
 
 if __name__ == "__main__":    
