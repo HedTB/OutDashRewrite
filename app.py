@@ -72,8 +72,6 @@ async def index():
     
 @app.route('/servers', methods=['GET'])
 async def dashboard():
-    if not await discord.authorized:
-        return discord.create_session()
 
     user = await discord.fetch_user()
     guilds = await discord.fetch_guilds()
@@ -85,13 +83,11 @@ async def dashboard():
 
 @app.route("/login/")
 async def login():
-    return await discord.create_session()
+    return await discord.create_session(scope=["email"])
 
 
 @app.route("/dashboard/<int:guild_id>/")
 async def server_dashboard(guild_id: int):
-    if not await discord.authorized:
-        return await discord.create_session()
     
     access_token = await discord.get_authorization_token()["access_token"]
     user = await discord.fetch_user()
