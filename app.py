@@ -50,7 +50,6 @@ def background_process_test():
 @app.route("/")
 def index():
     user = discord.fetch_user()
-
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
     if not discord.authorized:
