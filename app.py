@@ -36,6 +36,7 @@ def get_guilds_with_permission():
     for g in guilds:
         if not g.permissions.manage_guild:
             print(str(g))
+            guilds.pop(str(g))
     
     return guilds
 
