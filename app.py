@@ -104,8 +104,8 @@ def callback():
     data = discord.callback()
     redirect_to = data.get("redirect", "/")
 
-    user = discord.fetch_user()
-    welcome_user(user)
+    # user = discord.fetch_user()
+    # welcome_user(user)
 
     return redirect(redirect_to)
 
