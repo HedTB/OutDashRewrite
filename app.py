@@ -63,6 +63,7 @@ def index():
     
     guilds = get_guilds_with_permission()
     
+    print(hasattr(app, "bot"))
     print(app.bot.get_guild(836495137651294258))
     print(app.bot.users)
 
