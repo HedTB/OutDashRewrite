@@ -26,6 +26,7 @@ class AppFunctions(commands.Cog):
         self.bot = bot
         global theBot
         theBot = self.bot
+        print(theBot)
       
     @staticmethod  
     def check_for_bot_in_server(guild_id: int):
