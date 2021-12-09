@@ -11,7 +11,7 @@ import certifi
 from discord.ext import commands
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from app import app
+from app import app, import_bot
 
 
 # FILES
@@ -121,6 +121,7 @@ async def bot_loop():
     await bot.wait_until_ready()
     load_cogs()
     app.bot = bot
+    import_bot(bot)
     await asyncio.sleep(5)
     
     while not bot.is_closed():
