@@ -2,7 +2,7 @@
 
 import os
 import requests
-import main
+from cogs.bot_settings.app_functions import check_for_bot_in_server
 
 from flask import Flask, request, redirect, render_template, url_for
 from flask_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
@@ -63,7 +63,7 @@ def index():
     
     access_token = discord.get_authorization_token().get("access_token")
     guilds = get_guilds_with_permission()
-    main.check_for_bot_in_server(836495137651294258)
+    check_for_bot_in_server(836495137651294258)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
 
