@@ -36,7 +36,7 @@ def get_guilds_with_permission():
     print(guilds)
     for g in guilds:
         if not g.permissions.manage_guild:
-            del guilds[g]
+            guilds.remove(g)
     
     return guilds
 
