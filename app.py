@@ -63,8 +63,8 @@ def index():
     
     guilds = get_guilds_with_permission()
     
-    print(hasattr(app.config, "bot"))
-    print(app.config["bot"].get_guild(836495137651294258))
+    print(hasattr(app, "bot"))
+    print(app.bot.get_guild(836495137651294258))
     print(app.bot.users)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
