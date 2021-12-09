@@ -38,6 +38,8 @@ def get_guilds_with_permission():
         if not g.permissions.manage_guild:
             guilds.remove(g)
             print(g)
+            
+    print(guilds)
     
     return guilds
 
