@@ -83,7 +83,7 @@ async def dashboard():
 
 @app.route("/login/")
 async def login():
-    return await discord.create_session(scope=["email"])
+    return await discord.create_session(scope=["identify", "guilds", "email"])
 
 
 @app.route("/dashboard/<int:guild_id>/")
