@@ -3,9 +3,10 @@ git+git://github.com/Pycord-Development/pycord
 pymongo
 dnspython
 praw
-flask
-flask_discord
+quart
+Quart-Discord
 requests_oauthlib
 cachetools
 python-dotenv
 gunicorn
+Async-OAuthlib

@@ -2,24 +2,23 @@
 
 import os
 import requests
-from cogs.bot_settings.app_functions import AppFunctions
 
-from flask import Flask, request, redirect, render_template, url_for
-from flask_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
+from quart import Quart, request, redirect, render_template, url_for
+from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
 from dotenv import load_dotenv
 
 ## -- VARIABLES -- ##
 
-app = Flask(__name__)
+app = Quart(__name__)
 load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
-app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
+app.config['SERVER_NAME'] = '127.0.0.1:5000'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
-app.config["DISCORD_REDIRECT_URI"] = "https://outdash-test-bot.herokuapp.com/callback"
+app.config["DISCORD_REDIRECT_URI"] = "http://%s/callback" % app.config["SERVER_NAME"]
 app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
@@ -62,7 +61,9 @@ def index():
     
     access_token = discord.get_authorization_token().get("access_token")
     guilds = get_guilds_with_permission()
-    AppFunctions.check_for_bot_in_server(836495137651294258)
+    
+    print(app.bot.get_guild(836495137651294258))
+    print(app.bot.users)
 
     return render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
 
@@ -115,9 +116,6 @@ def callback():
     data = discord.callback()
     redirect_to = data.get("redirect", "/")
 
-    # user = discord.fetch_user()
-    # welcome_user(user)
-
     return redirect(redirect_to)
 
 
@@ -125,16 +123,17 @@ def callback():
 def me():
     user = discord.fetch_user()
     return f"""
-<html>
-<head>
-<title>{user.name}</title>
-</head>
-<body><img src='{user.avatar_url or user.default_avatar_url}' />
-<p>Is avatar animated: {str(user.is_avatar_animated)}</p>
-<a href={url_for("my_connections")}>Connections</a>
-<br />
-</body>
-</html>
+    <html>
+        <head>
+            <title>{user.name}</title>
+        </head>
+        <body>
+            <img src='{user.avatar_url or user.default_avatar_url}' />
+            <p>Is avatar animated: {str(user.is_avatar_animated)}</p>
+            <a href={url_for("my_connections")}>Connections</a>
+            <br />
+        </body>
+    </html>
 """
 
 
@@ -188,7 +187,8 @@ def redirect_unauthorized(e):
 
 
 
-if __name__ == '__main__':
+def start_app(bot):
     # from waitress import serve
-    # serve(app, host="0.0.0.0", port=5000)
-    app.run(debug=False)
+    # serve(app, host="localhost", port=5000
+    app.bot = bot
+    app.run(debug=True, host="localhost", port=5000)

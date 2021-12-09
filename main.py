@@ -7,11 +7,11 @@ import random
 import asyncio
 import datetime
 import certifi
-from discord.errors import ClientException
 
 from discord.ext import commands
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from app import start_app
 
 
 # FILES
@@ -162,5 +162,6 @@ async def unloadcogs(ctx):
 
 ## -- RUNNING BOT -- ##
 
+start_app(bot)
 bot.loop.create_task(bot_loop())
 bot.run(bot_token)
