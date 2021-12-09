@@ -1,5 +1,6 @@
 ## -- IMPORTANT -- ##
 
+import asyncio
 import os
 import requests
 
@@ -15,10 +16,10 @@ load_dotenv()
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
-app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
+app.config['SERVER_NAME'] = '127.0.0.1:5000'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
-app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_NAME"]
+app.config["DISCORD_REDIRECT_URI"] = "http://%s/callback" % app.config["SERVER_NAME"]
 app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
@@ -26,13 +27,13 @@ HYPERLINK = '<a href="{}">{}</a>'
 
 ## -- FUNCTIONS -- ##
 
-def welcome_user(user):
-    dm_channel = discord.bot_request("/users/@me/channels", "POST", json={"recipient_id": user.id})
-    return discord.bot_request(
+async def welcome_user(user):
+    dm_channel = await discord.bot_request("/users/@me/channels", "POST", json={"recipient_id": user.id})
+    return await discord.bot_request(
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
-def get_guilds_with_permission():
-    guilds = discord.fetch_guilds()
+async def get_guilds_with_permission():
+    guilds = await discord.fetch_guilds()
     for g in guilds[:]:
         if not g.permissions.manage_guild:
             guilds.remove(g)
@@ -42,13 +43,13 @@ def get_guilds_with_permission():
 ## -- METHODS -- ##
 
 @app.route('/test_button')
-def background_process_test():
+async def background_process_test():
     print("YO")
     return("nothing")
 
 @app.route("/")
-def index():
-    user = discord.fetch_user()
+async def index():
+    user = await discord.fetch_user()
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
     if not discord.authorized:
@@ -59,8 +60,7 @@ def index():
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
     
-    access_token = discord.get_authorization_token().get("access_token")
-    guilds = get_guilds_with_permission()
+    guilds = await get_guilds_with_permission()
     
     print(app.bot.get_guild(836495137651294258))
     print(app.bot.users)
@@ -69,12 +69,12 @@ def index():
 
     
 @app.route('/servers', methods=['GET'])
-def dashboard():
+async def dashboard():
     if not discord.authorized:
-        return discord.create_session()
+        return await discord.create_session()
 
-    user = discord.fetch_user()
-    guilds = discord.fetch_guilds()
+    user = await discord.fetch_user()
+    guilds = await discord.fetch_guilds()
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
 
@@ -82,18 +82,18 @@ def dashboard():
 
 
 @app.route("/login/")
-def login():
-    return discord.create_session()
+async def login():
+    return await discord.create_session()
 
 
 @app.route("/dashboard/<int:guild_id>/")
-def server_dashboard(guild_id: int):
+async def server_dashboard(guild_id: int):
     if not discord.authorized:
-        return discord.create_session()
+        return await discord.create_session()
     
-    access_token = discord.get_authorization_token()["access_token"]
-    user = discord.fetch_user()
-    guild_members = discord.bot_request(
+    access_token = await discord.get_authorization_token()["access_token"]
+    user = await discord.fetch_user()
+    guild_members = await discord.bot_request(
         route=f"https://discord.com/api/v9/guilds/{guild_id}/members"
         # headers={'Authorization': 'Bearer %s' % access_token}
     )
@@ -102,26 +102,26 @@ def server_dashboard(guild_id: int):
 
 
 @app.route("/invite-bot/")
-def invite_bot():
-    return discord.create_session(scope=["bot"], permissions=8, guild_id=859482895009579039, disable_guild_select=True)
+async def invite_bot():
+    return await discord.create_session(scope=["bot"], permissions=8, guild_id=859482895009579039, disable_guild_select=True)
 
 
 @app.route("/invite-oauth/")
-def invite_oauth():
-    return discord.create_session(scope=["bot", "identify"], permissions=8)
+async def invite_oauth():
+    return await discord.create_session(scope=["bot", "identify"], permissions=8)
 
 
 @app.route("/callback/")
-def callback():
-    data = discord.callback()
+async def callback():
+    data = await discord.callback()
     redirect_to = data.get("redirect", "/")
 
     return redirect(redirect_to)
 
 
 @app.route("/me/")
-def me():
-    user = discord.fetch_user()
+async def me():
+    user = await discord.fetch_user()
     return f"""
     <html>
         <head>
@@ -138,8 +138,8 @@ def me():
 
 
 @app.route("/me/guilds/")
-def get_permission_guilds():
-    guilds = discord.fetch_guilds()
+async def get_permission_guilds():
+    guilds = await discord.fetch_guilds()
     for g in guilds:
         has_permission = g.permissions.manage_guild
         print(has_permission)
@@ -148,15 +148,15 @@ def get_permission_guilds():
 
 
 @app.route("/add_to/<int:guild_id>/")
-def add_to_guild(guild_id):
-    user = discord.fetch_user()
+async def add_to_guild(guild_id):
+    user = await discord.fetch_user()
     return user.add_to_guild(guild_id)
 
 
 @app.route("/me/connections/")
-def my_connections():
-    user = discord.fetch_user()
-    connections = discord.fetch_connections()
+async def my_connections():
+    user = await discord.fetch_user()
+    connections = await discord.fetch_connections()
     return f"""
     <html>
         <head>
@@ -170,25 +170,28 @@ def my_connections():
 
 
 @app.route("/logout/")
-def logout():
-    discord.revoke()
+async def logout():
+    await discord.revoke()
     return redirect(url_for(".index"))
 
 
 @app.route("/secret/")
 @requires_authorization
-def secret():
+async def secret():
     return os.urandom(16)
 
 
 @app.errorhandler(Unauthorized)
-def redirect_unauthorized(e):
+async def redirect_unauthorized(e):
     return redirect(url_for("login"))
 
 
-
-def start_app(bot):
+async def import_bot(bot):
+    app.bot = bot
+    await bot.wait_until_ready()
+    print("Started the webserver successfully.")
+    
+if __name__ == "__main__":
     # from waitress import serve
     # serve(app, host="0.0.0.0", port=5000
-    app.bot = bot
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="localhost", port=5000)

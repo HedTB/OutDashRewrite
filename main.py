@@ -11,7 +11,7 @@ import certifi
 from discord.ext import commands
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from app import start_app
+from app import import_bot
 
 
 # FILES
@@ -113,6 +113,8 @@ async def on_ready():
     print(f"Signed In As: {bot.user.name} ({bot.user.id})")
     print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
     
+    await import_bot(bot)
+    
 
 ## -- LOOPS -- ##
 
@@ -162,6 +164,5 @@ async def unloadcogs(ctx):
 
 ## -- RUNNING BOT -- ##
 
-start_app(bot)
 bot.loop.create_task(bot_loop())
 bot.run(bot_token)
