@@ -170,7 +170,7 @@ async def my_connections():
 
 @app.route("/logout/")
 async def logout():
-    await discord.revoke()
+    discord.revoke()
     return await redirect(url_for(".index"))
 
 
