@@ -2,7 +2,7 @@
 
 import os
 import requests
-from cogs.bot_settings.app_functions import check_for_bot_in_server
+from cogs.bot_settings.app_functions.AppFunctions import check_for_bot_in_server
 
 from flask import Flask, request, redirect, render_template, url_for
 from flask_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
