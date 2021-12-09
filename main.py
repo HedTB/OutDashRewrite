@@ -88,6 +88,16 @@ bot = commands.Bot(command_prefix=get_prefix, intents=discord.Intents.all(), sta
 activities = ['Minecraft | ?help', f'in {len(bot.guilds)} servers | ?help', 'Roblox | ?help', f'with {len(bot.users)} users | ?help']
 
 
+# APP FUNCTIONS
+def check_for_bot_in_server(guild_id: int):
+    guild = bot.get_guild(guild_id)
+    print(guild)
+    if guild:
+        return guild
+    else:
+        return None
+
+
 ## -- STARTING BOT -- ##
 
 @bot.event
