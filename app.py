@@ -36,9 +36,12 @@ def get_guilds_with_permission():
     for g in guilds[:]:
         if not g.permissions.manage_guild:
             guilds.remove(g)
-        # else:
-            # g["icon_url"] = g.icon_url
-            # print(g.icon_url)
+        else:
+            try:
+                print(g["name"])
+                print(g["icon"])
+            except Exception as e:
+                print(e)
     
     return guilds
 
