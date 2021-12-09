@@ -32,10 +32,10 @@ def welcome_user(user):
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
 def get_guilds_with_permission():
-    guilds = discord.fetch_guilds()
+    guilds = dict(discord.fetch_guilds())
     for g in guilds:
         if not g.permissions.manage_guild:
-            del guilds[g.name]
+            del guilds[g]
     
     return guilds
 
