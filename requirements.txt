@@ -8,4 +8,4 @@ flask_discord
 requests_oauthlib
 cachetools
 python-dotenv
-gunicorn
+hypercorn
