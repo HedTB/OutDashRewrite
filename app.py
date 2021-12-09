@@ -92,8 +92,8 @@ def server_dashboard(guild_id: int):
     access_token = discord.get_authorization_token()["access_token"]
     user = discord.fetch_user()
     guild_members = discord.request(
-        url=f"https://discord.com/api/v9/guilds/{guild_id}/members",
-        headers={'Authorization': 'Bearer %s' % access_token}
+        route=f"https://discord.com/api/v9/guilds/{guild_id}/members"
+        # headers={'Authorization': 'Bearer %s' % access_token}
     )
     print(guild_members)
     return "nothing"
