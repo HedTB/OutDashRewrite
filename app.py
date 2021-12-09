@@ -5,7 +5,7 @@ import os
 import requests
 
 from quart import Quart, request, redirect, render_template, url_for
-from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
+from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
 from dotenv import load_dotenv
 
 ## -- VARIABLES -- ##
@@ -178,6 +178,10 @@ async def secret():
 
 @app.errorhandler(Unauthorized)
 async def redirect_unauthorized(e):
+    return redirect(url_for("login"))
+
+@app.errorhandler(exceptions.AccessDenied)
+async def access_denied(e):
     return redirect(url_for("login"))
 
 
