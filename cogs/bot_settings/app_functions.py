@@ -18,18 +18,20 @@ from pymongo import MongoClient
 # FILES
 import bot_info
 
-bot = "None"
+theBot = "None"
 
 class AppFunctions(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        bot = self.bot
+        global theBot
+        theBot = self.bot
       
     @staticmethod  
     def check_for_bot_in_server(guild_id: int):
-        guild = bot.get_guild(guild_id)
+        guild = theBot.get_guild(guild_id)
         print(guild)
+        
         if guild:
             return guild
         else:
