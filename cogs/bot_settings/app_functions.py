@@ -32,7 +32,5 @@ class AppFunctions(commands.Cog):
           return None
         
     
-        
-    
 def setup(bot):
-    bot.add_cog(Cog(bot))
+    bot.add_cog(AppFunctions(bot))
