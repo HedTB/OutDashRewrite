@@ -17,8 +17,6 @@ from pymongo import MongoClient
 # FILES
 import bot_info
 
-selff = None
-
 class AppFunctions(commands.Cog):
 
     def __init__(self, bot):
