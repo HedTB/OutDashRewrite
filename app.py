@@ -16,7 +16,7 @@ app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
 app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
-app.config["DISCORD_CLIENT_ID"] = 844937957185159198
+app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
 app.config["DISCORD_REDIRECT_URI"] = "https://outdash-test-bot.herokuapp.com/callback"
 app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
@@ -84,9 +84,19 @@ def login():
     return discord.create_session()
 
 
-@app.route("/login-data/")
-def login_with_data():
-    return discord.create_session(data=dict(redirect="/me/", coupon="15off", number=15, zero=0, status=False))
+@app.route("/dashboard/<int:guild_id>/")
+def server_dashboard(guild_id: int):
+    if not discord.authorized:
+        return discord.create_session()
+    
+    access_token = discord.get_authorization_token()["access_token"]
+    user = discord.fetch_user()
+    guild_members = requests.get(
+        url=f"https://discord.com/api/v9/guilds/{guild_id}/members",
+        headers={'Authorization': 'Bearer %s' % access_token}
+    )
+    print(guild_members)
+    return "nothing"
 
 
 @app.route("/invite-bot/")
