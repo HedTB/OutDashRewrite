@@ -118,7 +118,7 @@ async def callback():
     data = await discord.callback()
     redirect_to = data.get("redirect", "/")
 
-    return await redirect(redirect_to)
+    return redirect(redirect_to)
 
 
 @app.route("/me/")
@@ -171,7 +171,7 @@ async def my_connections():
 @app.route("/logout/")
 async def logout():
     discord.revoke()
-    return await redirect(url_for(".index"))
+    return redirect(url_for(".index"))
 
 
 @app.route("/secret/")
