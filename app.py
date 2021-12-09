@@ -34,7 +34,7 @@ def welcome_user(user):
 def get_guilds_with_permission():
     guilds = discord.fetch_guilds()
     print(guilds)
-    for g in guilds:
+    for g in guilds[:]:
         if not g.permissions.manage_guild:
             guilds.remove(g)
             print(g)
