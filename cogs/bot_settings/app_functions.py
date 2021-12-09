@@ -23,7 +23,7 @@ class AppFunctions(commands.Cog):
         self.bot = bot
 
     # FUNCTIONS
-    def check_for_bot_in_server(guild_id: int):
+    def check_for_bot_in_server(self, guild_id: int):
         guild = self.bot.get_guild(guild_id)
         print(guild)
         if guild:
