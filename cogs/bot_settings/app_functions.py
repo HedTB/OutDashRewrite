@@ -18,19 +18,16 @@ from pymongo import MongoClient
 import bot_info
 
 class AppFunctions(commands.Cog):
-    
+
     def __init__(self, bot):
         self.bot = bot
-		guild = self.bot.get_guild(859482895009579039)
-		print(guild)
-		if guild:
-		  return guild
-		else:
-		  return None
-		
-	def check_for_bot_in_server(self, guild_id: int):
-		print(None)
-        
-    
+        guild = self.bot.get_guild(859482895009579039)
+        print(guild)
+        if guild:
+            return guild
+        else:
+            return None
+
+
 def setup(bot):
     bot.add_cog(AppFunctions(bot))
