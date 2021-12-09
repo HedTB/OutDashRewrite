@@ -113,7 +113,7 @@ async def on_ready():
     print(f"Signed In As: {bot.user.name} ({bot.user.id})")
     print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
     
-    await import_bot(bot)
+    import_bot(bot)
     
 
 ## -- LOOPS -- ##
@@ -164,5 +164,6 @@ async def unloadcogs(ctx):
 
 ## -- RUNNING BOT -- ##
 
-bot.loop.create_task(bot_loop())
-bot.run(bot_token)
+if __name__ == "__main__":
+    bot.loop.create_task(bot_loop())
+    bot.run(bot_token)

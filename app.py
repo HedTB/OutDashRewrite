@@ -4,19 +4,19 @@ import asyncio
 import os
 import requests
 
-from quart import Quart, request, redirect, render_template, url_for
-from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
+from flask import Flask, request, redirect, render_template, url_for
+from flask_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
 from dotenv import load_dotenv
 
 ## -- VARIABLES -- ##
 
-app = Quart(__name__)
+app = Flask(__name__)
 load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
-app.config['SERVER_NAME'] = '127.0.0.1:5000'
+app.config['SERVER_NAME'] = 'localhost:5000'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
 app.config["DISCORD_REDIRECT_URI"] = "http://%s/callback" % app.config["SERVER_NAME"]
@@ -27,13 +27,14 @@ HYPERLINK = '<a href="{}">{}</a>'
 
 ## -- FUNCTIONS -- ##
 
-async def welcome_user(user):
-    dm_channel = await discord.bot_request("/users/@me/channels", "POST", json={"recipient_id": user.id})
-    return await discord.bot_request(
+def welcome_user(user):
+    dm_channel = discord.bot_request("/users/@me/channels", "POST", json={"recipient_id": user.id})
+    return discord.bot_request(
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
-async def get_guilds_with_permission():
-    guilds = await discord.fetch_guilds()
+    
+def get_guilds_with_permission():
+    guilds = discord.fetch_guilds()
     for g in guilds[:]:
         if not g.permissions.manage_guild:
             guilds.remove(g)
@@ -43,13 +44,13 @@ async def get_guilds_with_permission():
 ## -- METHODS -- ##
 
 @app.route('/test_button')
-async def background_process_test():
+def background_process_test():
     print("YO")
     return("nothing")
 
 @app.route("/")
-async def index():
-    user = await discord.fetch_user()
+def index():
+    user = discord.fetch_user()
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
     if not discord.authorized:
@@ -60,7 +61,7 @@ async def index():
         {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
         """
     
-    guilds = await get_guilds_with_permission()
+    guilds = get_guilds_with_permission()
     
     print(app.bot.get_guild(836495137651294258))
     print(app.bot.users)
@@ -69,12 +70,12 @@ async def index():
 
     
 @app.route('/servers', methods=['GET'])
-async def dashboard():
+def dashboard():
     if not discord.authorized:
-        return await discord.create_session()
+        return discord.create_session()
 
-    user = await discord.fetch_user()
-    guilds = await discord.fetch_guilds()
+    user = discord.fetch_user()
+    guilds = discord.fetch_guilds()
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
 
@@ -82,18 +83,18 @@ async def dashboard():
 
 
 @app.route("/login/")
-async def login():
-    return await discord.create_session()
+def login():
+    return discord.create_session()
 
 
 @app.route("/dashboard/<int:guild_id>/")
-async def server_dashboard(guild_id: int):
+def server_dashboard(guild_id: int):
     if not discord.authorized:
-        return await discord.create_session()
+        return discord.create_session()
     
-    access_token = await discord.get_authorization_token()["access_token"]
-    user = await discord.fetch_user()
-    guild_members = await discord.bot_request(
+    access_token = discord.get_authorization_token()["access_token"]
+    user = discord.fetch_user()
+    guild_members = discord.bot_request(
         route=f"https://discord.com/api/v9/guilds/{guild_id}/members"
         # headers={'Authorization': 'Bearer %s' % access_token}
     )
@@ -102,26 +103,26 @@ async def server_dashboard(guild_id: int):
 
 
 @app.route("/invite-bot/")
-async def invite_bot():
-    return await discord.create_session(scope=["bot"], permissions=8, guild_id=859482895009579039, disable_guild_select=True)
+def invite_bot():
+    return discord.create_session(scope=["bot"], permissions=8, guild_id=859482895009579039, disable_guild_select=True)
 
 
 @app.route("/invite-oauth/")
-async def invite_oauth():
-    return await discord.create_session(scope=["bot", "identify"], permissions=8)
+def invite_oauth():
+    return discord.create_session(scope=["bot", "identify"], permissions=8)
 
 
 @app.route("/callback/")
-async def callback():
-    data = await discord.callback()
+def callback():
+    data = discord.callback()
     redirect_to = data.get("redirect", "/")
 
     return redirect(redirect_to)
 
 
 @app.route("/me/")
-async def me():
-    user = await discord.fetch_user()
+def me():
+    user = discord.fetch_user()
     return f"""
     <html>
         <head>
@@ -138,8 +139,8 @@ async def me():
 
 
 @app.route("/me/guilds/")
-async def get_permission_guilds():
-    guilds = await discord.fetch_guilds()
+def get_permission_guilds():
+    guilds = discord.fetch_guilds()
     for g in guilds:
         has_permission = g.permissions.manage_guild
         print(has_permission)
@@ -148,15 +149,15 @@ async def get_permission_guilds():
 
 
 @app.route("/add_to/<int:guild_id>/")
-async def add_to_guild(guild_id):
-    user = await discord.fetch_user()
+def add_to_guild(guild_id):
+    user = discord.fetch_user()
     return user.add_to_guild(guild_id)
 
 
 @app.route("/me/connections/")
-async def my_connections():
-    user = await discord.fetch_user()
-    connections = await discord.fetch_connections()
+def my_connections():
+    user = discord.fetch_user()
+    connections = discord.fetch_connections()
     return f"""
     <html>
         <head>
@@ -170,8 +171,8 @@ async def my_connections():
 
 
 @app.route("/logout/")
-async def logout():
-    await discord.revoke()
+def logout():
+    discord.revoke()
     return redirect(url_for(".index"))
 
 
@@ -186,12 +187,11 @@ async def redirect_unauthorized(e):
     return redirect(url_for("login"))
 
 
-async def import_bot(bot):
+def import_bot(bot):
     app.bot = bot
-    await bot.wait_until_ready()
-    print("Started the webserver successfully.")
-    
-if __name__ == "__main__":
+    print("Bot received in app successfully.")
+
+if __name__ == "__main__":    
     # from waitress import serve
     # serve(app, host="0.0.0.0", port=5000
     app.run(debug=True, host="localhost", port=5000)
