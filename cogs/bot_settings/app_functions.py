@@ -22,9 +22,9 @@ selff = None
 class AppFunctions(commands.Cog):
 
     def __init__(self, bot):
+        global selff
         selff = self
-        
-        selff.bot = bot
+        selff["bot"] = bot
         
     def check_for_bot_in_server(guild_id: int):
         guild = selff.bot.get_guild(859482895009579039)
