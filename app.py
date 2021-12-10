@@ -92,7 +92,9 @@ async def server_dashboard(guild_id: int):
     user = await discord.fetch_user()
     guilds = await get_guilds_with_permission()
     
+    print(guild_id)
     for g in guilds:
+        print(g.id)
         if g.id != guild_id:
             guilds.remove(g)
             
