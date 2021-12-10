@@ -104,6 +104,7 @@ class Bot(commands.Bot):
         
         
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
+my_ipc = ipc.Server(secret_key="Test", bot=bot)
 #bot.remove_command("help")
 
 
@@ -171,6 +172,6 @@ async def unloadcogs(ctx):
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
-    bot.ipc.start()
+    asyncio.run(my_ipc.start())
     bot.loop.create_task(bot_loop())
     bot.run(bot_token)
