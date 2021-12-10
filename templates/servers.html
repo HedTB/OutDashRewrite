@@ -15,7 +15,7 @@
                                     <h4>
                                         <img class="img-responsive" style="display:inline-block; height:30px; margin-top:5px" src="{{ guild["icon_url"] }}" />
                                         <p class="guild-name"> {{ guild['name'] }} </p>
-                                        <button type="button" class="btn btn-success pull-right" onClick="open_dashboard">Go To Dashboard</button>
+                                        <button id="{{ guild['id'] }}" type="button" class="btn btn-success pull-right" onClick="open_dashboard">Go To Dashboard</button>
                                         
                                         <script type="text/javascript">
                                             function open_dashboard(clicked_id)
