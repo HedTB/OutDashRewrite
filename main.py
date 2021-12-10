@@ -83,7 +83,7 @@ def unload_cogs():
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ipc = ipc.Server(self, secret_key="HedTBIsHandsome", host="localhost", port=5000)
+        self.ipc = ipc.Server(self, secret_key="HedTBIsHandsome")
         
     async def on_ready(self):
         status_channel = bot.get_channel(bot_info.messages_channel)
@@ -95,6 +95,9 @@ class Bot(commands.Bot):
 
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
+14
+15  async def on_ipc_ready(self):
+17      print("Ipc is ready.")
         
     async def on_ipc_error(self, endpoint, error):
         """Called upon an error being raised within an IPC route"""
@@ -111,8 +114,8 @@ activities = ['Minecraft | ?help', f'in {len(bot.guilds)} servers | ?help', 'Rob
 
 # IPC
 @bot.ipc.route()
-async def check_for_bot_in_server(guild_id: int):
-    guild = bot.get_guild(guild_id)
+async def check_for_bot_in_server(data):
+    guild = bot.get_guild(data.guild_id)
     
     if guild:
         return guild
