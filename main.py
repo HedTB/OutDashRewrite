@@ -82,7 +82,7 @@ def unload_cogs():
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ipc = ipc.Server(self, secret_key="Test")
+        self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g", port=5000, do_multicast=False)
         
         self.loop.create_task(self.start_ipc())
         

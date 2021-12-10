@@ -12,11 +12,11 @@ from discord.ext import ipc
 ## -- VARIABLES -- ##
 
 app = Quart(__name__)
-ipc_client = ipc.Client(secret_key="Test")
+ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g", port=5000)
 load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "false"
 
 app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
