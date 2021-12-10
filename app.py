@@ -41,6 +41,15 @@ async def get_guilds_with_permission():
     
     return guilds
 
+async def get_guild(guild_id: int):
+    guilds = await get_guilds_with_permission()
+    
+    for g in guilds[:]:
+        if g.id == guild_id:
+            return g
+        
+    return None
+
 ## -- METHODS -- ##
 
 @app.route('/test_button')
@@ -90,18 +99,9 @@ async def login():
 async def server_dashboard(guild_id: int):
     
     user = await discord.fetch_user()
-    guilds = await get_guilds_with_permission()
-    
-    print(guild_id)
-    for g in guilds[:]:
-        print(g.id)
-        if g.id == guild_id:
-            print(g.name)
-        else:
-            print("rekt")
-            guilds.remove(g)
+    guild = await get_guild(guild_id)
             
-    print(guilds)
+    print(guild)
     return "nothing"
 
 
