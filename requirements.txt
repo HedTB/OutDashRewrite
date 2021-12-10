@@ -10,4 +10,4 @@ cachetools
 python-dotenv
 hypercorn
 Async-OAuthlib
-# discord-ext-ipc
+discord-ext-ipc
