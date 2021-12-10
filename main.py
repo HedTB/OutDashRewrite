@@ -8,10 +8,10 @@ import asyncio
 import datetime
 import certifi
 
-from discord.ext import commands, ipc
+from discord.ext import commands
+from ipc.discord.ext import ipc
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from app import app, import_bot, setBotAttribute
 
 
 # FILES
@@ -83,7 +83,7 @@ def unload_cogs():
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ipc = ipc.Server(self, secret_key="HedTBIsHandsome")
+        self.ipc = ipc.Server(self, secret_key=None)
         
     async def on_ready(self):
         status_channel = bot.get_channel(bot_info.messages_channel)
@@ -129,8 +129,6 @@ async def bot_loop():
     
     await bot.wait_until_ready()
     load_cogs()
-    setBotAttribute(bot)
-    print(hasattr(app, "bot"))
     await asyncio.sleep(5)
     
     while not bot.is_closed():
@@ -174,6 +172,6 @@ async def unloadcogs(ctx):
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
+    bot.ipc.start()
     bot.loop.create_task(bot_loop())
-    asyncio.get_running_loop().run_until_complete(bot.ipc.start())
     bot.run(bot_token)

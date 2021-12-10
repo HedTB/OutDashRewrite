@@ -7,12 +7,12 @@ import requests
 from quart import Quart, request, redirect, render_template, url_for
 from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
 from dotenv import load_dotenv
-from discord.ext import ipc
+from ipc.discord.ext import ipc
 
 ## -- VARIABLES -- ##
 
 app = Quart(__name__)
-ipc_client = ipc.Client(secret_key="HedTBIsHandsome")
+ipc_client = ipc.Client(secret_key=None)
 load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
