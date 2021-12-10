@@ -95,9 +95,9 @@ class Bot(commands.Bot):
 
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
-14
-15  async def on_ipc_ready(self):
-17      print("Ipc is ready.")
+        
+    async def on_ipc_ready(self):
+        print("The IPC server is ready.")
         
     async def on_ipc_error(self, endpoint, error):
         """Called upon an error being raised within an IPC route"""
