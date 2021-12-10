@@ -8,7 +8,7 @@ import asyncio
 import datetime
 import certifi
 
-from discord.ext import commands
+from discord.ext import commands, ipc
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from app import app, import_bot, setBotAttribute
@@ -83,10 +83,9 @@ def unload_cogs():
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.ipc = ipc.Server(self, secret_key="HedTBIsHandsome")
+        self.ipc = ipc.Server(self, secret_key="HedTBIsHandsome")
         
     async def on_ready(self):
-        
         status_channel = bot.get_channel(bot_info.messages_channel)
         embed = discord.Embed(title=f"Singed In As: {bot.user.name} ({bot.user.id})", 
                             description=f"Bot started in `{str(len(bot.guilds))}` server(s), with total of `{len(bot.users)}` member(s), on an average latency of `{round(bot.latency * 1000)} ms`.", 
@@ -96,6 +95,10 @@ class Bot(commands.Bot):
 
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
+        
+    async def on_ipc_error(self, endpoint, error):
+        """Called upon an error being raised within an IPC route"""
+        print(endpoint, "raised", error)
         
         
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
@@ -107,7 +110,6 @@ activities = ['Minecraft | ?help', f'in {len(bot.guilds)} servers | ?help', 'Rob
 
 
 # IPC
-"""
 @bot.ipc.route()
 async def check_for_bot_in_server(guild_id: int):
     guild = bot.get_guild(guild_id)
@@ -116,7 +118,6 @@ async def check_for_bot_in_server(guild_id: int):
         return guild
     else:
         return None
-"""
 
 
 ## -- LOOPS -- ##
@@ -171,4 +172,5 @@ async def unloadcogs(ctx):
 
 if __name__ == "__main__":
     bot.loop.create_task(bot_loop())
+    bot.ipc.start()
     bot.run(bot_token)
