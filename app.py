@@ -12,7 +12,7 @@ from discord.ext import ipc
 ## -- VARIABLES -- ##
 
 app = Quart(__name__)
-ipc_client = ipc.Client(secret_key="HedTBIsHandsome", host="localhost", port=5000)
+ipc_client = ipc.Client(secret_key="HedTBIsHandsome")
 load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
