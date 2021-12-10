@@ -7,10 +7,12 @@ import requests
 from quart import Quart, request, redirect, render_template, url_for
 from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
 from dotenv import load_dotenv
+from discord.ext import ipc
 
 ## -- VARIABLES -- ##
 
 app = Quart(__name__)
+ipc_client = ipc.Client(secret_key="HedTBIsHandsome")
 load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
@@ -99,7 +101,8 @@ async def login():
 async def server_dashboard(guild_id: int):
     
     user = await discord.fetch_user()
-    guild = await get_guild(guild_id)
+    # guild = await get_guild(guild_id)
+    guild = await ipc_client.request("check_for_bot_in_server", guild_id=guild_id)
     
     if not guild:
         return "You don't have permission to enter this server's dashboard."
