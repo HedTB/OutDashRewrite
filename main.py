@@ -175,5 +175,5 @@ async def unloadcogs(ctx):
 
 if __name__ == "__main__":
     bot.loop.create_task(bot_loop())
-    bot.ipc.start()
+    asyncio.get_running_loop().run_until_complete(bot.ipc.start())
     bot.run(bot_token)
