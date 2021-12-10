@@ -7,7 +7,7 @@ import requests
 from quart import Quart, request, redirect, render_template, url_for
 from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
 from dotenv import load_dotenv
-from ipc.discord.ext import ipc
+from discord.ext import ipc
 
 ## -- VARIABLES -- ##
 

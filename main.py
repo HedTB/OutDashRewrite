@@ -8,8 +8,7 @@ import asyncio
 import datetime
 import certifi
 
-from discord.ext import commands
-from ipc.discord.ext import ipc
+from discord.ext import commands, ipc
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
