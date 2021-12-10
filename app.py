@@ -102,7 +102,7 @@ async def server_dashboard(guild_id: int):
     guild = await get_guild(guild_id)
     
     if not guild:
-        return "You haven't joined this guild/it doesn't exist.
+        return "You haven't joined this guild/it doesn't exist."
             
     print(guild)
     return guild.name
