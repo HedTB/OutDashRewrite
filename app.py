@@ -100,15 +100,11 @@ async def login():
 @app.route("/dashboard/<int:guild_id>/")
 async def server_dashboard(guild_id: int):
     
-    user = await discord.fetch_user()
-    # guild = await get_guild(guild_id)
-    guild = await ipc_client.request("check_for_bot_in_server", guild_id=guild_id)
+    member_count = await ipc_client.request(
+        "get_member_count", guild_id=guild_id
+    )
     
-    if not guild:
-        return "You don't have permission to enter this server's dashboard."
-            
-    print(guild)
-    return guild.name
+    return str(member_count)
 
 
 @app.route("/invite-bot/")
