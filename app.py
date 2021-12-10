@@ -74,11 +74,11 @@ async def index():
 async def dashboard():
 
     user = await discord.fetch_user()
-    guilds = await discord.fetch_guilds()
+    guilds = await get_guilds_with_permission()
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
 
-    return await render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds) 
+    return await render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
 
 
 @app.route("/login/")
