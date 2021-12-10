@@ -18,10 +18,10 @@ load_dotenv()
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
-app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
+app.config['SERVER_NAME'] = 'localhost:5000'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
-app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_NAME"]
+app.config["DISCORD_REDIRECT_URI"] = "http://%s/callback" % app.config["SERVER_NAME"]
 app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
@@ -102,6 +102,7 @@ async def server_dashboard(guild_id: int):
     
     user = await discord.fetch_user()
     # guild = await get_guild(guild_id)
+    print(guild_id)
     guild = await ipc_client.request("check_for_bot_in_server", guild_id=guild_id)
     
     if not guild:

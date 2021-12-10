@@ -82,7 +82,9 @@ def unload_cogs():
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ipc = ipc.Server(self, secret_key=None)
+        self.ipc = ipc.Server(self, secret_key="Test")
+        
+        self.loop.create_task(self.start_ipc())
         
     async def on_ready(self):
         status_channel = bot.get_channel(bot_info.messages_channel)
@@ -102,9 +104,11 @@ class Bot(commands.Bot):
         """Called upon an error being raised within an IPC route"""
         print(endpoint, "raised", error)
         
+    async def start_ipc(self):
+        self.ipc.start()
+        
         
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
-my_ipc = ipc.Server(secret_key="Test", bot=bot)
 #bot.remove_command("help")
 
 
@@ -113,8 +117,9 @@ activities = ['Minecraft | ?help', f'in {len(bot.guilds)} servers | ?help', 'Rob
 
 
 # IPC
-@bot.ipc.route()
+@bot.ipc.route(name="check_for_bot_in_server")
 async def check_for_bot_in_server(data):
+    print(data)
     guild = bot.get_guild(data.guild_id)
     
     if guild:
@@ -172,6 +177,5 @@ async def unloadcogs(ctx):
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
-    asyncio.run(my_ipc.start())
     bot.loop.create_task(bot_loop())
     bot.run(bot_token)
