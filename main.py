@@ -83,7 +83,7 @@ def unload_cogs():
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ipc = ipc.Server(self, secret_key="HedTBIsHandsome", host="0.0.0.0", port=8080)
+        self.ipc = ipc.Server(self, secret_key="HedTBIsHandsome", host="localhost", port=5000)
         
     async def on_ready(self):
         status_channel = bot.get_channel(bot_info.messages_channel)
