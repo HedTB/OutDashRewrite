@@ -105,6 +105,7 @@ class Bot(commands.Bot):
         print(endpoint, "raised", error)
         
     async def start_ipc(self):
+        await self.wait_until_ready()
         self.ipc.start()
         
         

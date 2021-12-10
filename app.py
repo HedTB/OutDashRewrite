@@ -102,7 +102,6 @@ async def server_dashboard(guild_id: int):
     
     user = await discord.fetch_user()
     # guild = await get_guild(guild_id)
-    print(guild_id)
     guild = await ipc_client.request("check_for_bot_in_server", guild_id=guild_id)
     
     if not guild:
