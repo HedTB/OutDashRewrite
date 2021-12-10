@@ -100,9 +100,12 @@ async def server_dashboard(guild_id: int):
     
     user = await discord.fetch_user()
     guild = await get_guild(guild_id)
+    
+    if not guild:
+        return "You haven't joined this guild/it doesn't exist.
             
     print(guild)
-    return "nothing"
+    return guild.name
 
 
 @app.route("/invite-bot/")
