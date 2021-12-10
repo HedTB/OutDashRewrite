@@ -89,13 +89,14 @@ async def login():
 @app.route("/dashboard/<int:guild_id>/")
 async def server_dashboard(guild_id: int):
     
-    access_token = await discord.get_authorization_token()["access_token"]
     user = await discord.fetch_user()
-    guild_members = await discord.bot_request(
-        route=f"https://discord.com/api/v9/guilds/{guild_id}/members"
-        # headers={'Authorization': 'Bearer %s' % access_token}
-    )
-    print(guild_members)
+    guilds = await get_guilds_with_permission()
+    
+    for g in guilds:
+        if g.id != guild_id:
+            guilds.remove(g)
+            
+    print(guilds)
     return "nothing"
 
 
