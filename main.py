@@ -111,7 +111,8 @@ class Bot(commands.Bot):
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
 #bot.remove_command("help")
 
-def export_bot():
+async def export_bot():
+    await bot.wait_until_ready()
     return bot
 
 
