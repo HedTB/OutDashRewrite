@@ -107,6 +107,7 @@ async def server_dashboard(guild_id: int):
     #     "get_member_count", guild_id=guild_id
     # )
     bot = export_bot()
+    print(bot)
     guild = bot.get_guild(guild_id)
     
     return str(guild.name)
