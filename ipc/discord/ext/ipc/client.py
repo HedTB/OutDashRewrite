@@ -3,7 +3,7 @@ import logging
 import typing
 
 import aiohttp
-from ipc.discord.ext.ipc.errors import *
+from discord.ext.ipc.errors import *
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class Client:
             The websocket connection to the server
         """
         log.info("Initiating WebSocket connection.")
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(trust_env=True)
 
         if not self.port:
             log.debug(
@@ -95,6 +95,8 @@ class Client:
         log.info("Requesting IPC Server for %r with %r", endpoint, kwargs)
         if not self.session:
             await self.init_sock()
+        if not self.websocket:
+            await self.init_sock()
 
         payload = {
             "endpoint": endpoint,
@@ -105,9 +107,7 @@ class Client:
         await self.websocket.send_json(payload)
 
         log.debug("Client > %r", payload)
-
         recv = await self.websocket.receive()
-
         log.debug("Client < %r", recv)
 
         if recv.type == aiohttp.WSMsgType.PING:
@@ -126,11 +126,8 @@ class Client:
             )
 
             await self.session.close()
-
             await asyncio.sleep(5)
-
             await self.init_sock()
-
             return await self.request(endpoint, **kwargs)
 
         return recv.json()
