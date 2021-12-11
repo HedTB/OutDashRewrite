@@ -8,7 +8,7 @@ import bot_info
 from quart import Quart, request, redirect, render_template, url_for
 from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
 from dotenv import load_dotenv
-from discord.ext import ipc
+from discord.ext import commands
 
 if __name__ == '__main__':
     from main import export_bot
@@ -19,6 +19,13 @@ class App(Quart):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = None
+        
+class AppCog(commands.Cog):
+    
+    def __init__(self, bot):
+        self.bot = bot
+        app.bot = bot
+    
         
 app = App(__name__)
 # ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
@@ -114,6 +121,7 @@ async def server_dashboard(guild_id: int):
     #     "get_member_count", guild_id=guild_id
     # )
     print(bot_info.bot)
+    print(app.bot)
     guild = bot_info.bot.get_guild(guild_id)
     print(guild)
     
@@ -218,6 +226,9 @@ async def init_app(bot):
     app.bot = bot
     print(bot_info.bot)
     # await ipc_client.init_sock()
+    
+def setup(bot):
+    bot.add_cog(AppCog(bot))
 
 if __name__ == "__main__":
     app.run(debug=True, host="localhost", port=8080)
