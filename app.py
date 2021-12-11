@@ -82,10 +82,14 @@ async def get_guild_with_permission(guild_id: int):
     return None
 
 async def check_for_bot_in_server(guild_id: int):
-    return await discord.bot_request(
-        route=f"/guilds/{guild_id}",
+    response = await discord.bot_request(
+        route=f"/guilds/{guild_id}/members",
         method="GET"
     )
+    for member in response:
+        if member.user.id == os.environ.get("CLIENT_ID"): 
+            return True
+    return False
 
 ## -- METHODS -- ##
 
@@ -135,10 +139,10 @@ async def login():
 @app.route("/dashboard/<int:guild_id>/")
 async def server_dashboard(guild_id: int):
     
-    guild = await check_for_bot_in_server(guild_id=guild_id)
-    print(guild)
+    response = await check_for_bot_in_server(guild_id=guild_id)
+    print(response)
     
-    return str(guild.name)
+    return str("ye")
 
 
 @app.route("/invite-bot/")

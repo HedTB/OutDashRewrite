@@ -99,37 +99,9 @@ class Bot(commands.Bot):
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
         
-    # async def on_ipc_ready(self):
-    #     print("The IPC server is ready.")
-        
-    # async def on_ipc_error(self, endpoint, error):
-    #     """Called upon an error being raised within an IPC route"""
-    #     print(endpoint, "raised", error)
-        
-    # async def start_ipc(self):
-    #     await self.wait_until_ready()
-    #     # self.ipc.start()
-        
         
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
 #bot.remove_command("help")
-
-async def export_bot():
-    print("exporting bot ig")
-    return bot
-
-    if bot.ready == False:
-        print("not ready bruh")
-        await bot.wait_until_ready()
-        print("done")
-        return bot
-    
-    elif bot.ready == True:
-        print("bot ready!!")
-        return bot
-    
-async def get_guild(guild_id: int):
-    return bot.get_guild(guild_id)
 
 
 # OTHER
