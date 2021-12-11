@@ -148,13 +148,13 @@ async def login():
 @app.route("/dashboard/<int:guild_id>/")
 async def server_dashboard(guild_id: int):
     
-    response = await check_for_bot_in_server(guild_id=guild_id)
+    # response = await check_for_bot_in_server(guild_id=guild_id)
     guild = requests.get(
         url=f"https://{app.config['SERVER_NAME']}/api/get_guild/{guild_id}",
         headers={"Password": bot_info.api_password}
     ).json()
     
-    print(response)
+    # print(response)
     print(guild)
     
     return str(guild)
