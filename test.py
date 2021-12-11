@@ -50,7 +50,7 @@ app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
 app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_NAME"]
 app.config["DISCORD_BOT_TOKEN"] = bot_token
 
-discord = DiscordOAuth2Session(app)
+discord2 = DiscordOAuth2Session(app)
 HYPERLINK = '<a href="{}">{}</a>'
 
 
@@ -223,10 +223,10 @@ async def background_process_test():
 
 @app.route("/")
 async def index():
-    user = await discord.fetch_user()
+    user = await discord2.fetch_user()
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
     
-    if not await discord.authorized:
+    if not await discord2.authorized:
         return f"""
         {HYPERLINK.format(url_for(".login"), "Login")} <br />
         {HYPERLINK.format(url_for(".login_with_data"), "Login with custom data")} <br />
@@ -246,7 +246,7 @@ async def index():
 @app.route('/servers', methods=['GET'])
 async def dashboard():
 
-    user = await discord.fetch_user()
+    user = await discord2.fetch_user()
     guilds = await get_guilds_with_permission()
 
     id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
@@ -256,7 +256,7 @@ async def dashboard():
 
 @app.route("/login/")
 async def login():
-    return await discord.create_session(scope=["identify", "guilds", "email"])
+    return await discord2.create_session(scope=["identify", "guilds", "email"])
 
 
 @app.route("/dashboard/<int:guild_id>/")
@@ -271,17 +271,17 @@ async def server_dashboard(guild_id: int):
 
 @app.route("/invite-bot/")
 async def invite_bot():
-    return await discord.create_session(scope=["bot"], permissions=8, guild_id=859482895009579039, disable_guild_select=True)
+    return await discord2.create_session(scope=["bot"], permissions=8, guild_id=859482895009579039, disable_guild_select=True)
 
 
 @app.route("/invite-oauth/")
 async def invite_oauth():
-    return await discord.create_session(scope=["bot", "identify"], permissions=8)
+    return await discord2.create_session(scope=["bot", "identify"], permissions=8)
 
 
 @app.route("/callback/")
 async def callback():
-    data = await discord.callback()
+    data = await discord2.callback()
     redirect_to = data.get("redirect", "/")
 
     return redirect(redirect_to)
@@ -289,7 +289,7 @@ async def callback():
 
 @app.route("/me/")
 async def me():
-    user = await discord.fetch_user()
+    user = await discord2.fetch_user()
     return f"""
     <html>
         <head>
@@ -307,21 +307,21 @@ async def me():
 
 @app.route("/me/guilds/")
 async def get_permission_guilds():
-    guilds = await discord.fetch_guilds()
+    guilds = await discord2.fetch_guilds()
         
     return "<br />".join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else g.name for g in guilds])
 
 
 @app.route("/add_to/<int:guild_id>/")
 async def add_to_guild(guild_id):
-    user = await discord.fetch_user()
+    user = await discord2.fetch_user()
     return await user.add_to_guild(guild_id)
 
 
 @app.route("/me/connections/")
 async def my_connections():
-    user = await discord.fetch_user()
-    connections = await discord.fetch_connections()
+    user = await discord2.fetch_user()
+    connections = await discord2.fetch_connections()
     return f"""
     <html>
         <head>
@@ -336,7 +336,7 @@ async def my_connections():
 
 @app.route("/logout/")
 async def logout():
-    discord.revoke()
+    discord2.revoke()
     return redirect(url_for(".index"))
 
 
