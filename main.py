@@ -119,7 +119,7 @@ async def export_bot():
     if bot.ready == False:
         print("not ready bruh")
         while not bot.ready:
-            print("waiting")
+            return
             
         print("done")
         return bot
