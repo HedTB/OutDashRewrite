@@ -152,7 +152,7 @@ async def server_dashboard(guild_id: int):
     guild = requests.get(
         url=f"https://{app.config['SERVER_NAME']}/api/get_guild/{guild_id}",
         headers={"Password": bot_info.api_password}
-    ).json()
+    )
     
     # print(response)
     print(guild)
