@@ -149,14 +149,15 @@ async def login():
 async def server_dashboard(guild_id: int):
     
     response = await check_for_bot_in_server(guild_id=guild_id)
-    guild = await requests.get(
+    guild = requests.get(
         url=f"https://{app.config['SERVER_NAME']}/api/get_guild/{guild_id}",
         headers={"Password": bot_info.api_password}
-    )
+    ).json()
+    
     print(response)
     print(guild)
     
-    return str(guild.get("name"))
+    return str(guild)
 
 
 @app.route("/invite-bot/")
