@@ -28,6 +28,9 @@ class AppCog(commands.Cog):
         self.bot = bot
         app.bot = bot
         bot_info.bot = bot
+        
+        print(bot_info.bot)
+        print(app.bot)
     
     print(bot_info.bot)
     print(app.bot)
