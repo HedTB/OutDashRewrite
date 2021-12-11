@@ -65,7 +65,7 @@ async def get_guild_with_permission(guild_id: int):
 
 async def check_for_bot_in_server(guild_id: int):
     return await discord.bot_request(
-        f"/guilds/{guild_id}/"
+        f"https://discord.com/api/v9/guilds/{guild_id}/"
     )
 
 ## -- METHODS -- ##
