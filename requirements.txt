@@ -9,6 +9,7 @@ requests_oauthlib
 cachetools
 python-dotenv
 hypercorn
+gunicorn
 Async-OAuthlib
 discord-ext-ipc
 flask
