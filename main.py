@@ -82,7 +82,7 @@ def unload_cogs():
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
+        # self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
         # self.loop.create_task(self.start_ipc())
         
     async def on_ready(self):
@@ -112,7 +112,9 @@ bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=disco
 #bot.remove_command("help")
 
 async def export_bot():
+    print("exporting bot ig")
     if not bot.is_ready():
+        print("not ready bruh")
         await bot.wait_until_ready()
         return bot
     else:
@@ -124,23 +126,15 @@ activities = ['Minecraft | ?help', f'in {len(bot.guilds)} servers | ?help', 'Rob
 
 
 # IPC
-@bot.ipc.route(name="check_for_bot_in_server")
-async def check_for_bot_in_server(data):
-    print(data)
-    guild = bot.get_guild(data.guild_id)
+# @bot.ipc.route(name="check_for_bot_in_server")
+# async def check_for_bot_in_server(data):
+#     print(data)
+#     guild = bot.get_guild(data.guild_id)
     
-    if guild:
-        return guild
-    else:
-        return None
-    
-@bot.ipc.route()
-async def get_member_count(data):
-    guild = bot.get_guild(
-        data.guild_id
-    )  # get the guild object using parsed guild_id
-
-    return guild.member_count  # return the member count to the client
+#     if guild:
+#         return guild
+#     else:
+#         return None
 
 
 ## -- LOOPS -- ##
