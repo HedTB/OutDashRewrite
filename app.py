@@ -113,6 +113,7 @@ async def server_dashboard(guild_id: int):
     # member_count = await ipc_client.request(
     #     "get_member_count", guild_id=guild_id
     # )
+    print(bot_info.bot)
     guild = bot_info.bot.get_guild(guild_id)
     print(guild)
     
@@ -214,6 +215,7 @@ def setBotAttribute(bot):
     
 async def init_app(bot):
     bot_info.bot = bot
+    app.bot = bot
     print(bot_info.bot)
     # await ipc_client.init_sock()
 
