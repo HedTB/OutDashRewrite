@@ -114,10 +114,8 @@ async def server_dashboard(guild_id: int):
     # member_count = await ipc_client.request(
     #     "get_member_count", guild_id=guild_id
     # )
-    bot = await export_bot()
-    print(bot.is_ready())
-    await bot.wait_until_ready()
-    guild = bot.get_guild(guild_id)
+    
+    guild = await get_guild(guild_id)
     print(guild)
     
     return str(guild.name)

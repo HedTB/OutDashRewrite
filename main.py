@@ -127,6 +127,9 @@ async def export_bot():
     elif bot.ready == True:
         print("bot ready!!")
         return bot
+    
+async def get_guild(guild_id: int):
+    return bot.get_guild(guild_id)
 
 
 # OTHER
