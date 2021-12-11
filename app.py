@@ -4,11 +4,12 @@ import asyncio
 import os
 import requests
 import bot_info
+import socket
 
 from quart import Quart, request, redirect, render_template, url_for
 from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
 from dotenv import load_dotenv
-from discord.ext import commands
+from discord.ext import commands, ipc
 
 ## -- FUNCTIONS -- ##
 
@@ -34,6 +35,7 @@ class App(Quart):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = None
+        self.ipc = ipc.Client(self, host="localhost", port=5000, secret_key="Yes")
         
 app = App(__name__)
 
@@ -149,15 +151,18 @@ async def login():
 async def server_dashboard(guild_id: int):
     
     # response = await check_for_bot_in_server(guild_id=guild_id)
-    guild = requests.get(
-        url=f"https://{app.config['SERVER_NAME']}/api/get_guild/{guild_id}",
-        headers={"Password": bot_info.api_password}
+    # guild = requests.get(
+    #     url=f"https://{app.config['SERVER_NAME']}/api/get_guild/{guild_id}",
+    #     headers={"Password": bot_info.api_password}
+    # )
+    guild = await app.ipc.request(
+        endpoint="get_guild", guild_id=guild_id
     )
     
     # print(response)
     print(guild)
     
-    return str(guild)
+    return str(guild.name)
 
 
 @app.route("/invite-bot/")

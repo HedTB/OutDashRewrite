@@ -87,7 +87,7 @@ class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ready = False
-        # self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
+        self.ipc = ipc.Server(self, host="localhost", port=5000, secret_key="Yes")
         
     async def on_ready(self):
         self.ready = True
@@ -101,8 +101,16 @@ class Bot(commands.Bot):
 
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
+
+    async def on_ipc_ready(self):
+        print("Ipc is ready.")
+
+    async def on_ipc_error(self, endpoint, error):
+        print(endpoint, "raised", error)
         
-        app.run("localhost", port=5000)
+    async def start_ipc(self):
+        self.wait_until_ready()
+        self.ipc.start()
           
       
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
@@ -123,6 +131,11 @@ activities = ['Minecraft | ?help', f'in {len(bot.guilds)} servers | ?help', 'Rob
 #         return guild
 #     else:
 #         return None
+
+@bot.ipc.route(name="get_member_count")
+async def get_guild(data):
+    guild = bot.get_guild(data.guild_id)
+    return guild
 
 
 ## -- LOOPS -- ##
