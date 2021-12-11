@@ -12,6 +12,24 @@ from discord.ext import commands
 
 from main import export_bot, get_guild
 
+## -- FUNCTIONS -- ##
+
+API_ENDPOINT = 'https://discord.com/api/v9'
+CLIENT_ID = os.environ.get("CLIENT_ID")
+CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
+
+def get_token():
+  data = {
+    'grant_type': 'client_credentials',
+    'scope': 'identify connections'
+  }
+  headers = {
+    'Content-Type': 'application/x-www-form-urlencoded'
+  }
+  r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers, auth=(CLIENT_ID, CLIENT_SECRET))
+  r.raise_for_status()
+  return r.json()
+
 ## -- VARIABLES -- ##
 
 class App(Quart):
@@ -64,9 +82,13 @@ async def get_guild_with_permission(guild_id: int):
     return None
 
 async def check_for_bot_in_server(guild_id: int):
-    return await discord.bot_request(
-        f"https://discord.com/api/v9/guilds/{guild_id}/"
-    )
+    response = requests.get(
+        url=f"{API_ENDPOINT}/guilds/{guild_id}/",
+        headers = {"Authorization":"Bot {}".format(os.environ.get("TEST_BOT_TOKEN")),
+                "User-Agent":"myBotThing (http://some.url, v0.1)",
+                "Content-Type":"application/json", }
+    ).json()
+    print(response)
 
 ## -- METHODS -- ##
 
