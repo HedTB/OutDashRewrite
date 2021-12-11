@@ -63,8 +63,10 @@ async def get_guild_with_permission(guild_id: int):
         
     return None
 
-async def check_for_bot_in_server(guild):
-    print(guild)
+async def check_for_bot_in_server(guild_id: int):
+    return await discord.bot_request(
+        f"/guilds/{guild_id}/"
+    )
 
 ## -- METHODS -- ##
 
@@ -114,11 +116,8 @@ async def login():
 @app.route("/dashboard/<int:guild_id>/")
 async def server_dashboard(guild_id: int):
     
-    # member_count = await ipc_client.request(
-    #     "get_member_count", guild_id=guild_id
-    # )
-    
-    guild = await get_guild(guild_id)
+    guild = await check_for_bot_in_server(guild_id=guild_id)
+    print(guild)
     
     return str(guild.name)
 

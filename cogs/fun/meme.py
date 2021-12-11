@@ -58,9 +58,9 @@ class Meme(commands.Cog):
         post_to_pick = random.randint(1, 100)
         for i in range(0, post_to_pick):
           submission = next(x for x in memes_submissions if not x.stickied)
-        
+
         embed = discord.Embed(title="Meme", description=f"{submission.title}", color=0x505050)
-        
+
         embed.set_footer(icon_url=ctx.author.avatar, text=f"Requested by {ctx.author}")
         embed.timestamp = datetime.datetime.utcnow()
         embed.set_image(url=submission.url)
