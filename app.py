@@ -82,11 +82,10 @@ async def get_guild_with_permission(guild_id: int):
     return None
 
 async def check_for_bot_in_server(guild_id: int):
-    response = await discord.bot_request(
+    return await discord.bot_request(
         route=f"/guilds/{guild_id}",
         method="GET"
     )
-    print(response)
 
 ## -- METHODS -- ##
 
