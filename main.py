@@ -87,6 +87,8 @@ class Bot(commands.Bot):
         # self.loop.create_task(self.start_ipc())
         
     async def on_ready(self):
+        self.ready = True
+        
         status_channel = bot.get_channel(bot_info.messages_channel)
         embed = discord.Embed(title=f"Singed In As: {bot.user.name} ({bot.user.id})", 
                             description=f"Bot started in `{str(len(bot.guilds))}` server(s), with total of `{len(bot.users)}` member(s), on an average latency of `{round(bot.latency * 1000)} ms`.", 
@@ -97,18 +99,16 @@ class Bot(commands.Bot):
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
         
-        self.ready = True
+    # async def on_ipc_ready(self):
+    #     print("The IPC server is ready.")
         
-    async def on_ipc_ready(self):
-        print("The IPC server is ready.")
+    # async def on_ipc_error(self, endpoint, error):
+    #     """Called upon an error being raised within an IPC route"""
+    #     print(endpoint, "raised", error)
         
-    async def on_ipc_error(self, endpoint, error):
-        """Called upon an error being raised within an IPC route"""
-        print(endpoint, "raised", error)
-        
-    async def start_ipc(self):
-        await self.wait_until_ready()
-        # self.ipc.start()
+    # async def start_ipc(self):
+    #     await self.wait_until_ready()
+    #     # self.ipc.start()
         
         
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
@@ -119,7 +119,7 @@ async def export_bot():
     if bot.ready == False:
         print("not ready bruh")
         while not bot.ready:
-            await asyncio.sleep(0.1)
+            print("waiting")
             
         print("done")
         return bot
