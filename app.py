@@ -47,7 +47,7 @@ load_dotenv()
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "false"
 
-app.config['SERVER_NAME'] = 'localhost:8080'
+app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
 app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_NAME"]
