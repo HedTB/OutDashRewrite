@@ -17,7 +17,7 @@ if __name__ == '__main__':
 class App(Quart):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bot = None
+        self.bot = os.environ["bot"] or None
         
 app = App(__name__)
 # ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
@@ -112,7 +112,7 @@ async def server_dashboard(guild_id: int):
     # member_count = await ipc_client.request(
     #     "get_member_count", guild_id=guild_id
     # )
-    guild = app.bot.get_guild(guild_id)
+    guild = os.environ["bot"].get_guild(guild_id)
     print(guild)
     
     return str(guild.name)
@@ -212,7 +212,7 @@ def setBotAttribute(bot):
     app.config["bot"] = bot
     
 async def init_app(bot):
-    app.bot = bot
+    os.environ["bot"] = bot
     # await ipc_client.init_sock()
 
 if __name__ == "__main__":
