@@ -82,12 +82,10 @@ async def get_guild_with_permission(guild_id: int):
     return None
 
 async def check_for_bot_in_server(guild_id: int):
-    response = requests.get(
-        url=f"{API_ENDPOINT}/guilds/{guild_id}/",
-        headers = {"Authorization":"Bot {}".format(os.environ.get("TEST_BOT_TOKEN")),
-                "User-Agent":"myBotThing (http://some.url, v0.1)",
-                "Content-Type":"application/json", }
-    ).json()
+    response = await discord.bot_request(
+        route=f"/guilds/{guild_id}",
+        method="GET"
+    )
     print(response)
 
 ## -- METHODS -- ##
