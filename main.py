@@ -88,7 +88,6 @@ class Bot(commands.Bot):
         super().__init__(*args, **kwargs)
         self.ready = False
         # self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
-        self.loop.create_task(self.start_app())
         
     async def on_ready(self):
         self.ready = True
@@ -103,8 +102,6 @@ class Bot(commands.Bot):
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
         
-    async def start_app(self):
-        await self.wait_until_ready()
         app.run("localhost", port=5000)
           
       
