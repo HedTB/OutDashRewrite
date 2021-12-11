@@ -144,7 +144,6 @@ class Server:
             log.debug("IPC Server < %r", request)
 
             endpoint = request.get("endpoint")
-
             headers = request.get("headers")
 
             if not headers or headers.get("Authorization") != self.secret_key:
