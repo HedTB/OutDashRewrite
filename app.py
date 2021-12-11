@@ -10,8 +10,6 @@ from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authoriza
 from dotenv import load_dotenv
 from discord.ext import commands
 
-from main import export_bot, get_guild
-
 ## -- FUNCTIONS -- ##
 
 API_ENDPOINT = 'https://discord.com/api/v9'
