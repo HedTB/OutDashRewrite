@@ -143,9 +143,9 @@ class Bot(commands.Bot):
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
         
-    async def start_app(self):
-        await self.wait_until_ready()
-        app.run("localhost", port=5000)
+    # async def start_app(self):
+    #     await self.wait_until_ready()
+    #     app.run("localhost", port=5000)
           
       
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
