@@ -258,10 +258,6 @@ class Server:
             self._multicast_server = aiohttp.web.Application()
             self._multicast_server.router.add_route("GET", "/", self.handle_multicast)
 
-            self.loop.run_until_complete(await self.__start(self._multicast_server, self.multicast_port))
+            self.loop.run_until_complete(self.__start(self._multicast_server, self.multicast_port))
 
-        if not self.loop.is_running():
-            print("loop is not running, starting it")
-            self.loop.run_until_complete(await self.__start(self._server, self.port))
-        else:
-            print("loop is running, wont start it")
+        self.loop.run_until_complete(self.__start(self._server, self.port))
