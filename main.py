@@ -7,10 +7,12 @@ import random
 import asyncio
 import datetime
 import certifi
+import flask
 
 from discord.ext import commands, ipc
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from flask import Flask, render_template, redirect, request,
 
 
 # FILES
@@ -165,6 +167,20 @@ async def unloadcogs(ctx):
         embed = discord.Embed(description="Unloaded all cogs successfully.", color=bot_info.success_embed_color)
         await ctx.send(embed=embed)
         
+
+## -- API -- ##
+
+app = Flask(__name__)
+
+@app.route("/api/get_guild/<int:guild_id>", methods=["GET"])
+async def get_guild(guild_id: int):
+    password = request.headers['Password']
+    print(password)
+    
+    if password != bot_info.api_password:
+        return "You don't have permission to access this page."
+    
+    return bot.get_guild(guild_id)
 
 ## -- RUNNING BOT -- ##
 

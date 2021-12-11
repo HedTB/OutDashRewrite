@@ -2,6 +2,8 @@ bot = None
 
 ## -- NORMAL VALUES -- ##
 
+api_password = "urMomIsFatLMAO"
+
 embed_color = 0x505050
 success_embed_color = 0x2ecc71
 error_embed_color = 0xFF0000

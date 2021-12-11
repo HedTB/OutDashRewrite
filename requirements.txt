@@ -11,3 +11,4 @@ python-dotenv
 hypercorn
 Async-OAuthlib
 discord-ext-ipc
+flask
