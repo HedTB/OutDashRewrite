@@ -258,6 +258,8 @@ class Server:
             self._multicast_server = aiohttp.web.Application()
             self._multicast_server.router.add_route("GET", "/", self.handle_multicast)
 
-            self.loop.run_until_complete(self.__start(self._multicast_server, self.multicast_port))
+            task = self.loop.create_task(self.__start(self._multicast_server, self.multicast_port))
+            self.loop.run_until_complete(task)
 
-        self.loop.run_until_complete(self.__start(self._server, self.port))
+        task = self.loop.create_task(self.__start(self._server, self.port))
+        self.loop.run_until_complete(task)
