@@ -181,7 +181,11 @@ async def get_guild(guild_id: int):
     if password != bot_info.api_password:
         return "You don't have permission to access this page."
     
-    return bot.get_guild(guild_id)
+    guild = bot.get_guild(guild_id)
+    if not guild:
+        return {"message": f"Guild with ID {guild_id} was not found."}, 404
+    
+    return {"guild": bot.get_guild(guild_id)}, 200
 
 ## -- RUNNING BOT -- ##
 
