@@ -260,7 +260,7 @@ async def login():
 
 
 @app.route("/dashboard/<int:guild_id>/")
-@requires_authorization()
+@requires_authorization
 async def server_dashboard(guild_id: int):
     
     guild = bot.get_guild(guild_id)
