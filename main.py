@@ -100,7 +100,7 @@ class Bot(commands.Bot):
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
         
-        init_app(bot)
+        await init_app(bot)
         
     # async def on_ipc_ready(self):
     #     print("The IPC server is ready.")
