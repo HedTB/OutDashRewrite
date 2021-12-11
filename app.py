@@ -17,7 +17,7 @@ if __name__ == '__main__':
 class App(Quart):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bot = os.environ["bot"] or None
+        self.bot = None
         
 app = App(__name__)
 # ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
