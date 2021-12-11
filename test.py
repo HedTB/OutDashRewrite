@@ -106,7 +106,7 @@ def unload_cogs():
                 """
 
 async def get_guilds_with_permission():
-    guilds = await discord.fetch_guilds()
+    guilds = await discord2.fetch_guilds()
     for g in guilds[:]:
         if not g.permissions.manage_guild:
             guilds.remove(g)
