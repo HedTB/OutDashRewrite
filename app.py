@@ -85,7 +85,7 @@ async def check_for_bot_in_server(guild_id: int):
         method="GET"
     )
     for member in response:
-        if member.user.id == os.environ.get("CLIENT_ID"): 
+        if member.get("user").get("id") == os.environ.get("CLIENT_ID"): 
             return True
     return False
 
