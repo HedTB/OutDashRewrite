@@ -214,6 +214,7 @@ def setBotAttribute(bot):
     
 async def init_app(bot):
     bot_info.bot = bot
+    print(bot_info.bot)
     # await ipc_client.init_sock()
 
 if __name__ == "__main__":
