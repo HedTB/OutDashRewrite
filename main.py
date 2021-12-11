@@ -11,7 +11,6 @@ import certifi
 from discord.ext import commands, ipc
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from app import init_app
 
 
 # FILES
@@ -100,8 +99,6 @@ class Bot(commands.Bot):
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
         
-        await init_app(bot)
-        
     # async def on_ipc_ready(self):
     #     print("The IPC server is ready.")
         
@@ -119,6 +116,8 @@ bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=disco
 
 async def export_bot():
     print("exporting bot ig")
+    return bot
+
     if bot.ready == False:
         print("not ready bruh")
         await bot.wait_until_ready()

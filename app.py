@@ -10,8 +10,7 @@ from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authoriza
 from dotenv import load_dotenv
 from discord.ext import commands
 
-if __name__ == '__main__':
-    from main import export_bot
+from main import export_bot
 
 ## -- VARIABLES -- ##
 
