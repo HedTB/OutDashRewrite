@@ -88,7 +88,7 @@ class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ready = False
-        self.ipc = ipc.Server(self, host="127.0.0.1", port=8080, secret_key="Yes", do_multicast=False)
+        self.ipc = ipc.Server(self, host=os.environ.get("IPC_HOST"), port=int(os.environ.get("IPC_PORT")), secret_key=os.environ.get("IPC_KEY"), do_multicast=False)
         
         self.loop.create_task(self.start_ipc())
         

@@ -30,19 +30,18 @@ def get_token():
   return r.json()
 
 ## -- VARIABLES -- ##
+load_dotenv()
 
 class App(Quart):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = None
-        self.ipc = ipc.Client(host="127.0.0.1", port=8080, secret_key="Yes")
+        self.ipc = ipc.Client(host=os.environ.get("IPC_HOST"), port=int(os.environ.get("IPC_PORT")), secret_key=os.environ.get("IPC_KEY"))
         
 app = App(__name__)
 
-    
 # ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
 
-load_dotenv()
 
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "false"
