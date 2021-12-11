@@ -82,6 +82,7 @@ def unload_cogs():
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.ready = False
         # self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
         # self.loop.create_task(self.start_ipc())
         
@@ -95,6 +96,8 @@ class Bot(commands.Bot):
 
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
+        
+        self.ready = True
         
     async def on_ipc_ready(self):
         print("The IPC server is ready.")
@@ -113,11 +116,15 @@ bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=disco
 
 async def export_bot():
     print("exporting bot ig")
-    if not bot.is_ready():
+    if bot.ready == False:
         print("not ready bruh")
-        await bot.wait_until_ready()
+        while not bot.ready:
+            await asyncio.sleep(0.1)
+            
+        print("done")
         return bot
-    else:
+    elif bot.ready == True:
+        print("bot ready!!")
         return bot
 
 
