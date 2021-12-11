@@ -115,7 +115,7 @@ async def server_dashboard(guild_id: int):
     #     "get_member_count", guild_id=guild_id
     # )
     bot = await export_bot()
-    print(bot)
+    print(bot.is_ready())
     await bot.wait_until_ready()
     guild = bot.get_guild(guild_id)
     print(guild)
