@@ -83,7 +83,7 @@ class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
-        self.loop.create_task(self.start_ipc())
+        # self.loop.create_task(self.start_ipc())
         
     async def on_ready(self):
         status_channel = bot.get_channel(bot_info.messages_channel)
@@ -105,15 +105,18 @@ class Bot(commands.Bot):
         
     async def start_ipc(self):
         await self.wait_until_ready()
-        self.ipc.start()
+        # self.ipc.start()
         
         
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
 #bot.remove_command("help")
 
 async def export_bot():
-    await bot.wait_until_ready()
-    return bot
+    if not bot.is_ready():
+        await bot.wait_until_ready()
+        return bot
+    else:
+        return bot
 
 
 # OTHER
