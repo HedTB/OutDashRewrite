@@ -1,7 +1,0 @@
-# python cache
-__pycache__/
-
-# python package-index
-build/
-dist/
-*.egg-info/
