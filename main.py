@@ -12,7 +12,7 @@ import flask
 from discord.ext import commands, ipc
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from flask import Flask, render_template, redirect, request,
+from flask import Flask, render_template, redirect, request
 
 
 # FILES
@@ -81,12 +81,14 @@ def unload_cogs():
 
 
 # BOT
+app = Flask(__name__)
+
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ready = False
         # self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
-        # self.loop.create_task(self.start_ipc())
+        self.loop.create_task(self.start_app())
         
     async def on_ready(self):
         self.ready = True
@@ -101,7 +103,11 @@ class Bot(commands.Bot):
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
         
-        
+    async def start_app(self):
+        await self.wait_until_ready()
+        app.run("localhost", port=5000)
+          
+      
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
 #bot.remove_command("help")
 
@@ -169,8 +175,6 @@ async def unloadcogs(ctx):
         
 
 ## -- API -- ##
-
-app = Flask(__name__)
 
 @app.route("/api/get_guild/<int:guild_id>", methods=["GET"])
 async def get_guild(guild_id: int):
