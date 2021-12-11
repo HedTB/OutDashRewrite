@@ -24,16 +24,21 @@ app = App(__name__)
         
 class AppCog(commands.Cog):
     
-    def __init__(self, bot):
-        self.bot = bot
-        app.bot = bot
-        bot_info.bot = bot
+    def __init__(self, theBot):
+        self.bot = theBot
+        
+        global bot
+        bot = theBot
+        app.bot = self.bot
+        bot_info.bot = self.bot
         
         print(bot_info.bot)
         print(app.bot)
     
     print(bot_info.bot)
     print(app.bot)
+    print(bot)
+
     
 # ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
 
