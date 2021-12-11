@@ -77,7 +77,7 @@ def unload_cogs():
                     print(e)
                     return
                 """
- 
+
 
 # BOT
 class Bot(commands.Bot):
@@ -112,6 +112,9 @@ class Bot(commands.Bot):
         
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
 #bot.remove_command("help")
+
+def export_bot():
+    return bot
 
 
 # OTHER

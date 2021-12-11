@@ -9,6 +9,8 @@ from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authoriza
 from dotenv import load_dotenv
 from discord.ext import ipc
 
+from main import export_bot
+
 ## -- VARIABLES -- ##
 
 app = Quart(__name__)
@@ -101,11 +103,13 @@ async def login():
 @app.route("/dashboard/<int:guild_id>/")
 async def server_dashboard(guild_id: int):
     
-    member_count = await ipc_client.request(
-        "get_member_count", guild_id=guild_id
-    )
+    # member_count = await ipc_client.request(
+    #     "get_member_count", guild_id=guild_id
+    # )
+    bot = export_bot()
+    guild = bot.get_guild(guild_id)
     
-    return str(member_count)
+    return str(guild.name)
 
 
 @app.route("/invite-bot/")
