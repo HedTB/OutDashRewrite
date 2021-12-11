@@ -89,8 +89,7 @@ class Bot(commands.Bot):
         super().__init__(*args, **kwargs)
         self.ready = False
         self.ipc = ipc.Server(self, host=os.environ.get("IPC_HOST"), port=int(os.environ.get("IPC_PORT")), secret_key=os.environ.get("IPC_KEY"), do_multicast=False)
-        
-        self.loop.create_task(self.start_ipc())
+        # self.loop.create_task(self.start_ipc())
         
     async def on_ready(self):
         self.ready = True
@@ -104,6 +103,9 @@ class Bot(commands.Bot):
 
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
+        
+        await asyncio.sleep(2)
+        await self.ipc.start()
         
 
     async def on_ipc_ready(self):
