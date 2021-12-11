@@ -123,6 +123,7 @@ async def export_bot():
             
         print("done")
         return bot
+    
     elif bot.ready == True:
         print("bot ready!!")
         return bot
