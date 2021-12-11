@@ -10,7 +10,7 @@ from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authoriza
 from dotenv import load_dotenv
 from discord.ext import commands
 
-from main import export_bot
+from main import export_bot, get_guild
 
 ## -- VARIABLES -- ##
 
@@ -54,7 +54,7 @@ async def get_guilds_with_permission():
     
     return guilds
 
-async def get_guild(guild_id: int):
+async def get_guild_with_permission(guild_id: int):
     guilds = await get_guilds_with_permission()
     
     for g in guilds[:]:
@@ -62,6 +62,9 @@ async def get_guild(guild_id: int):
             return g
         
     return None
+
+async def check_for_bot_in_server(guild):
+    print(guild)
 
 ## -- METHODS -- ##
 
@@ -116,7 +119,6 @@ async def server_dashboard(guild_id: int):
     # )
     
     guild = await get_guild(guild_id)
-    print(guild)
     
     return str(guild.name)
 
