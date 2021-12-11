@@ -13,4 +13,3 @@ gunicorn
 Async-OAuthlib
 flask
 aiohttp
-socket
