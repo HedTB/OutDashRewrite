@@ -21,23 +21,6 @@ class App(Quart):
         self.bot = None
         
 app = App(__name__)
-        
-class AppCog(commands.Cog):
-    
-    def __init__(self, theBot):
-        self.bot = theBot
-        
-        global bot
-        bot = theBot
-        app.bot = self.bot
-        bot_info.bot = self.bot
-        
-        print(bot_info.bot)
-        print(app.bot)
-    
-    print(bot_info.bot)
-    print(app.bot)
-    print(bot)
 
     
 # ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
@@ -132,9 +115,10 @@ async def server_dashboard(guild_id: int):
     # member_count = await ipc_client.request(
     #     "get_member_count", guild_id=guild_id
     # )
-    print(bot_info.bot)
-    print(app.bot)
-    guild = bot_info.bot.get_guild(guild_id)
+    bot = await export_bot()
+    print(bot)
+    await bot.wait_until_ready()
+    guild = bot.get_guild(guild_id)
     print(guild)
     
     return str(guild.name)
@@ -238,9 +222,6 @@ async def init_app(bot):
     app.bot = bot
     print(bot_info.bot)
     # await ipc_client.init_sock()
-    
-def setup(bot):
-    bot.add_cog(AppCog(bot))
 
 if __name__ == "__main__":
     app.run(debug=True, host="localhost", port=8080)
