@@ -62,6 +62,12 @@ async def welcome_user(user):
         f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
     )
     
+async def get_guild(guild_id: int):
+    return await discord.bot_request(
+        route=f"/guilds{guild_id}",
+        method="GET"
+    )
+    
 async def get_guilds_with_permission():
     guilds = await discord.fetch_guilds()
     for g in guilds[:]:
@@ -85,6 +91,8 @@ async def check_for_bot_in_server(guild_id: int):
         method="GET"
     )
     for member in response:
+        print(member.get("user"))
+        print(member.get("user").get("id"))
         if member.get("user").get("id") == os.environ.get("CLIENT_ID"): 
             return True
     return False
@@ -138,9 +146,10 @@ async def login():
 async def server_dashboard(guild_id: int):
     
     response = await check_for_bot_in_server(guild_id=guild_id)
+    guild = await get_guild(guild_id=guild_id)
     print(response)
     
-    return str("ye")
+    return str(guild.get("name"))
 
 
 @app.route("/invite-bot/")
@@ -235,12 +244,6 @@ def import_bot(bot):
 
 def setBotAttribute(bot):
     app.config["bot"] = bot
-    
-async def init_app(bot):
-    bot_info.bot = bot
-    app.bot = bot
-    print(bot_info.bot)
-    # await ipc_client.init_sock()
 
 if __name__ == "__main__":
     app.run(debug=True, host="localhost", port=8080)
