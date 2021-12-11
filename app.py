@@ -9,11 +9,17 @@ from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authoriza
 from dotenv import load_dotenv
 from discord.ext import ipc
 
-from main import export_bot
+if __name__ == '__main__':
+    from main import export_bot
 
 ## -- VARIABLES -- ##
 
-app = Quart(__name__)
+class App(Quart):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bot = None
+        
+app = App(__name__)
 # ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
 
 load_dotenv()
@@ -21,7 +27,7 @@ load_dotenv()
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "false"
 
-app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
+app.config['SERVER_NAME'] = 'localhost:8080'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
 app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_NAME"]
@@ -106,9 +112,7 @@ async def server_dashboard(guild_id: int):
     # member_count = await ipc_client.request(
     #     "get_member_count", guild_id=guild_id
     # )
-    bot = await export_bot()
-    print(bot)
-    guild = bot.get_guild(guild_id)
+    guild = app.bot.get_guild(guild_id)
     print(guild)
     
     return str(guild.name)
@@ -207,8 +211,8 @@ def import_bot(bot):
 def setBotAttribute(bot):
     app.config["bot"] = bot
     
-async def start_app():
-    return
+async def init_app(bot):
+    app.bot = bot
     # await ipc_client.init_sock()
 
 if __name__ == "__main__":
