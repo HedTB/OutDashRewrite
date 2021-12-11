@@ -11,6 +11,7 @@ import certifi
 from discord.ext import commands, ipc
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from app import start_app
 
 
 # FILES
@@ -82,7 +83,7 @@ def unload_cogs():
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g", port=5000, do_multicast=False)
+        self.ipc = ipc.Server(self, secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g", port=5000, host="localhost", do_multicast=True)
         
         self.loop.create_task(self.start_ipc())
         
@@ -99,6 +100,7 @@ class Bot(commands.Bot):
         
     async def on_ipc_ready(self):
         print("The IPC server is ready.")
+        await start_app()
         
     async def on_ipc_error(self, endpoint, error):
         """Called upon an error being raised within an IPC route"""
