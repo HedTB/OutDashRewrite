@@ -90,12 +90,15 @@ async def check_for_bot_in_server(guild_id: int):
         route=f"/guilds/{guild_id}/members",
         method="GET"
     )
+    print(response)
     for member in response:
-        print(member.get("user"))
         print(member.get("user").get("id"))
         if member.get("user").get("id") == os.environ.get("CLIENT_ID"): 
             return True
-    return False
+        else:
+            print("no")
+            
+    # return False
 
 ## -- METHODS -- ##
 
