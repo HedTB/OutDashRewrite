@@ -3,6 +3,7 @@
 import asyncio
 import os
 import requests
+import bot_info
 
 from quart import Quart, request, redirect, render_template, url_for
 from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
@@ -112,7 +113,7 @@ async def server_dashboard(guild_id: int):
     # member_count = await ipc_client.request(
     #     "get_member_count", guild_id=guild_id
     # )
-    guild = os.environ["bot"].get_guild(guild_id)
+    guild = bot_info.bot.get_guild(guild_id)
     print(guild)
     
     return str(guild.name)
@@ -212,7 +213,7 @@ def setBotAttribute(bot):
     app.config["bot"] = bot
     
 async def init_app(bot):
-    os.environ["bot"] = bot
+    bot_info.bot = bot
     # await ipc_client.init_sock()
 
 if __name__ == "__main__":

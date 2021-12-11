@@ -1,3 +1,5 @@
+bot = None
+
 ## -- NORMAL VALUES -- ##
 
 embed_color = 0x505050
