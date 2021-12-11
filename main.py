@@ -65,7 +65,7 @@ def load_cogs():
                     print(e)
                     return
                 """
-    bot.load_extension("cogs.app")
+    bot.load_extension("app")
                 
 def unload_cogs():
     for foldername in os.listdir("./cogs"):
@@ -78,7 +78,7 @@ def unload_cogs():
                     print(e)
                     return
                 """
-    bot.unload_extension("cogs.app")
+    bot.unload_extension("app")
 
 
 # BOT
