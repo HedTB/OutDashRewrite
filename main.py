@@ -9,10 +9,11 @@ import datetime
 import certifi
 import flask
 
-from discord.ext import commands, ipc
+from discord.ext import commands
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from flask import Flask, render_template, redirect, request
+from ipc.discord.ext import ipc
 
 
 # FILES
@@ -87,7 +88,8 @@ class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ready = False
-        self.ipc = ipc.Server(self, host="localhost", port=5000, secret_key="Yes")
+        self.ipc = ipc.Server(self, host="localhost", port=5000, secret_key="Yes", do_multicast=False)
+        self.loop.create_task(self.start_ipc())
         
     async def on_ready(self):
         self.ready = True
@@ -101,6 +103,7 @@ class Bot(commands.Bot):
 
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
+        
 
     async def on_ipc_ready(self):
         print("Ipc is ready.")
@@ -109,8 +112,8 @@ class Bot(commands.Bot):
         print(endpoint, "raised", error)
         
     async def start_ipc(self):
-        self.wait_until_ready()
-        self.ipc.start()
+        await self.wait_until_ready()
+        await self.ipc.start()
           
       
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
@@ -122,20 +125,19 @@ activities = ['Minecraft | ?help', f'in {len(bot.guilds)} servers | ?help', 'Rob
 
 
 # IPC
-# @bot.ipc.route(name="check_for_bot_in_server")
-# async def check_for_bot_in_server(data):
-#     print(data)
-#     guild = bot.get_guild(data.guild_id)
-    
-#     if guild:
-#         return guild
-#     else:
-#         return None
-
-@bot.ipc.route(name="get_member_count")
-async def get_guild(data):
+@bot.ipc.route(name="get_guild_data")
+async def get_guild_data(data):
     guild = bot.get_guild(data.guild_id)
-    return guild
+    
+    if data.type == "check_for_bot_in_server":
+        for member in guild.members:
+            if member.id == bot.user.id:
+                return True
+        return False
+    elif data.type == "name":
+        return guild.name
+    elif data.type == "id":
+        return guild.id
 
 
 ## -- LOOPS -- ##
@@ -183,22 +185,6 @@ async def unloadcogs(ctx):
         embed = discord.Embed(description="Unloaded all cogs successfully.", color=bot_info.success_embed_color)
         await ctx.send(embed=embed)
         
-
-## -- API -- ##
-
-@app.route("/api/get_guild/<int:guild_id>", methods=["GET"])
-async def get_guild(guild_id: int):
-    password = request.headers['Password']
-    print(password)
-    
-    if password != bot_info.api_password:
-        return "You don't have permission to access this page."
-    
-    guild = bot.get_guild(guild_id)
-    if not guild:
-        return {"message": f"Guild with ID {guild_id} was not found."}, 404
-    
-    return {"guild": bot.get_guild(guild_id)}, 200
 
 ## -- RUNNING BOT -- ##
 

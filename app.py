@@ -9,7 +9,7 @@ import socket
 from quart import Quart, request, redirect, render_template, url_for
 from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
 from dotenv import load_dotenv
-from discord.ext import commands, ipc
+from ipc.discord.ext import ipc
 
 ## -- FUNCTIONS -- ##
 
@@ -47,7 +47,7 @@ load_dotenv()
 app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "false"
 
-app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
+app.config['SERVER_NAME'] = 'localhost:8080'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
 app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_NAME"]
@@ -155,14 +155,13 @@ async def server_dashboard(guild_id: int):
     #     url=f"https://{app.config['SERVER_NAME']}/api/get_guild/{guild_id}",
     #     headers={"Password": bot_info.api_password}
     # )
-    guild = await app.ipc.request(
-        endpoint="get_guild", guild_id=guild_id
-    )
+    bot_in_server = await app.ipc.request(endpoint="get_guild_data", type="check_for_bot_in_server", guild_id=guild_id)
+    guild_name = await app.ipc.request(endpoint="get_guild_data", type="name", guild_id=guild_id)
     
-    # print(response)
-    print(guild)
+    if not bot_in_server:
+        discord.create_session(scope=["bot", "identify"], permissions=545460846583, guild_id=guild_id)
     
-    return str(guild.name)
+    return guild_name
 
 
 @app.route("/invite-bot/")
