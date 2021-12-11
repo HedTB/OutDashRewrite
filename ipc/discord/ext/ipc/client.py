@@ -3,7 +3,7 @@ import logging
 import typing
 
 import aiohttp
-from discord.ext.ipc.errors import *
+from ipc.discord.ext.ipc.errors import *
 
 log = logging.getLogger(__name__)
 
