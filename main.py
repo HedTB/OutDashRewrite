@@ -87,7 +87,7 @@ class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ready = False
-        self.ipc = ipc.Server(self, host="localhost", port=5000, secret_key="Yes")
+        self.ipc = ipc.Server(host="localhost", port=5000, secret_key="Yes")
         
     async def on_ready(self):
         self.ready = True
