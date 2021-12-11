@@ -35,7 +35,7 @@ class App(Quart):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = None
-        self.ipc = ipc.Client(host="localhost", port=5000, secret_key="Yes")
+        self.ipc = ipc.Client(host="127.0.0.1", port=5000, secret_key="Yes")
         
 app = App(__name__)
 
