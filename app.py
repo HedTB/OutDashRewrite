@@ -36,7 +36,7 @@ class App(Quart):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = None
-        self.ipc = ipc.Client(host=os.environ.get("IPC_HOST"), port=int(os.environ.get("IPC_PORT")), secret_key=os.environ.get("IPC_KEY"))
+        self.ipc = ipc.Client(host="outdash-test-bot.herokuapp.com", port=int(os.environ.get("IPC_PORT")), secret_key=os.environ.get("IPC_KEY"))
         
 app = App(__name__)
 
