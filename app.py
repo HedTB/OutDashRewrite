@@ -9,25 +9,14 @@ import socket
 from quart import Quart, request, redirect, render_template, url_for
 from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
 from dotenv import load_dotenv
-from ipc.discord.ext import ipc
+from discord.ext import ipc
+# from ipc import ipc
 
 ## -- FUNCTIONS -- ##
 
 API_ENDPOINT = 'https://discord.com/api/v9'
 CLIENT_ID = os.environ.get("CLIENT_ID")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
-
-def get_token():
-  data = {
-    'grant_type': 'client_credentials',
-    'scope': 'identify connections'
-  }
-  headers = {
-    'Content-Type': 'application/x-www-form-urlencoded'
-  }
-  r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers, auth=(CLIENT_ID, CLIENT_SECRET))
-  r.raise_for_status()
-  return r.json()
 
 ## -- VARIABLES -- ##
 load_dotenv()
@@ -36,20 +25,20 @@ class App(Quart):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot = None
-        self.ipc = ipc.Client(host="outdash-test-bot.herokuapp.com", port=int(os.environ.get("IPC_PORT")), secret_key=os.environ.get("IPC_KEY"))
+        # self.ipc = ipc.Client(host="localhost", port=int(os.environ.get("IPC_PORT")), secret_key=os.environ.get("IPC_KEY"))
         
 app = App(__name__)
+ipc_client = ipc.Client(secret_key = "Swas")
 
 # ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
 
+app.secret_key = "yay"
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
 
-app.secret_key = b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g"
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "false"
-
-app.config['SERVER_NAME'] = 'outdash-test-bot.herokuapp.com'
+app.config['SERVER_NAME'] = 'localhost:8080'
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
-app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_NAME"]
+app.config["DISCORD_REDIRECT_URI"] = "http://%s/callback" % app.config["SERVER_NAME"]
 app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
@@ -110,29 +99,12 @@ async def background_process_test():
 
 @app.route("/")
 async def index():
-    user = await discord.fetch_user()
-    id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
-    
-    if not await discord.authorized:
-        return f"""
-        {HYPERLINK.format(url_for(".login"), "Login")} <br />
-        {HYPERLINK.format(url_for(".login_with_data"), "Login with custom data")} <br />
-        {HYPERLINK.format(url_for(".invite_bot"), "Invite Bot with permissions 8")} <br />
-        {HYPERLINK.format(url_for(".invite_oauth"), "Authorize with oauth and bot invite")}
-        """
-    
-    guilds = await get_guilds_with_permission()
-    
-    # print(hasattr(app, "bot"))
-    # print(app.bot.get_guild(836495137651294258))
-    # print(app.bot.users)
-
-    return await render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
+	return await render_template("index.html", authorized = await discord.authorized)
 
     
 @app.route('/servers', methods=['GET'])
-async def dashboard():
-
+@requires_authorization
+async def servers():
     user = await discord.fetch_user()
     guilds = await get_guilds_with_permission()
 
@@ -140,45 +112,58 @@ async def dashboard():
 
     return await render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
 
+@app.route("/dashboard")
+@requires_authorization
+async def dashboard(): 
 
-@app.route("/login/")
+    guild_count = await app.ipc.request("get_guild_count")
+    guild_ids = await app.ipc.request("get_guild_ids")
+
+    user_guilds = await discord.fetch_guilds()
+
+    guilds = []
+
+    for guild in user_guilds:
+        if guild.permissions.administrator:
+            guild.class_color = "green-border" if guild.id in guild_ids else "red-border"
+            guilds.append(guild)
+
+    guilds.sort(key = lambda x: x.class_color == "red-border")
+    name = (await discord.fetch_user()).name
+    return await render_template("dashboard.html", guild_count = guild_count, guilds = guilds, username=name)
+
+
+@app.route("/login")
 async def login():
-    return await discord.create_session(scope=["identify", "guilds", "email"])
+	return await discord.create_session(scope=["identify", "guilds", "email"])
 
 
 @app.route("/dashboard/<int:guild_id>/")
+@requires_authorization
 async def server_dashboard(guild_id: int):
-    
-    # response = await check_for_bot_in_server(guild_id=guild_id)
-    # guild = requests.get(
-    #     url=f"https://{app.config['SERVER_NAME']}/api/get_guild/{guild_id}",
-    #     headers={"Password": bot_info.api_password}
-    # )
-    bot_in_server = await app.ipc.request(endpoint="get_guild_data", type="check_for_bot_in_server", guild_id=guild_id)
-    guild_name = await app.ipc.request(endpoint="get_guild_data", type="name", guild_id=guild_id)
-    
-    if not bot_in_server:
-        discord.create_session(scope=["bot", "identify"], permissions=545460846583, guild_id=guild_id)
-    
-    return guild_name
+	guild = await ipc_client.request("get_guild", guild_id = guild_id)
+	if guild is None:
+		return redirect(f'https://discord.com/oauth2/authorize?&client_id={app.config["DISCORD_CLIENT_ID"]}&scope=bot&permissions=8&guild_id={guild_id}&response_type=code&redirect_uri={app.config["DISCORD_REDIRECT_URI"]}')
+	return guild["name"]
 
 
-@app.route("/invite-bot/")
+@app.route("/invite-bot")
 async def invite_bot():
-    return await discord.create_session(scope=["bot"], permissions=8, guild_id=859482895009579039, disable_guild_select=True)
+    return await discord.create_session(scope=["bot"], permissions=os.environ.get("PERMISSIONS"), guild_id=859482895009579039, disable_guild_select=True)
 
 
-@app.route("/invite-oauth/")
+@app.route("/invite-oauth")
 async def invite_oauth():
     return await discord.create_session(scope=["bot", "identify"], permissions=8)
 
 
-@app.route("/callback/")
+@app.route("/callback")
 async def callback():
-    data = await discord.callback()
-    redirect_to = data.get("redirect", "/")
-
-    return redirect(redirect_to)
+    try:
+        data = await discord.callback()
+        return redirect(data.get("redirect", "/"))
+    except Exception as e:
+        raise e
 
 
 @app.route("/me/")

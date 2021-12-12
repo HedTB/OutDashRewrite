@@ -9,11 +9,11 @@ import datetime
 import certifi
 import flask
 
-from discord.ext import commands
+from discord.ext import commands, ipc
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from flask import Flask, render_template, redirect, request
-from ipc.discord.ext import ipc
+# from ipc.discord.ext import ipc
 
 
 # FILES
@@ -87,14 +87,10 @@ app = Flask(__name__)
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ready = False
-        self.ipc = ipc.Server(self, host=os.environ.get("IPC_HOST"), port=int(os.environ.get("IPC_PORT")), secret_key=os.environ.get("IPC_KEY"), do_multicast=False)
-        # self.loop.create_task(self.start_ipc())
+        # self.loop.create_task(self.start_app())
         
     async def on_ready(self):
-        self.ready = True
-        
-        status_channel = bot.get_channel(bot_info.messages_channel)
+        status_channel = self.get_channel(bot_info.messages_channel)
         embed = discord.Embed(title=f"Singed In As: {bot.user.name} ({bot.user.id})", 
                             description=f"Bot started in `{str(len(bot.guilds))}` server(s), with total of `{len(bot.users)}` member(s), on an average latency of `{round(bot.latency * 1000)} ms`.", 
                             color=bot_info.success_embed_color)
@@ -104,21 +100,13 @@ class Bot(commands.Bot):
         print(f"Signed In As: {bot.user.name} ({bot.user.id})")
         print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
         
-        await asyncio.sleep(2)
-        await self.ipc.start()
+        await asyncio.sleep(1)
+        await self.start_app()
         
-
-    async def on_ipc_ready(self):
-        print("Ipc is ready.")
-
-    async def on_ipc_error(self, endpoint, error):
-        print(endpoint, "raised", error)
-        
-    async def start_ipc(self):
+    async def start_app(self):
         await self.wait_until_ready()
-        await self.ipc.start()
+        app.run(host="localhost", port=8080, debug=False, load_dotenv=True)
           
-      
 bot = Bot(command_prefix=get_prefix, intents=discord.Intents.all(), status=discord.Status.idle, activity=discord.Game(name="booting up.."), case_insensitive=True)
 #bot.remove_command("help")
 
@@ -128,19 +116,12 @@ activities = ['Minecraft | ?help', f'in {len(bot.guilds)} servers | ?help', 'Rob
 
 
 # IPC
-@bot.ipc.route(name="get_guild_data")
-async def get_guild_data(data):
-    guild = bot.get_guild(data.guild_id)
+@app.route("/api/get_guild")
+async def get_guild():
+    data = request.data
+    print(data)
     
-    if data.type == "check_for_bot_in_server":
-        for member in guild.members:
-            if member.id == bot.user.id:
-                return True
-        return False
-    elif data.type == "name":
-        return guild.name
-    elif data.type == "id":
-        return guild.id
+    return "ok"
 
 
 ## -- LOOPS -- ##

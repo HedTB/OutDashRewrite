@@ -11,5 +11,6 @@ python-dotenv
 hypercorn
 gunicorn
 Async-OAuthlib
-flask
+flask[async]
 aiohttp
+discord-ext-ipc
