@@ -1,10 +1,3 @@
-2022-01-24 13:03:42,052:INFO:disnake.client: logging in using static token
-2022-01-24 13:03:42,422:INFO:disnake.gateway: Shard ID None has sent the IDENTIFY payload.
-2022-01-24 13:03:42,580:INFO:disnake.gateway: Shard ID None has connected to Gateway: ["gateway-prd-main-h3kg",{"micros":106903,"calls":["discord-sessions-green-prd-2-168",{"micros":105836,"calls":["start_session",{"micros":73878,"calls":["discord-api-56cd49dd65-tkghv",{"micros":69069,"calls":["get_user",{"micros":10473},"add_authorized_ip",{"micros":9564},"get_guilds",{"micros":3777},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":2,"calls":[]},"presence_connect",{"micros":12957,"calls":[]}]}]}] (Session ID: 6a9aa25616f8cab84f8b7db90fb85441).
-2022-01-24 13:50:47,228:INFO:disnake.client: Got a request to RESUME the websocket.
-2022-01-24 13:50:47,440:INFO:disnake.gateway: Shard ID None has sent the RESUME payload.
-2022-01-24 13:50:47,491:INFO:disnake.gateway: Shard ID None has successfully RESUMED session 6a9aa25616f8cab84f8b7db90fb85441 under trace ["gateway-prd-main-whn0",{"micros":3706,"calls":["discord-sessions-green-prd-2-168",{"micros":67}]}].
-2022-01-24 14:22:45,565:INFO:disnake.gateway: Websocket closed with 1006, attempting a reconnect.
-2022-01-24 14:22:45,565:INFO:disnake.client: Got a request to RESUME the websocket.
-2022-01-24 14:22:45,728:INFO:disnake.gateway: Shard ID None has sent the RESUME payload.
-2022-01-24 14:22:45,768:INFO:disnake.gateway: Shard ID None has successfully RESUMED session 6a9aa25616f8cab84f8b7db90fb85441 under trace ["gateway-prd-main-b4ws",{"micros":1079,"calls":["discord-sessions-green-prd-2-168",{"micros":21}]}].
+2022-01-24 16:37:17,796:INFO:disnake.client: logging in using static token
+2022-01-24 16:37:18,511:INFO:disnake.gateway: Shard ID None has sent the IDENTIFY payload.
+2022-01-24 16:37:18,867:INFO:disnake.gateway: Shard ID None has connected to Gateway: ["gateway-prd-main-pcmq",{"micros":209266,"calls":["discord-sessions-green-prd-2-67",{"micros":204426,"calls":["start_session",{"micros":92621,"calls":["discord-api-56cd49dd65-wvwkd",{"micros":88659,"calls":["get_user",{"micros":4251},"add_authorized_ip",{"micros":1710},"get_guilds",{"micros":66021},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":3,"calls":[]},"presence_connect",{"micros":2,"calls":[]}]}]}] (Session ID: 9060079be86eee44ac51750bd1a88b75).

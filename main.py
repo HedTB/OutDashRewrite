@@ -1,8 +1,10 @@
 ## -- IMPORTING -- ##
 
 # MODULE
+import multiprocessing
 import os
 import datetime
+from async_timeout import asyncio
 import certifi
 import disnake
 import json
@@ -163,7 +165,6 @@ class Bot(commands.Bot):
         
     async def on_ready(self):
         self.avatar = await self.user.avatar.read()
-        
         status_channel = self.get_channel(messages_channel)
         embed = disnake.Embed(title=f"Singed In As: {bot.user.name} ({bot.user.id})", 
                             description=f"Bot started in `{str(len(bot.guilds))}` server(s), with total of `{len(bot.users)}` member(s), on an average latency of `{round(bot.latency * 1000)} ms`.", 
@@ -290,7 +291,7 @@ async def reloadcogs(ctx: commands.Context):
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
-    run_website(bot)
-
+    Thread(target=run_website, args=(bot, )).start()
+    
     bot.loop.create_task(load_cogs(bot, None))
     bot.run(bot_token)

@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from threading import Thread
 from waitress import serve
 from pymongo import MongoClient
+from multiprocessing import Process
+from werkzeug.serving import make_server
 
 import modules
 
@@ -48,6 +50,21 @@ argument_names = {
     "prefix": "prefix",
     "member_remove_logs_webhook": "member_remove_logs_webhook"
 }
+
+
+class ServerThread(Thread):
+    
+    def __init__(self, app: Flask):
+        Thread.__init__(self)
+        self.server = make_server(host="0.0.0.0", port=8080, app=app)
+        self.ctx = app.app_context()
+        self.ctx.push()
+        
+    def run(self):
+        self.server.serve_forever()
+    
+    def terminate(self):
+        self.server.shutdown()
 
 ## -- FUNCTIONS -- ##
 
@@ -110,6 +127,25 @@ def check_permissions(guild_id: int):
 ## -- METHODS -- ##
 
 def run(bot):
+    server = Thread(target=app.run, args=("0.0.0.0", 8080,))
+    
+    @app.route("/api/reload-website")
+    def reload_website():
+        headers = request.headers
+
+        if not headers.get("api-key"):
+            return {"error": "Missing API Key"}, 403
+        elif headers.get("api-key") != api_key:
+            return {"error": "Invalid API Key"}, 403
+        
+        
+        function = request.environ.get("werkzeug.server.shutdown")
+        if not function:
+            return {"error": "The shutdown function is not found."}, 400
+        
+        function()
+        server.start()
+        return {"message": "Reload website successfully."}, 200
 
     @app.route("/api/save-settings")
     def save_guild_settings():
@@ -298,17 +334,17 @@ def run(bot):
     @app.errorhandler(exceptions.AccessDenied)
     def access_denied(e):
         return redirect(url_for("login"))
-
-    server = Thread(target=app.run, args=("0.0.0.0", 8080, False, ))
+    
     server.run()
     #serve(app=app, host="0.0.0.0", port=8080)
+    
+    return server
 
 def run_website(bot):
     if not bot:
         raise Exception("You have to assign the bot to run the website.")
 
-    server = Thread(target=run, args=(bot, ))
-    server.start()
+    run(bot)
 
 if __name__ == "__main__":
     run_website(None)

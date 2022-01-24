@@ -8,6 +8,7 @@ import asyncio
 import datetime
 import certifi
 import json
+import requests
 
 from disnake.ext import commands
 from disnake.errors import Forbidden, HTTPException
@@ -36,12 +37,12 @@ class ReloadWebsite(commands.Cog):
         if ctx.author.id not in config.owners:
             return
 
-        guild_dict = dict()
-        guild_dict["id"] = ctx.guild.id
-        guild_dict["name"] = ctx.guild.name
-        guild_dict["icon"] = str(ctx.guild.icon)
-
-        print(json.dumps(guild_dict))
+        response = requests.get(
+            url="https://outdash.ga/api/reload-website",
+            headers={"api-key": os.environ.get("API_KEY")}
+        )
+        
+        print(response.text)
         
     
 def setup(bot):
