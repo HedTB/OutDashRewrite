@@ -27,8 +27,9 @@ import modules
 load_dotenv()
 mongo_token = os.environ.get("MONGO_LOGIN")
 google_api_key = os.environ.get("GOOGLE_API_KEY")
+rapid_api_key = os.environ.get("RAPID_API_KEY")
 
-ai_client = AsyncClient(api_key="b61wK9syZ9gZ")
+ai_client = AsyncClient(api_key=rapid_api_key)
 perspective_client = discovery.build(
     "commentanalyzer",
     "v1alpha1",
