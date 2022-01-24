@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+
+body {
+  background-image: url("../images/bg.png");
+  background-size: 40%;
+}
+
+.title {
+    font-family: 'Ubuntu' sans-serif;
+    font-weight: 500;
+}
+
+.login {
+    background-color: #00a9ec; /* Cyan */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border-radius: 12px;
+    background-size: 0%;
+    transition: transform .1s ease;
+}

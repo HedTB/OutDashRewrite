@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>OutDash</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="icon" type="image/x-icon" href="/images/icon-rounded.png">
+    <link rel="stylesheet" type="text/css" href="/static/dashboard_list.css"/>
+
+    <script type=text/javascript>
+        // document.addEventListener('contextmenu', event => event.preventDefault());
+    </script>
+  </head>
+  <body>
+    <h1>OutDash Dashboard</h1>
+
+    <h2 id="title">The Bot is in: {{guild_count}} servers</h2>
+    <div class="picker">
+      <h3 id="title">Hello, {{username}}! Please select a server to get started</h3>
+      <hr/>
+      <section class="cards">
+        {% for guild in guilds %}
+        <div class="card">
+          <a class="guild-name" href="/dashboard/{{guild.id}}">
+            {% if guild.icon_url %}
+            <img src="{{guild.icon_url}}" class="gray-border" />
+            {% elif not guild.icon_url %}
+            <img
+              src="https://discordapp.com/assets/322c936a8c8be1b803cd94861bdfa868.png"
+              class="gray-border"
+            />
+            {% endif %}
+          </a>
+        <br />
+        <p class="guild-name">{{ guild.name }}</p>
+        </div>
+        {% endfor %}
+      </section>
+    </div>
+  </body>
+</html>

@@ -1,34 +1,26 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Home Page</title>
-    <link rel="stylesheet" type="text/css" href="/static/index.css" />
-    <style>
-      button {
-        background-color: #4caf50; /* Green */
-        border: none;
-        color: white;
-        padding: 15px 32px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        border-radius: 12px;
-      }
-      button:hover {
-        transform: scale(1.1);
-        cursor: pointer;
-      }
-    </style>
+    <title>OutDash</title>
+    <meta charset="UTF-8">
+    <meta name="viewport", width=device-width, initial-scale=1>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="OutDashBoard">
+    <meta content="It's a multipurpose bot called OutDash. It has many features such as logging, fun commands, moderation commands, and a lot more." property="og:description">
+    <meta content="https://outdash.ga/" property="og:url">
+    <meta content="#d4d4d4" data-react-helmet="true" name="theme-color">
+
+    <link rel="icon" type="image/x-icon" href="/static/icon-rounded.png">
+    <link rel="stylesheet" type="text/css" href="/static/index.css">
   </head>
   <body>
-    <h1>Welcome to OutDash!</h1>
-    <p align="center">
-      {% if not authorized %}
-      <a href="/login"><button>Login with discord</button></a>
-      {% else %}
-      <a href="/dashboard"><button>Open Dashboard</button></a>
-      {% endif %}
-    </p>
-  </body>
+    <h1 class="title">Welcome to OutDashBoard!</h1>
+        <p align="center">
+            {% if not authorized %}
+            <a href="/login" class="login"><button>Login with discord</button></a>
+            {% else %}
+            <a href="/dashboard" class="login"><button>Open Dashboard</button></a>
+            {% endif %}
+        </p>
+    </body>
 </html>

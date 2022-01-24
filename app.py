@@ -1,245 +1,314 @@
 ## -- IMPORTANT -- ##
 
-import asyncio
+import json
 import os
 import requests
-import bot_info
-import socket
+import config
+import certifi
+import disnake
 
-from quart import Quart, request, redirect, render_template, url_for
-from quart_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
+from flask import Flask, request, redirect, render_template, url_for
+from flask_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
 from dotenv import load_dotenv
-from discord.ext import ipc
-# from ipc import ipc
+from threading import Thread
+from waitress import serve
+from pymongo import MongoClient
+
+import modules
 
 ## -- FUNCTIONS -- ##
 
-API_ENDPOINT = 'https://discord.com/api/v9'
-CLIENT_ID = os.environ.get("CLIENT_ID")
-CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
-
-## -- VARIABLES -- ##
 load_dotenv()
 
-class App(Quart):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.bot = None
-        # self.ipc = ipc.Client(host="localhost", port=int(os.environ.get("IPC_PORT")), secret_key=os.environ.get("IPC_KEY"))
+## -- VARIABLES -- ##
         
-app = App(__name__)
-ipc_client = ipc.Client(secret_key = "Swas")
+app = Flask(__name__)
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-# ipc_client = ipc.Client(secret_key=b"%\xe0'\x01\xdeH\x8e\x85m|\xb3\xffCN\xc9g")
-
-app.secret_key = "yay"
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
-
-app.config['SERVER_NAME'] = 'localhost:8080'
+app.jinja_env.auto_reload = True
+app.config["SECRET_KEY"] = "HedTBIsHandsome"
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["SERVER_NAME"] = "outdash.ga"
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
 app.config["DISCORD_CLIENT_SECRET"] = str(os.environ.get("CLIENT_SECRET"))
-app.config["DISCORD_REDIRECT_URI"] = "http://%s/callback" % app.config["SERVER_NAME"]
+app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_NAME"]
 app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
-HYPERLINK = '<a href="{}">{}</a>'
+
+mongo_login = os.environ.get("MONGO_LOGIN")
+api_key = os.environ.get("API_KEY")
+
+client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
+db = client["db2"]
+
+server_data_col = db["server_data"]
+
+argument_names = {
+    "prefix": "prefix",
+    "member_remove_logs_webhook": "member_remove_logs_webhook"
+}
 
 ## -- FUNCTIONS -- ##
 
-async def welcome_user(user):
-    dm_channel = await discord.bot_request("/users/@me/channels", "POST", json={"recipient_id": user.id})
-    return await discord.bot_request(
-        f"/channels/{dm_channel['id']}/messages", "POST", json={"content": "Thanks for authorizing the app!"}
+def guild_to_dict(guild: disnake.Guild):
+    guild_dict = dict()
+
+    guild_dict["id"] = guild.id
+    guild_dict["name"] = guild.name
+    guild_dict["icon"] = str(guild.icon)
+
+    return json.dumps(guild_dict)
+
+def api_request(endpoint, params=None):
+    response = requests.get(
+        url=f"https://outdash.ga/api/{endpoint}",
+        headers={"api-key": api_key},
+        params=params
+    )
+    return response
+
+def message_user(user, message: str):
+    dm_channel = discord.bot_request("/users/@me/channels", "POST", json={"recipient_id": user.id})
+    return discord.bot_request(
+        f"/channels/{dm_channel['id']}/messages", "POST", json={"content": message}
     )
     
-async def get_guild(guild_id: int):
-    return await discord.bot_request(
+def get_guild(guild_id: int):
+    return discord.bot_request(
         route=f"/guilds{guild_id}",
         method="GET"
     )
     
-async def get_guilds_with_permission():
-    guilds = await discord.fetch_guilds()
+def get_guilds_with_permission():
+    guilds = discord.fetch_guilds()
     for g in guilds[:]:
-        if not g.permissions.manage_guild:
+        if not g.permissions.administrator:
             guilds.remove(g)
     
     return guilds
 
-async def get_guild_with_permission(guild_id: int):
-    guilds = await get_guilds_with_permission()
-    
+def get_guild_with_permission(guild_id: int):
+    guilds = get_guilds_with_permission()
+
     for g in guilds[:]:
         if g.id == guild_id:
             return g
-        
+    
     return None
 
-async def check_for_bot_in_server(guild_id: int):
-    response = await discord.bot_request(
-        route=f"/guilds/{guild_id}/members",
-        method="GET"
-    )
-    print(response)
-    for member in response:
-        print(member.get("user").get("id"))
-        if member.get("user").get("id") == os.environ.get("CLIENT_ID"): 
-            return True
-        else:
-            print("no")
-            
-    # return False
+def check_permissions(guild_id: int):
+    user = discord.fetch_user()
+
+    if user.id in config.owners:
+        return True
+    if get_guild_with_permission(guild_id):
+        return True
+
+    return False
 
 ## -- METHODS -- ##
 
-@app.route('/test_button')
-async def background_process_test():
-    print("YO")
-    return("nothing")
+def run(bot):
 
-@app.route("/")
-async def index():
-	return await render_template("index.html", authorized = await discord.authorized)
+    @app.route("/api/save-settings")
+    def save_guild_settings():
+        arguments = request.args
+        headers = request.headers
+        guild_id = arguments.get("guild_id")
+        update_values = {}
+        query = {"guild_id": str(guild_id)}
 
-    
-@app.route('/servers', methods=['GET'])
-@requires_authorization
-async def servers():
-    user = await discord.fetch_user()
-    guilds = await get_guilds_with_permission()
+        if not headers.get("api-key"):
+            return {"error": "Missing API Key"}, 403
+        elif headers.get("api-key") != api_key:
+            return {"error": "Invalid API Key"}, 403
+        elif not guild_id:
+            return {"error": "Missing guild ID"}, 400
+        elif not bot.get_guild(int(guild_id)):
+            return {"error": "Invalid guild ID"}, 400
 
-    id, avatar, username, usertag = user.id, user.avatar_url, user.username, user.discriminator
+        for argument in arguments:
+            value = arguments.get(argument)
+            if argument == "guild_id" or not argument in argument_names:
+                continue
+                
+            argument_name = argument_names[argument]
+            update_values[argument_name] = value
 
-    return await render_template('servers.html', render_avatar=avatar, render_username=f'{username}#{usertag}', render_guilds=guilds)
+        server_data_col.update_one(query, {"$set": update_values})
+        return {"changed_settings": argument_name for argument_name in list(update_values.keys())}, 200
 
-@app.route("/dashboard")
-@requires_authorization
-async def dashboard(): 
+    @app.route("/api/get-bot-guilds", methods=["GET"])
+    async def get_bot_guilds():
+        headers = request.headers
 
-    guild_count = await app.ipc.request("get_guild_count")
-    guild_ids = await app.ipc.request("get_guild_ids")
-
-    user_guilds = await discord.fetch_guilds()
-
-    guilds = []
-
-    for guild in user_guilds:
-        if guild.permissions.administrator:
-            guild.class_color = "green-border" if guild.id in guild_ids else "red-border"
-            guilds.append(guild)
-
-    guilds.sort(key = lambda x: x.class_color == "red-border")
-    name = (await discord.fetch_user()).name
-    return await render_template("dashboard.html", guild_count = guild_count, guilds = guilds, username=name)
-
-
-@app.route("/login")
-async def login():
-	return await discord.create_session(scope=["identify", "guilds", "email"])
-
-
-@app.route("/dashboard/<int:guild_id>/")
-@requires_authorization
-async def server_dashboard(guild_id: int):
-	guild = await ipc_client.request("get_guild", guild_id = guild_id)
-	if guild is None:
-		return redirect(f'https://discord.com/oauth2/authorize?&client_id={app.config["DISCORD_CLIENT_ID"]}&scope=bot&permissions=8&guild_id={guild_id}&response_type=code&redirect_uri={app.config["DISCORD_REDIRECT_URI"]}')
-	return guild["name"]
-
-
-@app.route("/invite-bot")
-async def invite_bot():
-    return await discord.create_session(scope=["bot"], permissions=os.environ.get("PERMISSIONS"), guild_id=859482895009579039, disable_guild_select=True)
-
-
-@app.route("/invite-oauth")
-async def invite_oauth():
-    return await discord.create_session(scope=["bot", "identify"], permissions=8)
-
-
-@app.route("/callback")
-async def callback():
-    try:
-        data = await discord.callback()
-        return redirect(data.get("redirect", "/"))
-    except Exception as e:
-        raise e
-
-
-@app.route("/me/")
-async def me():
-    user = await discord.fetch_user()
-    return f"""
-    <html>
-        <head>
-            <title>{user.name}</title>
-        </head>
-        <body>
-            <img src='{user.avatar_url or user.default_avatar_url}' />
-            <p>Is avatar animated: {str(user.is_avatar_animated)}</p>
-            <a href={url_for("my_connections")}>Connections</a>
-            <br />
-        </body>
-    </html>
-"""
-
-
-@app.route("/me/guilds/")
-async def get_permission_guilds():
-    guilds = await discord.fetch_guilds()
+        if not headers.get("api-key"):
+            return {"error": "Missing API Key"}, 403
+        elif headers.get("api-key") != api_key:
+            return {"error": "Invalid API Key"}, 403
         
-    return "<br />".join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else g.name for g in guilds])
+        return {"bot_guilds": ", ".join(guild_to_dict(guild) for guild in bot.guilds)}
+
+    @app.route("/api/get-guild-count", methods=["GET"])
+    async def get_guild_count():
+        headers = request.headers
+
+        if not headers.get("api-key"):
+            return {"error": "Missing API Key"}, 403
+        elif headers.get("api-key") != api_key:
+            return {"error": "Invalid API Key"}, 403
+
+        return {"guild_count": len(bot.guilds)}, 200
 
 
-@app.route("/add_to/<int:guild_id>/")
-async def add_to_guild(guild_id):
-    user = await discord.fetch_user()
-    return await user.add_to_guild(guild_id)
+    @app.route("/")
+    def index():
+        return render_template("index.html", authorized = discord.authorized)
+
+    @app.route("/dashboard")
+    @requires_authorization
+    def dashboard():
+        guild_count = len(bot.guilds)
+        guild_ids = []
+
+        for guild in bot.guilds:
+            guild_ids.append(guild.id)
+
+        user_guilds = discord.fetch_guilds()
+        user = discord.fetch_user()
+
+        guilds = []
+
+        for guild in user_guilds:
+            if guild.permissions.administrator:
+                guild.class_color = "green-border" if guild.id in guild_ids else "red-border"
+                guilds.append(guild)
+
+        guilds.sort(key = lambda x: x.class_color == "red-border")
+        name = user.name
+        
+        return render_template("dashboard_list.html", guild_count=guild_count, guilds=guilds, username=name)
 
 
-@app.route("/me/connections/")
-async def my_connections():
-    user = await discord.fetch_user()
-    connections = await discord.fetch_connections()
-    return f"""
-    <html>
-        <head>
-            <title>{user.name}</title>
-        </head>
-        <body>
-            {str([f"{connection.name} - {connection.type}" for connection in connections])}
-        </body>
-    </html>
+    @app.route("/login")
+    def login():
+        return discord.create_session(scope=["identify", "guilds"])
+
+
+    @app.route("/dashboard/<int:guild_id>/")
+    @requires_authorization
+    def server_dashboard(guild_id: int):
+        user = discord.fetch_user()
+        guild = bot.get_guild(guild_id)
+        can_enter_dashboard = check_permissions(guild_id)
+
+        if not can_enter_dashboard:
+            return "You don't have permission to access this dashboard."
+        if not guild:
+            return discord.create_session(scope=["bot"], permissions=int(os.environ.get("PERMISSIONS")), guild_id=guild_id)
+
+
+        prefix = bot.get_bot_prefix(guild_id)
+        return render_template("dashboard.html", guild=guild, prefix=prefix)
+
+    @app.route("/invite-bot/<int:guild_id>")
+    def invite_bot(guild_id):
+        return discord.create_session(scope=["bot"], permissions=int(os.environ.get("PERMISSIONS")), guild_id=guild_id, disable_guild_select=True)
+
+
+    @app.route("/invite-oauth")
+    def invite_oauth():
+        return discord.create_session(scope=["bot", "identify"], permissions=8)
+
+
+    @app.route("/callback")
+    def callback():
+        try:
+            data = discord.callback()
+            print(data.get("redirect"))
+            return redirect(data.get("redirect", "/dashboard"))
+        except Exception as e:
+            return redirect("/login")
+
+
+    @app.route("/me/")
+    def me():
+        user = discord.fetch_user()
+        return f"""
+        <html>
+            <head>
+                <title>{user.name}</title>
+            </head>
+            <body>
+                <img src="{user.avatar_url or user.default_avatar_url}" />
+                <p>Is avatar animated: {str(user.is_avatar_animated)}</p>
+                <a href={url_for("my_connections")}>Connections</a>
+                <br />
+            </body>
+        </html>
     """
 
 
-@app.route("/logout/")
-async def logout():
-    discord.revoke()
-    return redirect(url_for(".index"))
+    @app.route("/me/guilds/")
+    def get_permission_guilds():
+        guilds = discord.fetch_guilds()
+            
+        return "<br />".join([f"[SERVER MANAGER] {g.name}" if g.permissions.manage_guild else g.name for g in guilds])
 
 
-@app.route("/secret/")
-@requires_authorization
-async def secret():
-    return os.urandom(16)
+    @app.route("/add_to/<int:guild_id>/")
+    def add_to_guild(guild_id):
+        user = discord.fetch_user()
+        return user.add_to_guild(guild_id)
 
 
-@app.errorhandler(Unauthorized)
-async def redirect_unauthorized(e):
-    return redirect(url_for("login"))
+    @app.route("/me/connections/")
+    def my_connections():
+        user = discord.fetch_user()
+        connections = discord.fetch_connections()
+        return f"""
+        <html>
+            <head>
+                <title>{user.name}</title>
+            </head>
+            <body>
+                {str([f"{connection.name} - {connection.type}" for connection in connections])}
+            </body>
+        </html>
+        """
 
-@app.errorhandler(exceptions.AccessDenied)
-async def access_denied(e):
-    return redirect(url_for("login"))
+
+    @app.route("/logout/")
+    def logout():
+        discord.revoke()
+        return redirect(url_for(".index"))
 
 
-def import_bot(bot):
-    app.bot = bot
-    print("Bot received in app successfully.")
+    @app.route("/secret/")
+    @requires_authorization
+    def secret():
+        return os.urandom(16)
 
-def setBotAttribute(bot):
-    app.config["bot"] = bot
+
+    @app.errorhandler(Unauthorized)
+    def redirect_unauthorized(e):
+        return redirect(url_for("login"))
+
+    @app.errorhandler(exceptions.AccessDenied)
+    def access_denied(e):
+        return redirect(url_for("login"))
+
+    server = Thread(target=app.run, args=("0.0.0.0", 8080, False, ))
+    server.run()
+    #serve(app=app, host="0.0.0.0", port=8080)
+
+def run_website(bot):
+    if not bot:
+        raise Exception("You have to assign the bot to run the website.")
+
+    server = Thread(target=run, args=(bot, ))
+    server.start()
 
 if __name__ == "__main__":
-    app.run(debug=True, host="localhost", port=8080)
+    run_website(None)
