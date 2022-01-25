@@ -26,7 +26,7 @@ mongo_token = os.environ.get("MONGO_LOGIN")
 ai_client = AsyncClient(api_key="b61wK9syZ9gZ")
 client = MongoClient(f"{mongo_token}", tlsCAFile=certifi.where())
 
-db = client["db2"]
+db = client["db"]
 server_data_col = db["server_data"]
 
 ## -- COG -- ##

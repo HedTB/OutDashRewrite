@@ -41,7 +41,7 @@ mongo_login = os.environ.get("MONGO_LOGIN")
 api_key = os.environ.get("API_KEY")
 
 client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
-db = client["db2"]
+db = client["db"]
 
 server_data_col = db["server_data"]
 

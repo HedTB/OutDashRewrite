@@ -23,7 +23,7 @@ load_dotenv()
 
 mongo_token = os.environ.get("MONGO_LOGIN")
 client = MongoClient(f"{mongo_token}",tlsCAFile=certifi.where())
-db = client["db2"]
+db = client["db"]
 
 prefixes_col = db["prefixes"]
 confirmations_col = db["bot_farm_confirmations"]

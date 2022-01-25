@@ -39,7 +39,7 @@ perspective_client = discovery.build(
 )
 client = MongoClient(f"{mongo_token}", tlsCAFile=certifi.where())
 
-db = client["db2"]
+db = client["db"]
 server_data_col = db["server_data"]
 
 ## -- FUNCTIONS -- ##
@@ -88,7 +88,8 @@ class OnMessage(commands.Cog):
 
         if not result:
             server_data_col.insert_one(data)
-            self.on_message(message)
+            await self.on_message(message)
+            return
 
         if (
             message.content.endswith(f"<@{self.bot.user.id}>") and 
