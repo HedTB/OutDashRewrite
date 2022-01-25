@@ -33,16 +33,11 @@ class ReloadWebsite(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def reloadwebsite(self, ctx: commands.Context):
+    async def test(self, ctx: commands.Context):
         if ctx.author.id not in config.owners:
             return
 
-        response = requests.get(
-            url="https://outdash.ga/api/reload-website",
-            headers={"api-key": os.environ.get("API_KEY")}
-        )
-        
-        print(response.text)
+        await ctx.send(random.choice([69 ** 420, 420 ** 69, 69 * 420]))
         
     
 def setup(bot):

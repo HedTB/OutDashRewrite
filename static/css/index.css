@@ -1,17 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@500&display=swap');
 
 body {
-  background-image: url("../images/bg.png");
+  background-image: url("../bg.png");
   background-size: 40%;
 }
 
 .title {
-    font-family: 'Ubuntu' sans-serif;
+    font-family: "Ubuntu", sans-serif;
     font-weight: 500;
+    color: whitesmoke;
+    text-align: center;
 }
 
 .login {
-    background-color: #00a9ec; /* Cyan */
+    background-color: #00a9ec;
     border: none;
     color: white;
     padding: 15px 32px;
@@ -22,4 +24,6 @@ body {
     border-radius: 12px;
     background-size: 0%;
     transition: transform .1s ease;
+    font-family: "Ubuntu", sans-serif;
+    font-weight: 500
 }

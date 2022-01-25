@@ -33,6 +33,7 @@ discord = "^1.7.3"
 discord-webhook = "^0.14.0"
 google-api-python-client = "^2.34.0"
 captcha = "^0.3"
+Werkzeug = "^2.0.2"
 
 [tool.poetry.dev-dependencies]
 

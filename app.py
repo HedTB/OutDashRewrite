@@ -13,8 +13,7 @@ from dotenv import load_dotenv
 from threading import Thread
 from waitress import serve
 from pymongo import MongoClient
-from multiprocessing import Process
-from werkzeug.serving import make_server
+from functools import wraps
 
 import modules
 
@@ -24,7 +23,7 @@ load_dotenv()
 
 ## -- VARIABLES -- ##
         
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 app.jinja_env.auto_reload = True
@@ -51,20 +50,20 @@ argument_names = {
     "member_remove_logs_webhook": "member_remove_logs_webhook"
 }
 
+## -- CHECKS -- ##
 
-class ServerThread(Thread):
-    
-    def __init__(self, app: Flask):
-        Thread.__init__(self)
-        self.server = make_server(host="0.0.0.0", port=8080, app=app)
-        self.ctx = app.app_context()
-        self.ctx.push()
+def requires_api_authorization(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        headers = request.headers
+
+        if not headers.get("api-key"):
+            return {"message": "Missing API Key"}, 403
+        elif headers.get("api-key") != api_key:
+            return {"message": "Invalid API Key"}, 403
+        return f()
+    return decorated_function
         
-    def run(self):
-        self.server.serve_forever()
-    
-    def terminate(self):
-        self.server.shutdown()
 
 ## -- FUNCTIONS -- ##
 
@@ -78,12 +77,11 @@ def guild_to_dict(guild: disnake.Guild):
     return json.dumps(guild_dict)
 
 def api_request(endpoint, params=None):
-    response = requests.get(
+    return requests.get(
         url=f"https://outdash.ga/api/{endpoint}",
         headers={"api-key": api_key},
         params=params
     )
-    return response
 
 def message_user(user, message: str):
     dm_channel = discord.bot_request("/users/@me/channels", "POST", json={"recipient_id": user.id})
@@ -128,38 +126,16 @@ def check_permissions(guild_id: int):
 
 def run(bot):
     server = Thread(target=app.run, args=("0.0.0.0", 8080,))
-    
-    @app.route("/api/reload-website")
-    def reload_website():
-        headers = request.headers
-
-        if not headers.get("api-key"):
-            return {"error": "Missing API Key"}, 403
-        elif headers.get("api-key") != api_key:
-            return {"error": "Invalid API Key"}, 403
-        
-        
-        function = request.environ.get("werkzeug.server.shutdown")
-        if not function:
-            return {"error": "The shutdown function is not found."}, 400
-        
-        function()
-        server.start()
-        return {"message": "Reload website successfully."}, 200
 
     @app.route("/api/save-settings")
+    @requires_api_authorization
     def save_guild_settings():
         arguments = request.args
-        headers = request.headers
         guild_id = arguments.get("guild_id")
         update_values = {}
         query = {"guild_id": str(guild_id)}
 
-        if not headers.get("api-key"):
-            return {"error": "Missing API Key"}, 403
-        elif headers.get("api-key") != api_key:
-            return {"error": "Invalid API Key"}, 403
-        elif not guild_id:
+        if not guild_id:
             return {"error": "Missing guild ID"}, 400
         elif not bot.get_guild(int(guild_id)):
             return {"error": "Invalid guild ID"}, 400
@@ -176,25 +152,13 @@ def run(bot):
         return {"changed_settings": argument_name for argument_name in list(update_values.keys())}, 200
 
     @app.route("/api/get-bot-guilds", methods=["GET"])
-    async def get_bot_guilds():
-        headers = request.headers
-
-        if not headers.get("api-key"):
-            return {"error": "Missing API Key"}, 403
-        elif headers.get("api-key") != api_key:
-            return {"error": "Invalid API Key"}, 403
-        
+    @requires_api_authorization
+    def get_bot_guilds():
         return {"bot_guilds": ", ".join(guild_to_dict(guild) for guild in bot.guilds)}
 
     @app.route("/api/get-guild-count", methods=["GET"])
-    async def get_guild_count():
-        headers = request.headers
-
-        if not headers.get("api-key"):
-            return {"error": "Missing API Key"}, 403
-        elif headers.get("api-key") != api_key:
-            return {"error": "Invalid API Key"}, 403
-
+    @requires_api_authorization
+    def get_guild_count():
         return {"guild_count": len(bot.guilds)}, 200
 
 
