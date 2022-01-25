@@ -1,3 +1,83 @@
-2022-01-25 17:13:29,180:INFO:disnake.client: logging in using static token
-2022-01-25 17:13:29,899:INFO:disnake.gateway: Shard ID None has sent the IDENTIFY payload.
-2022-01-25 17:13:30,198:INFO:disnake.gateway: Shard ID None has connected to Gateway: ["gateway-prd-main-9r13",{"micros":143238,"calls":["discord-sessions-green-prd-2-117",{"micros":142051,"calls":["start_session",{"micros":89255,"calls":["discord-api-56d7f485bd-mwfcd",{"micros":84936,"calls":["get_user",{"micros":10601},"add_authorized_ip",{"micros":7315},"get_guilds",{"micros":18968},"coros_wait",{"micros":0}]}]},"guilds_connect",{"micros":2,"calls":[]},"presence_connect",{"micros":1,"calls":[]}]}]}] (Session ID: 29cef203017612a7f06a9f21794c82c9).
+2022-01-25 18:46:53,384:INFO:disnake.client: logging in using static token
+2022-01-25 18:46:53,866:INFO:disnake.gateway: Shard ID None has sent the IDENTIFY payload.
+2022-01-25 18:46:54,249:INFO:disnake.gateway: Shard ID None has connected to Gateway: ["gateway-prd-main-8hsl",{"micros":321364,"calls":["discord-sessions-green-prd-2-118",{"micros":319376,"calls":["start_session",{"micros":190455,"calls":["discord-api-56d7f485bd-whx65",{"micros":172452,"calls":["get_user",{"micros":22803},"add_authorized_ip",{"micros":11992},"get_guilds",{"micros":31123},"coros_wait",{"micros":2}]}]},"guilds_connect",{"micros":5,"calls":[]},"presence_connect",{"micros":1,"calls":[]}]}]}] (Session ID: c84186cd0253963e198153d2f9321135).
+2022-01-25 18:47:33,515:WARNING:disnake.state: Shard ID 0 timed out waiting for chunks for guild_id 110373943822540800.
+2022-01-25 18:47:46,564:WARNING:disnake.gateway: Shard ID None heartbeat blocked for more than 10 seconds.
+Loop thread traceback (most recent call last):
+  File "main.py", line 327, in <module>
+    bot.run(bot_token)
+  File "/opt/virtualenvs/python3/lib/python3.8/site-packages/disnake/client.py", line 833, in run
+    loop.run_forever()
+  File "/usr/lib/python3.8/asyncio/base_events.py", line 570, in run_forever
+    self._run_once()
+  File "/usr/lib/python3.8/asyncio/base_events.py", line 1859, in _run_once
+    handle._run()
+  File "/usr/lib/python3.8/asyncio/events.py", line 81, in _run
+    self._context.run(self._callback, *self._args)
+  File "main.py", line 88, in load_cogs
+    bot.load_extension(f"cogs.{foldername}.{filename[:-3]}")
+  File "/opt/virtualenvs/python3/lib/python3.8/site-packages/disnake/ext/commands/common_bot_base.py", line 490, in load_extension
+    self._load_from_module_spec(spec, name)
+  File "/opt/virtualenvs/python3/lib/python3.8/site-packages/disnake/ext/commands/common_bot_base.py", line 418, in _load_from_module_spec
+    spec.loader.exec_module(lib)  # type: ignore
+  File "<frozen importlib._bootstrap_external>", line 843, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/home/runner/OutDashRewrite/cogs/loops/youtube_publishing.py", line 12, in <module>
+    import googleapiclient.discovery
+  File "<frozen importlib._bootstrap>", line 991, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 975, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 671, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 843, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/virtualenvs/python3/lib/python3.8/site-packages/googleapiclient/discovery.py", line 42, in <module>
+    import httplib2
+  File "<frozen importlib._bootstrap>", line 991, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 975, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 671, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 843, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/virtualenvs/python3/lib/python3.8/site-packages/httplib2/__init__.py", line 52, in <module>
+    from . import auth
+  File "<frozen importlib._bootstrap>", line 1042, in _handle_fromlist
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 991, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 975, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 671, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 843, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/virtualenvs/python3/lib/python3.8/site-packages/httplib2/auth.py", line 4, in <module>
+    import pyparsing as pp
+  File "<frozen importlib._bootstrap>", line 991, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 975, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 671, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 843, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/virtualenvs/python3/lib/python3.8/site-packages/pyparsing/__init__.py", line 141, in <module>
+    from .helpers import *
+  File "<frozen importlib._bootstrap>", line 991, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 975, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 671, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 843, in exec_module
+  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
+  File "/opt/virtualenvs/python3/lib/python3.8/site-packages/pyparsing/helpers.py", line 678, in <module>
+    common_html_entity = Regex("&(?P<entity>" + "|".join(_htmlEntityMap) + ");").set_name(
+  File "/opt/virtualenvs/python3/lib/python3.8/site-packages/pyparsing/core.py", line 2923, in __init__
+    self.re = re.compile(self.pattern, self.flags)
+  File "/usr/lib/python3.8/re.py", line 252, in compile
+    return _compile(pattern, flags)
+  File "/usr/lib/python3.8/re.py", line 304, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/usr/lib/python3.8/sre_compile.py", line 764, in compile
+    p = sre_parse.parse(p, flags)
+  File "/usr/lib/python3.8/sre_parse.py", line 948, in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+  File "/usr/lib/python3.8/sre_parse.py", line 443, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.8/sre_parse.py", line 834, in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+  File "/usr/lib/python3.8/sre_parse.py", line 443, in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+  File "/usr/lib/python3.8/sre_parse.py", line 852, in _parse
+    for i in range(len(subpattern))[::-1]:
+
+2022-01-25 18:48:21,232:WARNING:disnake.gateway: Can't keep up, shard ID None websocket is 25.2s behind.

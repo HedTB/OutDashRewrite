@@ -27,7 +27,7 @@ load_dotenv()
 
 ## -- COG -- ##
 
-class ReloadWebsite(commands.Cog):
+class Test(commands.Cog):
     
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -41,4 +41,4 @@ class ReloadWebsite(commands.Cog):
         
     
 def setup(bot):
-    bot.add_cog(ReloadWebsite(bot))
+    bot.add_cog(Test(bot))

@@ -36,7 +36,7 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(me
 logger.addHandler(handler)
 
 # TOKENS
-bot_token = str(os.environ.get("TEST_BOT_TOKEN"))
+bot_token = str(os.environ.get("BOT_TOKEN"))
 mongo_token = os.environ.get("MONGO_LOGIN")
 api_key = os.environ.get("API_KEY")
 
@@ -244,7 +244,15 @@ class Bot(commands.Bot):
             return False
         
        
-bot = Bot(command_prefix=get_prefix, intents=disnake.Intents.all(), status=disnake.Status.idle, activity=disnake.Game(name="booting up.."), case_insensitive=True, test_guilds=[int(config.bot_server), 746363347829784646, 933596774541692928], sync_permissions=True)
+bot = Bot(
+    command_prefix=get_prefix, 
+    intents=disnake.Intents.all(), 
+    status=disnake.Status.idle, 
+    activity=disnake.Game(name="booting up.."), 
+    case_insensitive=True, 
+    #test_guilds=[int(config.bot_server), 746363347829784646, 933596774541692928], 
+    sync_permissions=True
+)
 
 ## -- COGS -- ##
 

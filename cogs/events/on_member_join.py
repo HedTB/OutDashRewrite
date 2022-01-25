@@ -96,7 +96,8 @@ class OnMemberJoin(commands.Cog):
         if not welcome_toggle:
             server_data_col.update_one(query, update)
             return
-        welcome_channel = self.bot.get_channel(int(welcome_channel_id))
+        if welcome_channel_id and welcome_channel_id != "None":
+            welcome_channel = self.bot.get_channel(int(welcome_channel_id))
 
         webhook = Webhook(url=webhook_url, username="OutDash Logging", avatar_url=str(self.bot.user.avatar or "https://cdn.discordapp.com/embed/avatars/1.png"))
 
@@ -116,9 +117,9 @@ class OnMemberJoin(commands.Cog):
         welcome_embed.set_thumbnail(url=member.guild.icon)
         welcome_embed.timestamp = datetime.datetime.utcnow()
 
-        webhook.post(remove_embeds=False)
+        webhook.post()
         
-        if welcome_channel_id != "None" and welcome_channel_id and welcome_toggle == "true":
+        if welcome_channel_id != "None" and welcome_channel_id and welcome_toggle == "true" and welcome_channel:
             await welcome_channel.send(content=f"<@{member.id}>,", embed=welcome_embed)
 
     
