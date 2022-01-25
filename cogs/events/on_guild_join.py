@@ -17,8 +17,8 @@ from randomstuff import AsyncClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 ## -- VARIABLES -- ##
 
@@ -39,7 +39,7 @@ class OnGuildJoin(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild: disnake.Guild):
         
-        data = await modules.get_db_data(str(guild.id))
+        data = await functions.get_db_data(str(guild.id))
         query = {"guild_id": str(guild.id)}
         result = server_data_col.find_one(query)
 

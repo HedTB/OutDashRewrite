@@ -15,8 +15,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 load_dotenv()
 
@@ -76,7 +76,7 @@ class EditWelcomeEmbed(commands.Cog):
         result = server_data_col.find_one(query)
 
         if not result:
-            server_data_col.insert_one(await modules.get_db_data(ctx.guild.id))
+            server_data_col.insert_one(await functions.get_db_data(ctx.guild.id))
             self.editwelcomeembed(ctx, embed_part, value)
 
         if result["settings_locked"] == "true":

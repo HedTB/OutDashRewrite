@@ -19,8 +19,8 @@ from dotenv import load_dotenv
 from googleapiclient import discovery
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 ## -- VARIABLES -- ##
 
@@ -83,7 +83,7 @@ class OnMessage(commands.Cog):
         """
 
         query = {"guild_id": str(message.guild.id)}
-        data = await modules.get_db_data(str(message.guild.id))
+        data = await functions.get_db_data(str(message.guild.id))
         result = server_data_col.find_one(query)
 
         if not result:

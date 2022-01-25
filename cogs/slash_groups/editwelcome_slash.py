@@ -16,8 +16,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 load_dotenv()
 
@@ -109,7 +109,7 @@ class EditWelcomeSlash(commands.Cog):
     async def slash_welcome(self, inter):
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
-        data = await modules.get_db_data(str(inter.guild.id))
+        data = await functions.get_db_data(str(inter.guild.id))
 
         if not result:
             server_data_col.insert_one(data)

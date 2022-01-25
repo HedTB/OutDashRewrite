@@ -9,7 +9,7 @@ import json
 from disnake.ext import commands
 
 # FILES
-import config
+import extra.config as config
 
 def get_commands_run():
     with open("stats.json") as file_object:

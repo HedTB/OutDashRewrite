@@ -6,8 +6,8 @@ import disnake
 from disnake.ext import commands
 
 # FILES
-import config
-from checks import is_moderator
+import extra.config as config
+from extra.checks import is_moderator
 
 class Clear(commands.Cog):
     

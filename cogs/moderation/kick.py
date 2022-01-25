@@ -12,9 +12,9 @@ from disnake.errors import Forbidden, HTTPException
 from disnake.ext.commands import errors
 
 # FILES
-import config
-import modules
-from checks import is_moderator
+import extra.config as config
+import extra.functions as functions
+from extra.checks import is_moderator
 
 class Kick(commands.Cog):
     
@@ -58,7 +58,7 @@ class Kick(commands.Cog):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to kick.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error.original, Forbidden):
-            is_role_above_role = modules.is_role_above_role(ctx.guild.get_member(self.bot.user.id).top_role, ctx.author.top_role)
+            is_role_above_role = functions.is_role_above_role(ctx.guild.get_member(self.bot.user.id).top_role, ctx.author.top_role)
             if is_role_above_role:
                 embed = disnake.Embed(description=f"{config.no} You don't have permission to kick this member.", color=config.error_embed_color)
                 await ctx.send(embed=embed)
@@ -110,7 +110,7 @@ class Kick(commands.Cog):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to kick.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error.original, Forbidden):
-            is_role_above_role = modules.is_role_above_role(inter.guild.get_member(self.bot.user.id).top_role, inter.author.top_role)
+            is_role_above_role = functions.is_role_above_role(inter.guild.get_member(self.bot.user.id).top_role, inter.author.top_role)
             if is_role_above_role:
                 embed = disnake.Embed(description=f"{config.no} You don't have permission to kick this member.", color=config.error_embed_color)
                 await inter.response.send_message(embed=embed)

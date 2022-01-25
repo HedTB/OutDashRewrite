@@ -3,7 +3,7 @@
 import json
 import os
 import requests
-import config
+import extra.config as config
 import certifi
 import disnake
 
@@ -15,7 +15,7 @@ from waitress import serve
 from pymongo import MongoClient
 from functools import wraps
 
-import modules
+import extra.functions as functions
 
 ## -- FUNCTIONS -- ##
 

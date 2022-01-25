@@ -14,7 +14,7 @@ from disnake.errors import Forbidden, HTTPException
 from disnake.ext.commands import errors
 
 # FILES
-import config
+import extra.config as config
 
 ignored = (commands.CommandNotFound, commands.MissingPermissions, Forbidden, HTTPException, commands.MissingRequiredArgument, )
 

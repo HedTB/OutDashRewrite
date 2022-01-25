@@ -15,8 +15,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 load_dotenv()
 
@@ -43,7 +43,7 @@ class UnlockSettings(commands.Cog):
     async def unlocksettings(self, ctx: commands.Context):
         """Unlocks the server's settings."""
         
-        data = await modules.get_db_data(str(ctx.guild.id))
+        data = await functions.get_db_data(str(ctx.guild.id))
         query = {"guild_id": str(ctx.guild.id)}
         result = server_data_col.find_one(query)
         update = {"$set": {

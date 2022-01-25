@@ -8,7 +8,7 @@ import datetime
 from disnake.ext import commands
 
 # FILES
-import config
+import extra.config as config
 
 class OnCommand(commands.Cog):
     

@@ -4,7 +4,6 @@
 import multiprocessing
 import os
 import datetime
-from async_timeout import asyncio
 import certifi
 import disnake
 import json
@@ -18,7 +17,7 @@ from threading import Thread
 
 
 # FILES
-from config import *
+from extra import config
 from app import run_website
 
 
@@ -102,7 +101,6 @@ async def load_cogs(bot, cog = None):
                 if filename.endswith(".py") and filename[:3] == cog:
                     try:
                         bot.load_extension(f"cogs.{foldername}.{filename[:-3]}")
-                        amount += 1
                     except Exception as e:
                         print(e)
                         continue
@@ -165,10 +163,10 @@ class Bot(commands.Bot):
         
     async def on_ready(self):
         self.avatar = await self.user.avatar.read()
-        status_channel = self.get_channel(messages_channel)
+        status_channel = self.get_channel(config.messages_channel)
         embed = disnake.Embed(title=f"Singed In As: {bot.user.name} ({bot.user.id})", 
                             description=f"Bot started in `{str(len(bot.guilds))}` server(s), with total of `{len(bot.users)}` member(s), on an average latency of `{round(bot.latency * 1000)} ms`.", 
-                            color=success_embed_color)
+                            color=config.success_embed_color)
         
         await status_channel.send(embed=embed)
 
@@ -246,21 +244,29 @@ class Bot(commands.Bot):
             return False
         
        
-bot = Bot(command_prefix=get_prefix, intents=disnake.Intents.all(), status=disnake.Status.idle, activity=disnake.Game(name="booting up.."), case_insensitive=True, test_guilds=[int(bot_server), 746363347829784646, 933596774541692928], sync_permissions=True)
+bot = Bot(command_prefix=get_prefix, intents=disnake.Intents.all(), status=disnake.Status.idle, activity=disnake.Game(name="booting up.."), case_insensitive=True, test_guilds=[int(config.bot_server), 746363347829784646, 933596774541692928], sync_permissions=True)
 
 ## -- COGS -- ##
 
 @bot.slash_command(name="cogs", default_permission=False)
-@commands.guild_permissions(guild_id=int(bot_server), roles={871899070283800636: True})
+@commands.guild_permissions(guild_id=int(config.bot_server), roles={871899070283800636: True})
 async def cogs(inter):
     pass
 
 @cogs.sub_command(name="load", description="Load a specific cog.")
 async def loadcog(inter, cog: str):
-    await inter.response.defer()
+    try:
+        await inter.response.defer()
+    except Exception:
+        pass
+        
     await load_cogs(bot, cog)
-    embed = disnake.Embed(description=f"{yes} Loaded `{cog}` successfully.", color=success_embed_color)
-    await inter.send(embed=embed)
+    embed = disnake.Embed(description=f"{config.yes} Loaded `{cog}` successfully.", color=config.success_embed_color)
+    
+    try:
+        await inter.send(embed=embed)
+    except Exception:
+        pass
 
 @cogs.sub_command_group(name="reload")
 async def reload(inter):
@@ -268,24 +274,40 @@ async def reload(inter):
 
 @reload.sub_command(name="all", description="Reload all cogs.")
 async def reloadcogs(inter):
-    await inter.response.defer()
+    try:
+        await inter.response.defer()
+    except Exception:
+        pass
+    
     await reload_cogs(bot, None)
-    embed = disnake.Embed(description=f"{yes} Reloaded all cogs successfully.", color=success_embed_color)
-    await inter.send(embed=embed)
+    embed = disnake.Embed(description=f"{config.yes} Reloaded all cogs successfully.", color=config.success_embed_color)
+    
+    try:
+        await inter.send(embed=embed)
+    except Exception:
+        pass
 
 @reload.sub_command(name="cog", description="Reload one specific cog.")
 async def reloadcog(inter, cog: str):
-    await inter.response.defer()
+    try:
+        await inter.response.defer()
+    except Exception:
+        pass
+    
     await reload_cogs(bot, cog)
-    embed = disnake.Embed(description=f"{yes} Reloaded `{cog}` successfully.", color=success_embed_color)
-    await inter.send(embed=embed)
+    embed = disnake.Embed(description=f"{config.yes} Reloaded `{cog}` successfully.", color=config.success_embed_color)
+    
+    try:
+        await inter.send(embed=embed)
+    except Exception:
+        pass
     
 @bot.command()
 async def reloadcogs(ctx: commands.Context):
-    if ctx.author.id not in owners:
+    if ctx.author.id not in config.owners:
         return
     await reload_cogs(bot, None)
-    embed = disnake.Embed(description=f"{yes} Reloaded all cogs successfully.", color=success_embed_color)
+    embed = disnake.Embed(description=f"{config.yes} Reloaded all cogs successfully.", color=config.success_embed_color)
     await ctx.send(embed=embed)
 
 ## -- RUNNING BOT -- ##

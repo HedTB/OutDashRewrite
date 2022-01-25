@@ -18,9 +18,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-import config
-import modules
-from checks import is_moderator
+import extra.config as config
+import extra.functions as functions
+from extra.checks import is_moderator
 
 ## -- VARIABLES -- ##
 
@@ -65,7 +65,7 @@ class UnMute(commands.Cog):
                 embed = disnake.Embed(description=f"{config.no} Please specify how long they should be muted.", color=config.error_embed_color)
                 await ctx.send(embed=embed)
         elif isinstance(error.original, Forbidden):
-            is_role_above_role = modules.is_role_above_role(ctx.guild.get_member(self.bot.user.id).top_role, ctx.author.top_role)
+            is_role_above_role = functions.is_role_above_role(ctx.guild.get_member(self.bot.user.id).top_role, ctx.author.top_role)
             if is_role_above_role:
                 embed = disnake.Embed(description=f"{config.no} You don't have permission to mute this member.", color=config.error_embed_color)
                 await ctx.send(embed=embed)
@@ -103,7 +103,7 @@ class UnMute(commands.Cog):
                 embed = disnake.Embed(description=f"{config.no} Please specify the member you want to unmute.", color=config.error_embed_color)
                 await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error.original, Forbidden):
-            is_role_above_role = modules.is_role_above_role(inter.guild.get_member(self.bot.user.id).top_role, inter.author.top_role)
+            is_role_above_role = functions.is_role_above_role(inter.guild.get_member(self.bot.user.id).top_role, inter.author.top_role)
             if is_role_above_role:
                 embed = disnake.Embed(description=f"{config.no} You don't have permission to unmute this member.", color=config.error_embed_color)
                 await inter.response.send_message(embed=embed)

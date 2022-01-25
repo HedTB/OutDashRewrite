@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 from DiscordUtils import Music
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 ## -- VARIABLES -- ##
 

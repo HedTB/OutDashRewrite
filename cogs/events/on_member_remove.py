@@ -15,8 +15,8 @@ from pymongo import MongoClient
 from webhooks import Webhook
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 ## -- VARIABLES -- ##
 
@@ -86,7 +86,7 @@ class OnMemberRemove(commands.Cog):
         webhook = Webhook(url=webhook_url, username="OutDash Logging", avatar_url=str(self.bot.user.avatar))
         embed = disnake.Embed(description=f"**Member left**", color=config.logs_delete_embed_color)
 
-        embed.add_field(name="Member Since", value=f"{modules.seconds_to_text(seconds_old, 3)} ago", inline=False)
+        embed.add_field(name="Member Since", value=f"{functions.seconds_to_text(seconds_old, 3)} ago", inline=False)
         embed.add_field(name="Roles", value=str(role_str), inline=False)
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
         embed.timestamp = datetime.datetime.utcnow()

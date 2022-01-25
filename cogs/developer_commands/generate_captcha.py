@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 from captcha.image import ImageCaptcha
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 ## -- VARIABLES -- ##
 
@@ -36,7 +36,7 @@ class GenerateCaptcha(commands.Cog):
         if ctx.author.id not in config.owners:
             return
 
-        captcha = modules.generate_captcha()
+        captcha = functions.generate_captcha()
 
         await ctx.send(file=disnake.File(f"{captcha}.png"))
         os.remove(f"{captcha}.png")

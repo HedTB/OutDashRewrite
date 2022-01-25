@@ -3,7 +3,7 @@ import datetime
 import string
 import random
 
-import config
+import extra.config as config
 
 from captcha.image import ImageCaptcha
 

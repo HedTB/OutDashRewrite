@@ -16,9 +16,9 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
-from checks import is_moderator
+import extra.config as config
+import extra.functions as functions
+from extra.checks import is_moderator
 
 load_dotenv()
 

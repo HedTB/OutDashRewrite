@@ -18,9 +18,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-import config
-import modules
-from checks import is_moderator
+import extra.config as config
+import extra.functions as functions
+from extra.checks import is_moderator
 
 ## -- VARIABLES -- ##
 
@@ -51,7 +51,7 @@ class Mute(commands.Cog):
             await ctx.send(embed=embed)
             return
         
-        seconds = modules.manipulate_time(length, return_type="seconds")
+        seconds = functions.manipulate_time(length, return_type="seconds")
         
         if seconds == "InvalidInput":
             embed = disnake.Embed(description=f"{config.no} Please provide a valid time format. \nExample:\n```10s = 10 seconds\n1m = 1 minute\n3h = 3 hours\n2d = 2 days```",
@@ -77,7 +77,7 @@ class Mute(commands.Cog):
                 embed = disnake.Embed(description=f"{config.no} Please specify how long they should be muted.", color=config.error_embed_color)
                 await ctx.send(embed=embed)
         elif isinstance(error.original, Forbidden):
-            is_role_above_role = modules.is_role_above_role(ctx.guild.get_member(self.bot.user.id).top_role, ctx.author.top_role)
+            is_role_above_role = functions.is_role_above_role(ctx.guild.get_member(self.bot.user.id).top_role, ctx.author.top_role)
             if is_role_above_role:
                 embed = disnake.Embed(description=f"{config.no} You don't have permission to mute this member.", color=config.error_embed_color)
                 await ctx.send(embed=embed)
@@ -105,7 +105,7 @@ class Mute(commands.Cog):
             await inter.send(embed=embed)
             return
         
-        seconds = modules.manipulate_time(length, return_type="seconds")
+        seconds = functions.manipulate_time(length, return_type="seconds")
         
         if seconds == "InvalidInput":
             embed = disnake.Embed(description=f"{config.no} Please provide a valid time format. \nExample:\n```10s = 10 seconds\n1m = 1 minute\n3h = 3 hours\n2d = 2 days```",
@@ -131,7 +131,7 @@ class Mute(commands.Cog):
                 embed = disnake.Embed(description=f"{config.no} Please specify how long they should be muted.", color=config.error_embed_color)
                 await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error.original, Forbidden):
-            is_role_above_role = modules.is_role_above_role(inter.guild.get_member(self.bot.user.id).top_role, inter.author.top_role)
+            is_role_above_role = functions.is_role_above_role(inter.guild.get_member(self.bot.user.id).top_role, inter.author.top_role)
             if is_role_above_role:
                 embed = disnake.Embed(description=f"{config.no} You don't have permission to mute this member.", color=config.error_embed_color)
                 await inter.response.send_message(embed=embed)

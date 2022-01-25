@@ -15,8 +15,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 load_dotenv()
 
@@ -45,7 +45,7 @@ class SetWelcomeChannel(commands.Cog):
     async def setwelcomechannel(self, ctx, channel: disnake.TextChannel = None):
         """Set the channel where welcome messages should be sent."""
         
-        data = modules.get_db_data(str(ctx.guild_id))
+        data = functions.get_db_data(str(ctx.guild_id))
         query = {"guild_id": str(ctx.guild.id)}
         result = server_data_col.find_one(query)
         if not result:

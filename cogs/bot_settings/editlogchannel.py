@@ -16,8 +16,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 load_dotenv()
 
@@ -100,7 +100,7 @@ class EditLogChannel(commands.Cog):
     async def editlogchannel(self, ctx, type: str, channel: disnake.TextChannel = None):
         """Edit log channels, AKA where the logs should be sent."""
         
-        data = await modules.get_db_data(str(ctx.guild.id))
+        data = await functions.get_db_data(str(ctx.guild.id))
         query = {"guild_id": str(ctx.guild.id)}
         result = server_data_col.find_one(query)
         log_type, log_description = await find_log_type(f"{type.lower()}_logs_webhook")

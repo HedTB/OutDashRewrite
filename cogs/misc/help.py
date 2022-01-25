@@ -17,7 +17,7 @@ from pymongo import MongoClient
 from itertools import starmap, chain
 
 # FILES
-import config
+import extra.config as config
 
 class HelpPageSource(menus.ListPageSource):
     def __init__(self, data, helpcommand):

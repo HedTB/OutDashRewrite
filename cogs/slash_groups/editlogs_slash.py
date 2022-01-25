@@ -15,8 +15,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 load_dotenv()
 
@@ -112,7 +112,7 @@ class EditLogsSlash(commands.Cog):
         channel: The channel to send the logs to. If none, the log types will be disabled.
         """
         
-        data = await modules.get_db_data(inter.guild.id)
+        data = await functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
         if not result:

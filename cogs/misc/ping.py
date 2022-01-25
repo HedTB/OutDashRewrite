@@ -11,7 +11,7 @@ from disnake.ext import commands
 from pymongo import MongoClient
 
 # FILES
-import config
+import extra.config as config
 
 ## -- VARIABLES -- ##
 

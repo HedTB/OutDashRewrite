@@ -16,8 +16,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 load_dotenv()
 
@@ -64,12 +64,12 @@ class ModeratorsSlash(commands.Cog):
             embed = disnake.Embed(description=f"{config.no} You can't make a bot a moderator!", color=config.error_embed_color)
             await inter.send(embed=embed, ephemeral=True)
             return
-        elif modules.is_role_above_role(member.top_role, inter.author.top_role):
+        elif functions.is_role_above_role(member.top_role, inter.author.top_role):
             embed = disnake.Embed(description=f"{config.no} You don't have permission to make this member a moderator!", color=config.error_embed_color)
             await inter.send(embed=embed, ephemeral=True)
             return
         
-        data = await modules.get_db_data(inter.guild.id)
+        data = await functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
         
@@ -123,7 +123,7 @@ class ModeratorsSlash(commands.Cog):
     async def slash_moderatorsview(self, inter: disnake.ApplicationCommandInteraction):
         """"View all current moderators."""
         
-        data = await modules.get_db_data(inter.guild.id)
+        data = await functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
         

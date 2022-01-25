@@ -19,9 +19,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-import config
-import modules
-from checks import is_moderator
+import extra.config as config
+import extra.functions as functions
+from extra.checks import is_moderator
 
 ## -- VARIABLES -- ##
 
@@ -55,7 +55,7 @@ class Warn(commands.Cog):
             embed = disnake.Embed(description=f"{config.no} You can't warn a bot!", color=config.error_embed_color)
             await ctx.send(embed=embed)
             return
-        elif modules.is_role_above_role(member.top_role, ctx.author.top_role) or member.top_role == ctx.author.top_role:
+        elif functions.is_role_above_role(member.top_role, ctx.author.top_role) or member.top_role == ctx.author.top_role:
             embed = disnake.Embed(description=f"{config.no} You don't have permission to warn this member!", color=config.error_embed_color)
             await ctx.send(embed=embed)
             return
@@ -135,7 +135,7 @@ class Warn(commands.Cog):
             embed = disnake.Embed(description=f"{config.no} You can't warn a bot!", color=config.error_embed_color)
             await inter.send(embed=embed, ephemeral=True)
             return
-        elif modules.is_role_above_role(member.top_role, inter.author.top_role) or member.top_role == inter.author.top_role:
+        elif functions.is_role_above_role(member.top_role, inter.author.top_role) or member.top_role == inter.author.top_role:
             embed = disnake.Embed(description=f"{config.no} You don't have permission to warn this member!", color=config.error_embed_color)
             await inter.send(embed=embed, ephemeral=True)
             return

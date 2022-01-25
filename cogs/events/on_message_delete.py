@@ -16,7 +16,7 @@ from pymongo import MongoClient
 from webhooks import Webhook
 
 # FILES
-import config
+import extra.config as config
 
 ## -- VARIABLES -- ##
 

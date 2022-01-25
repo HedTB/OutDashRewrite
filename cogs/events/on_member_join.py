@@ -18,8 +18,8 @@ from requests.exceptions import Timeout
 from webhooks import Webhook
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 ## -- VARIABLES -- ##
 
@@ -102,7 +102,7 @@ class OnMemberJoin(commands.Cog):
 
         embed = disnake.Embed(description="**Member joined**", color=config.logs_add_embed_color, timestamp=datetime.datetime.utcnow())
         embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
-        embed.add_field(name="Account Created", value=f"{modules.seconds_to_text(seconds_old, 3)} ago", inline=False)
+        embed.add_field(name="Account Created", value=f"{functions.seconds_to_text(seconds_old, 3)} ago", inline=False)
 
         webhook.add_embed(embed)
         

@@ -19,8 +19,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 ## -- VARIABLES -- ##
 

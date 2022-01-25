@@ -15,8 +15,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 load_dotenv()
 
@@ -43,7 +43,7 @@ class SetChatBotChannel(commands.Cog):
     async def setchatbotchannel(self, ctx, channel: disnake.TextChannel):
         """Set where the chat bot should respond to messages."""
         
-        data = await modules.get_db_data(str(ctx.guild.id))
+        data = await functions.get_db_data(str(ctx.guild.id))
         query = {"guild_id": str(ctx.guild.id)}
         update = {"$set": {
             "chat_bot_channel": str(channel.id),

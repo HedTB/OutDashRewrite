@@ -14,8 +14,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import config
-import modules
+import extra.config as config
+import extra.functions as functions
 
 load_dotenv()
 
@@ -42,7 +42,7 @@ class SetPrefix(commands.Cog):
     async def setprefix(self, ctx, new_prefix: str):
         """Changes the server prefix."""
 
-        data = await modules.get_db_data(str(ctx.guild.id))
+        data = await functions.get_db_data(str(ctx.guild.id))
         query = {"guild_id": str(ctx.guild.id)}
         result = server_data_col.find_one(query)
 
@@ -89,7 +89,7 @@ class SetPrefix(commands.Cog):
         new_prefix: What you want your new prefix to be.
         """
 
-        data = modules.get_db_data(str(inter.guild_id))
+        data = functions.get_db_data(str(inter.guild_id))
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
         if not result:

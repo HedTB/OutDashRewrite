@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-import config
+import extra.config as config
 
 ## -- VARAIBLES -- ##
 
