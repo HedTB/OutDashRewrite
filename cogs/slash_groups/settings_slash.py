@@ -49,7 +49,7 @@ class SettingsSlash(commands.Cog):
     async def slash_settings_lock(self, inter: disnake.ApplicationCommandInteraction):
         """Locks the server's settings."""
         
-        data = await functions.get_db_data(str(inter.guild.id))
+        data = functions.get_db_data(str(inter.guild.id))
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
         update = {"$set": {
@@ -69,7 +69,7 @@ class SettingsSlash(commands.Cog):
     async def slash_settings_unlock(self, inter: disnake.ApplicationCommandInteraction):
         """Unlocks the server's settings."""
         
-        data = await functions.get_db_data(str(inter.guild.id))
+        data = functions.get_db_data(str(inter.guild.id))
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
         update = {"$set": {

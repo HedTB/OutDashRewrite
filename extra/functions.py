@@ -23,7 +23,7 @@ def generate_captcha(length: int = 8) -> str:
     return captcha_text
 
 
-async def get_db_data(guild_id: str) -> dict:
+def get_db_data(guild_id: str) -> dict:
     return {
         "guild_id": str(guild_id),
         "prefix": "?",

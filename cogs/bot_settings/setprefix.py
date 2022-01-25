@@ -42,7 +42,7 @@ class SetPrefix(commands.Cog):
     async def setprefix(self, ctx, new_prefix: str):
         """Changes the server prefix."""
 
-        data = await functions.get_db_data(str(ctx.guild.id))
+        data = functions.get_db_data(str(ctx.guild.id))
         query = {"guild_id": str(ctx.guild.id)}
         result = server_data_col.find_one(query)
 

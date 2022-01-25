@@ -43,7 +43,7 @@ class SetChatBotChannel(commands.Cog):
     async def setchatbotchannel(self, ctx, channel: disnake.TextChannel):
         """Set where the chat bot should respond to messages."""
         
-        data = await functions.get_db_data(str(ctx.guild.id))
+        data = functions.get_db_data(str(ctx.guild.id))
         query = {"guild_id": str(ctx.guild.id)}
         update = {"$set": {
             "chat_bot_channel": str(channel.id),

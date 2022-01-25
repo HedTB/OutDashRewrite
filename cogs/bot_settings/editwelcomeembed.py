@@ -76,7 +76,7 @@ class EditWelcomeEmbed(commands.Cog):
         result = server_data_col.find_one(query)
 
         if not result:
-            server_data_col.insert_one(await functions.get_db_data(ctx.guild.id))
+            server_data_col.insert_one(functions.get_db_data(ctx.guild.id))
             self.editwelcomeembed(ctx, embed_part, value)
 
         if result["settings_locked"] == "true":

@@ -109,7 +109,7 @@ class EditWelcomeSlash(commands.Cog):
     async def slash_welcome(self, inter):
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
-        data = await functions.get_db_data(str(inter.guild.id))
+        data = functions.get_db_data(str(inter.guild.id))
 
         if not result:
             server_data_col.insert_one(data)

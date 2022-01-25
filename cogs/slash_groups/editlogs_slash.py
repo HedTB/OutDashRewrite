@@ -112,7 +112,7 @@ class EditLogsSlash(commands.Cog):
         channel: The channel to send the logs to. If none, the log types will be disabled.
         """
         
-        data = await functions.get_db_data(inter.guild.id)
+        data = functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
         if not result:

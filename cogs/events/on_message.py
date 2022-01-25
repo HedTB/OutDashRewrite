@@ -83,7 +83,7 @@ class OnMessage(commands.Cog):
         """
 
         query = {"guild_id": str(message.guild.id)}
-        data = await functions.get_db_data(str(message.guild.id))
+        data = functions.get_db_data(str(message.guild.id))
         result = server_data_col.find_one(query)
 
         if not result:

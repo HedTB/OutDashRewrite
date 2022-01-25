@@ -69,7 +69,7 @@ class ModeratorsSlash(commands.Cog):
             await inter.send(embed=embed, ephemeral=True)
             return
         
-        data = await functions.get_db_data(inter.guild.id)
+        data = functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
         
@@ -123,7 +123,7 @@ class ModeratorsSlash(commands.Cog):
     async def slash_moderatorsview(self, inter: disnake.ApplicationCommandInteraction):
         """"View all current moderators."""
         
-        data = await functions.get_db_data(inter.guild.id)
+        data = functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
         

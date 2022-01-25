@@ -15,8 +15,11 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 from threading import Thread
 
+from werkzeug import serving
+
 
 # FILES
+from extra import functions
 from extra import config
 from app import run_website
 
@@ -51,26 +54,32 @@ server_data_col = db["server_data"]
 
 
 # IMPORTANT FUNCTIONS
-def get_prefix(bot, message):
+def get_prefix(bot, message: disnake.Message):
     query = {"guild_id": str(message.guild.id)}
-    data = {
-        "guild_id": str(message.guild.id),
-        "prefix": "?"
-    }
+    data = functions.get_db_data(message.guild.id)
+    
     result = server_data_col.find_one(query)
     result2 = prefixes_col.find_one(query)
+    
+    if not result:
+        server_data_col.insert_one(data)
+        return commands.when_mentioned_or("?")(bot, message)
     
     if not result["prefix"]:
         if not result2["prefix"]:
             if result:
                 server_data_col.replace_one(query, data)
+                return commands.when_mentioned_or("?")(bot, message)
             elif not result:
                 server_data_col.insert_one(data)
+                return commands.when_mentioned_or("?")(bot, message)
         else:
             if result:
                 server_data_col.replace_one(query, data)
+                return commands.when_mentioned_or("?")(bot, message)
             elif not result:
                 server_data_col.insert_one(data)
+                return commands.when_mentioned_or("?")(bot, message)
     
     return commands.when_mentioned_or(result["prefix"])(bot, message)
     

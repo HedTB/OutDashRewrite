@@ -43,7 +43,7 @@ class UnlockSettings(commands.Cog):
     async def unlocksettings(self, ctx: commands.Context):
         """Unlocks the server's settings."""
         
-        data = await functions.get_db_data(str(ctx.guild.id))
+        data = functions.get_db_data(str(ctx.guild.id))
         query = {"guild_id": str(ctx.guild.id)}
         result = server_data_col.find_one(query)
         update = {"$set": {

@@ -39,7 +39,7 @@ class OnGuildJoin(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild: disnake.Guild):
         
-        data = await functions.get_db_data(str(guild.id))
+        data = functions.get_db_data(str(guild.id))
         query = {"guild_id": str(guild.id)}
         result = server_data_col.find_one(query)
 
