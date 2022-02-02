@@ -325,7 +325,7 @@ def run(bot: commands.Bot):
     while not bot.is_ready():
         time.sleep(1)
 
-    #server.run()
+    server.run()
     #uvicorn.run("app:api_app", host="0.0.0.0", port=8080, log_level="info", reload=False)
     #serve(app=app, host="0.0.0.0", port=8080)
     
