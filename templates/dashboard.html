@@ -4,9 +4,7 @@
     <title>OutDash</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <link rel="icon" type="image/x-icon" href="../static/icon-rounded.png">
-    <link rel="stylesheet" type="text/css" href="../static/css/dashboard.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/dashboard.css"/>
 
     <link rel="apple-touch-icon-precomposed" sizes="57x57" href="/static/apple-touch-icon-57x57.png" />
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/static/apple-touch-icon-114x114.png" />
@@ -29,12 +27,26 @@
     <meta name="msapplication-wide310x150logo" content="/static/mstile-310x150.png" />
     <meta name="msapplication-square310x310logo" content="/static/mstile-310x310.png" />
 
-
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
     <script type=text/javascript> 
-        $(function() { $("#changePrefix").click(function (event) {
-            $.getJSON(`/api/save-settings?guild_id={{guild["id"]}}&prefix=${document.getElementById("newPrefix").value}`, {},
-        function(data) {}); return false; }); });
+        $(document).ready(function() {
+            $(function() { $("#changePrefix").click(function (event) {
+                const newPrefix = document.getElementById("newPrefix").value.toString()
+
+                $.ajax({
+                    type: "POST",
+                    url: `/api/save-settings?guild_id={{guild.id}}&prefix=${newPrefix}`,
+                    headers: {"api-key": "dzaXM7tUU_J5kzWy&WUP+9=p2Bu3nvnzx3Kgkm+wR%3EW9uRsDcmbDwd%gtf5EGB9q@Y=uQg?Ya3?sjeHs%P*E7hbx%c5^VwwY_G"},
+                    params: {"guild_id": "{{guild.id}}", "prefix": newPrefix},
+                    success: function() {
+                        alert(`prefix changed to "${newPrefix}" successfully`)
+                    },
+                    error: function(error) {
+                        console.error(error)
+                    }
+                });
+            })});
+        });
     </script>
   </head>
   

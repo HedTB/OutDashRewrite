@@ -56,8 +56,13 @@ class Ping(commands.Cog):
         message = await inter.send("Pinging...")
         end = time.time()
         time_result = end - start
+
+        start2 = time.time()
+        server_data_col.find_one({"guild_id": str(inter.guild.id)})
+        end2 = time.time()
+        time_result2 = end2 - start2
         
-        embed = disnake.Embed(description=f':hourglass: Bot Latency - **{round(self.bot.latency * 1000)}** ms\n\n:stopwatch: API Latency - **{round(time_result * 1000)}** ms', color=config.embed_color)
+        embed = disnake.Embed(description=f':hourglass: Bot Latency - **{round(self.bot.latency * 1000)}** ms\n\n:stopwatch: API Latency - **{round(time_result * 1000)}** ms\n\n:timer: Database Latency - **{round(time_result2 * 1000)}** ms', color=config.embed_color)
             
         embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
         embed.timestamp = datetime.datetime.utcnow()

@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
     <title>OutDash</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -45,10 +49,10 @@
         <div class="card">
           <a class="guild-name" href="/dashboard/{{guild.id}}">
             {% if guild.icon_url %}
-            <img src="{{guild.icon_url}}" class="gray-border" />
+            <img src="{{guild.icon_url}}" class="{{guild.class_color}}" />
             {% elif not guild.icon_url %}
             <img
-              src="https://discordapp.com/assets/322c936a8c8be1b803cd94861bdfa868.png"
+              src="https://cdn.discordapp.com/embed/avatars/1.png"
               class="gray-border"
             />
             {% endif %}

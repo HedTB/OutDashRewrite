@@ -66,7 +66,7 @@ class OnMemberRemove(commands.Cog):
         if not server_data:
             print(1)
             server_data_col.insert_one(data)
-            await self.on_member_remove()
+            await self.on_member_remove(member)
             return
             
         webhook_url = server_data.get("member_remove_logs_webhook")

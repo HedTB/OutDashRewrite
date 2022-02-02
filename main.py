@@ -15,8 +15,6 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 from threading import Thread
 
-from werkzeug import serving
-
 
 # FILES
 from extra import functions
@@ -255,7 +253,7 @@ class Bot(commands.Bot):
        
 bot = Bot(
     command_prefix=get_prefix, 
-    intents=disnake.Intents.all(), 
+    intents=disnake.Intents.all(),
     status=disnake.Status.idle, 
     activity=disnake.Game(name="booting up.."), 
     case_insensitive=True, 

@@ -132,7 +132,6 @@ class EditLogChannel(commands.Cog):
 
         server_data_col.update_one(query, update)
         await ctx.send(embed=embed)
-        print(server_data_col.find_one({"guild_id": str(ctx.guild.id)}))
     
     @editlogchannel.error 
     async def editlogchannel_error(self, ctx, error):

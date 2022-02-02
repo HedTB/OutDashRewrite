@@ -6,14 +6,22 @@ import requests
 import extra.config as config
 import certifi
 import disnake
+import time
+import flask_discord
+import flask
+import uvicorn
 
 from flask import Flask, request, redirect, render_template, url_for
-from flask_discord import DiscordOAuth2Session, Unauthorized, requires_authorization, exceptions
+from flask_cors import CORS, cross_origin
+from flask_discord import DiscordOAuth2Session, Unauthorized, requires_authorization
 from dotenv import load_dotenv
 from threading import Thread
 from waitress import serve
 from pymongo import MongoClient
 from functools import wraps
+from disnake.ext import commands
+from fastapi import FastAPI, Header, Response, status, Query
+from typing import Optional, List
 
 import extra.functions as functions
 
@@ -22,12 +30,19 @@ import extra.functions as functions
 load_dotenv()
 
 ## -- VARIABLES -- ##
+
+mongo_login = os.environ.get("MONGO_LOGIN")
+api_key = os.environ.get("API_KEY")
         
 app = Flask(__name__, template_folder="templates")
+api_app = FastAPI()
+CORS(app, support_credentials=True)
+
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 app.jinja_env.auto_reload = True
-app.config["SECRET_KEY"] = "HedTBIsHandsome"
+app.config["SECRET_KEY"] = api_key
+app.config["CORS_HEADERS"] = "Content-Type"
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["SERVER_NAME"] = "outdash.ga"
 app.config["DISCORD_CLIENT_ID"] = os.environ.get("CLIENT_ID")
@@ -36,9 +51,6 @@ app.config["DISCORD_REDIRECT_URI"] = "https://%s/callback" % app.config["SERVER_
 app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
-
-mongo_login = os.environ.get("MONGO_LOGIN")
-api_key = os.environ.get("API_KEY")
 
 client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
 db = client["db"]
@@ -61,6 +73,7 @@ def requires_api_authorization(f):
             return {"message": "Missing API Key"}, 403
         elif headers.get("api-key") != api_key:
             return {"message": "Invalid API Key"}, 403
+            
         return f()
     return decorated_function
         
@@ -124,21 +137,29 @@ def check_permissions(guild_id: int):
 
 ## -- METHODS -- ##
 
-def run(bot):
+def run(bot: commands.Bot):
     server = Thread(target=app.run, args=("0.0.0.0", 8080,))
 
-    @app.route("/api/save-settings")
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Access-Control-Allow-Headers,Origin,Accept,X-Requested-With,Content-Type,Access-Control-Request-Method,Access-Control-Request-Headers')
+        return response
+
+    @app.route("/api/save-settings", methods=["POST"])
     @requires_api_authorization
+    @cross_origin(supports_credentials=True)
     def save_guild_settings():
         arguments = request.args
+
         guild_id = arguments.get("guild_id")
         update_values = {}
         query = {"guild_id": str(guild_id)}
 
         if not guild_id:
-            return {"error": "Missing guild ID"}, 400
+            return {"message": "Missing guild ID"}, 400
         elif not bot.get_guild(int(guild_id)):
-            return {"error": "Invalid guild ID"}, 400
+            return {"message": "Invalid guild ID"}, 400
 
         for argument in arguments:
             value = arguments.get(argument)
@@ -149,15 +170,17 @@ def run(bot):
             update_values[argument_name] = value
 
         server_data_col.update_one(query, {"$set": update_values})
-        return {"changed_settings": argument_name for argument_name in list(update_values.keys())}, 200
+        return {"changed_settings": argument_name for argument_name in list(update_values.keys())}
 
-    @app.route("/api/get-bot-guilds", methods=["GET"])
+    @app.route("/api/get-bot-guilds", methods=["GET", "OPTIONS"])
     @requires_api_authorization
+    @cross_origin(supports_credentials=True)
     def get_bot_guilds():
         return {"bot_guilds": ", ".join(guild_to_dict(guild) for guild in bot.guilds)}
 
-    @app.route("/api/get-guild-count", methods=["GET"])
+    @app.route("/api/get-guild-count")
     @requires_api_authorization
+    @cross_origin(supports_credentials=True)
     def get_guild_count():
         return {"guild_count": len(bot.guilds)}, 200
 
@@ -208,7 +231,6 @@ def run(bot):
         if not guild:
             return discord.create_session(scope=["bot"], permissions=int(os.environ.get("PERMISSIONS")), guild_id=guild_id)
 
-
         prefix = bot.get_bot_prefix(guild_id)
         return render_template("dashboard.html", guild=guild, prefix=prefix)
 
@@ -244,6 +266,7 @@ def run(bot):
                 <img src="{user.avatar_url or user.default_avatar_url}" />
                 <p>Is avatar animated: {str(user.is_avatar_animated)}</p>
                 <a href={url_for("my_connections")}>Connections</a>
+                <a href={url_for("get_permission_guilds")}>Guilds</a>
                 <br />
             </body>
         </html>
@@ -267,6 +290,7 @@ def run(bot):
     def my_connections():
         user = discord.fetch_user()
         connections = discord.fetch_connections()
+
         return f"""
         <html>
             <head>
@@ -282,7 +306,7 @@ def run(bot):
     @app.route("/logout/")
     def logout():
         discord.revoke()
-        return redirect(url_for(".index"))
+        return redirect(url_for("index"))
 
 
     @app.route("/secret/")
@@ -290,16 +314,19 @@ def run(bot):
     def secret():
         return os.urandom(16)
 
-
     @app.errorhandler(Unauthorized)
     def redirect_unauthorized(e):
         return redirect(url_for("login"))
 
-    @app.errorhandler(exceptions.AccessDenied)
+    @app.errorhandler(flask_discord.exceptions.AccessDenied)
     def access_denied(e):
         return redirect(url_for("login"))
     
-    server.run()
+    while not bot.is_ready():
+        time.sleep(1)
+
+    #server.run()
+    #uvicorn.run("app:api_app", host="0.0.0.0", port=8080, log_level="info", reload=False)
     #serve(app=app, host="0.0.0.0", port=8080)
     
     return server
@@ -308,7 +335,8 @@ def run_website(bot):
     if not bot:
         raise Exception("You have to assign the bot to run the website.")
 
-    run(bot)
+    server = Thread(target=run, args=(bot, ))
+    server.start()
 
 if __name__ == "__main__":
     run_website(None)

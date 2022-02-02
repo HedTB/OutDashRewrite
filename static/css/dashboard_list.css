@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap');
 
 body {
   background-image: url("../bg.png");
@@ -12,7 +12,10 @@ h2 {
 }
 
 #welcome-title {
-    font-family: "Ubuntu" sans-serif;
+    font-family: "Ubuntu", sans-serif;
+    font-weight: 500;
+    size: 32px;
+    font-size: 28px;
 }
 
 .picker {
@@ -31,7 +34,7 @@ h2 {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 2fr));
   justify-items: center;
 }
 
@@ -49,15 +52,15 @@ h2 {
 .card img:hover {
   box-shadow: rgba(2, 8, 20, 0.1) 0px 0.35em 1.175em,
     rgba(2, 8, 20, 0.08) 0px 0.175em 0.5em;
-  transform: scale(1.1);
+  transform: scale(1.075);
 }
 
 .green-border {
-  border: 4px solid rgb(106, 255, 170);
+  border: 3px solid rgb(106, 255, 170);
 }
 
 .red-border {
-  border: 4px solid rgb(255, 103, 90);
+  border: 3px solid rgb(255, 103, 90);
 }
 
 .gray-border {

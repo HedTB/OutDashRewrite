@@ -31,6 +31,8 @@ server_data_col = db["server_data"]
 muted_users_col = db["muted_users"]
 privacy_settings_col = db["privacy_settings"]
 
+type_list = commands.option_enum({"wildcard": "wildcard", "normal": "normal"})
+
 ## -- COG -- ##
 
 class AutomodSlash(commands.Cog):
@@ -42,6 +44,15 @@ class AutomodSlash(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     async def slash_automod(self, inter):
         pass
+
+    @slash_automod.sub_command_group(name="filter")
+    @commands.has_permissions(manage_guild=True)
+    async def slash_filter(self, inter):
+        pass
+
+    @slash_filter.sub_command(name="add")
+    async def slash_filteradd(self, inter: disnake.ApplicationCommandInteraction, type: type_list, word: str):
+        await inter.send("wip")
     
 
     @slash_automod.error
