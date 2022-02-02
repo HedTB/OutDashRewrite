@@ -35,7 +35,7 @@ mongo_login = os.environ.get("MONGO_LOGIN")
 api_key = os.environ.get("API_KEY")
         
 app = Flask(__name__, template_folder="templates")
-api_app = FastAPI()
+#api_app = FastAPI()
 CORS(app, support_credentials=True)
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
