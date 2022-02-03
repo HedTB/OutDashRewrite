@@ -332,4 +332,4 @@ if __name__ == "__main__":
     #Thread(target=run_website, args=(bot, )).start()
     
     bot.loop.create_task(load_cogs(bot, None))
-    bot.run(test_bot_token)
+    bot.run(bot_token)
