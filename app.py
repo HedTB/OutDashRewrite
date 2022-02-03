@@ -9,7 +9,7 @@ import disnake
 import time
 import flask_discord
 import flask
-import uvicorn
+#import uvicorn
 
 from flask import Flask, request, redirect, render_template, url_for
 from flask_cors import CORS, cross_origin
@@ -20,8 +20,8 @@ from waitress import serve
 from pymongo import MongoClient
 from functools import wraps
 from disnake.ext import commands
-from fastapi import FastAPI, Header, Response, status, Query
-from typing import Optional, List
+#from fastapi import FastAPI, Header, Response, status, Query
+#from typing import Optional, List
 
 import extra.functions as functions
 
@@ -36,7 +36,7 @@ api_key = os.environ.get("API_KEY")
 bot_token = os.environ.get("BOT_TOKEN")
         
 app = Flask(__name__, template_folder="templates")
-api_app = FastAPI()
+#api_app = FastAPI()
 CORS(app, support_credentials=True)
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
