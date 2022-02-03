@@ -199,8 +199,10 @@ def get_guild_count():
 
 @app.route("/")
 def index():
-    return render_template("index.html", authorized = discord.authorized)
+    return {"message": "hey"}, 200
+    #return render_template("index.html", authorized = discord.authorized)
 
+"""
 @app.route("/dashboard")
 @requires_authorization
 def dashboard():
@@ -329,6 +331,7 @@ def logout():
 @requires_authorization
 def secret():
     return os.urandom(16)
+"""
 
 @app.errorhandler(Unauthorized)
 def redirect_unauthorized(e):
