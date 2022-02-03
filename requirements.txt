@@ -1,3 +1,5 @@
+quart==0.16.1
+gunicorn
 praw==7.5.0
 pymongo==4.0.1
 python-dotenv==0.19.2
@@ -18,6 +20,7 @@ apiclient==1.0.4
 randomstuff.py==2.0.0
 youtube-dl==2021.12.17
 pynacl==1.4.0
+discord==1.7.3
 discord-webhook==0.14.0
 google-api-python-client==2.34.0
 captcha==0.3
