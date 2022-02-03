@@ -236,30 +236,60 @@ class Player(commands.Cog):
     ## -- SLASH COMMANDS -- ##   
     
     @commands.slash_command(name="play", description="Play some music!")
-    async def slash_play(self, inter: disnake.ApplicationCommandInteraction):
-        """Play some music!"""
-        voice_client = utils.get(inter.bot.voice_clients, guild=inter.guild)
-        user_voice = inter.author.voice
+    async def slash_play(self, inter: disnake.ApplicationCommandInteraction, query: str):
+        """Play some music!
+        Parameters
+        ----------
+        query: The song you want to play.
+        """
         
+        voice_client = inter.voice_client
+        user_voice = inter.author.voice
+        player = self.music.get_player(guild_id=inter.guild.id)
+
         if not user_voice:
             embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
             await inter.send(embed=embed)
             return
-        if not voice_client or not voice_client.is_connected():
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
-        
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} Left {user_vc.mention} successfully.", color=config.success_embed_color)
+
+        if voice_client and not voice_client.is_connected():
+            await user_vc.connect()
+        elif not voice_client:
+            await user_vc.connect()
+
+        voice_client = inter.voice_client
+        
+        if not player:
+            player = self.music.create_player(inter, ffmpeg_error_betterfix=True)
         
         if voice_client and voice_client.is_connected():
-            await voice_client.disconnect()
-        else:
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
-            await inter.send(embed=embed)
-            return
+            if voice_client.channel != user_vc:
+                embed = disnake.Embed(description=f"{config.no} I'm already playing music in {voice_client.channel.mention}!", color=config.error_embed_color)
+                await inter.send(embed=embed)
+                return
+        
+        if not voice_client.is_playing():
+            embed = disnake.Embed(description=f"{config.loading} Retreiving video..", color=config.embed_color)
+            message = await inter.send(embed=embed)
+
+            song = await player.queue(query, bettersearch=True)
+            await player.play()
             
-        await user_vc.connect()
-        await inter.send(embed=embed)
+            embed = disnake.Embed(description=f":notes: Playing **[{song.name}]({song.url})** now.", color=config.embed_color)
+            embed.set_image(url=song.thumbnail)
+
+            await message.edit(embed=embed)
+        else:
+            embed = disnake.Embed(description=f"{config.loading} Retreiving video..", color=config.embed_color)
+            message = await inter.send(embed=embed)
+
+            song = await player.queue(query, bettersearch=True)
+            
+            embed = disnake.Embed(description=f":notes: Queued **[{song.name}]({song.url})** successfully.", color=config.embed_color)
+            embed.set_image(url=song.thumbnail)
+            
+            await message.edit(embed=embed)
      
     ## -- SLASH COMMAND HANDLERS -- ##   
     
