@@ -19,7 +19,7 @@ from threading import Thread
 # FILES
 from extra import functions
 from extra import config
-from app import run_website
+#from app import run_website
 
 
 ## -- VARIABLES / FUNCTIONS -- ##
@@ -328,7 +328,7 @@ async def reloadcogs(ctx: commands.Context):
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
-    Thread(target=run_website, args=(bot, )).start()
+    #Thread(target=run_website, args=(bot, )).start()
     
     bot.loop.create_task(load_cogs(bot, None))
     bot.run(bot_token)
