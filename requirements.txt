@@ -22,3 +22,4 @@ discord-webhook==0.14.0
 google-api-python-client==2.34.0
 captcha==0.3
 Flask-Cors==3.0.10
+discord.py==1.7.3
