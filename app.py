@@ -275,7 +275,7 @@ def callback():
 @app.route("/me/")
 def me():
     user = discord.fetch_user()
-    return f"""
+    return f""
     <html>
         <head>
             <title>{user.name}</title>
@@ -288,7 +288,7 @@ def me():
             <br />
         </body>
     </html>
-"""
+""
 
 
 @app.route("/me/guilds/")
