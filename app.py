@@ -309,7 +309,7 @@ def my_connections():
     user = discord.fetch_user()
     connections = discord.fetch_connections()
 
-    return f"""
+    return f""
     <html>
         <head>
             <title>{user.name}</title>
@@ -318,7 +318,7 @@ def my_connections():
             {str([f"{connection.name} - {connection.type}" for connection in connections])}
         </body>
     </html>
-    """
+    ""
 
 
 @app.route("/logout/")
