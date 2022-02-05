@@ -80,7 +80,7 @@ class OnMemberRemove(commands.Cog):
         for role in member.roles:
             if role.name == "@everyone":
                 continue
-            roles.append(role.mention)
+            roles.append(role.mention + " ")
         role_str = "".join(roles)
         
         webhook = Webhook(url=webhook_url, username="OutDash Logging", avatar_url=str(self.bot.user.avatar))
