@@ -258,7 +258,7 @@ bot = Bot(
     status=disnake.Status.idle, 
     activity=disnake.Game(name="booting up.."), 
     case_insensitive=True, 
-    #test_guilds=[int(config.bot_server), 746363347829784646, 933596774541692928], 
+    test_guilds=[int(config.bot_server)], 
     sync_permissions=True
 )
 

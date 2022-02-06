@@ -17,6 +17,7 @@ from webhooks import Webhook
 
 # FILES
 import extra.config as config
+from extra import functions
 
 ## -- VARIABLES -- ##
 
@@ -26,7 +27,7 @@ db = client["db"]
 
 server_data_col = db["server_data"]
 muted_users_col = db["muted_users"]
-privacy_settings_col = db["privacy_settings"]
+user_data_col = db["user_data"]
 
 ## -- COG -- ##
 
@@ -40,21 +41,24 @@ class OnMessageDelete(commands.Cog):
         if message.author.bot:
             return
 
-        query = {
-            "guild_id": str(message.guild.id)
-        }
-        data = {
-            "guild_id": str(message.guild.id),
-            "message_delete_logs_webhook": "None"
-        }
+        query = {"guild_id": str(message.guild.id)}
+        data = functions.get_db_data(message.guild.id)
         update = { "$set": { "message_delete_logs_webhook": "None" } }
+        
         server_data = server_data_col.find_one(query)
+        user_data = user_data_col.find_one({"user_id": str(message.author.id)})
+        
         if not server_data:
             server_data_col.insert_one(data)
             await self.on_message_delete(message)
             return
+        elif not user_data:
+            user_data_col.insert_one(functions.get_user_data(message.author.id))
+            await self.on_message_delete(message)
+            return
             
         webhook_url = server_data.get("message_delete_logs_webhook")
+        message_content_privacy = user_data.get("message_content_privacy")
 
         if webhook_url == "None" or not webhook_url:
             if not webhook_url:
@@ -66,6 +70,8 @@ class OnMessageDelete(commands.Cog):
         message_text = message.content if len(message.content) < 3750 else f"{message.content[:3750]}..."
         if len(message.embeds) >= 1:
             message_text = f"{message_text}\n**[EMBED]**" if len(message.embeds) == 1 else f"{message_text}\n**[EMBEDS]**"
+        if message_content_privacy == "true":
+            message_text = "`This user has message content privacy enabled.`"
 
         webhook = Webhook(url=webhook_url, username="OutDash Logging", avatar_url=str(self.bot.user.avatar))
 

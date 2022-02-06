@@ -58,6 +58,17 @@ def get_db_data(guild_id: str) -> dict:
         "welcome_embed_color": config.logs_embed_color,
         "welcome_message_content": "{member_mention},",
     }
+    
+def get_user_data(user_id: int):
+    user_id = str(user_id)
+    
+    return {
+        "user_id": user_id,
+        
+        "timezone": "Europe/Belfast",
+        
+        "message_content_privacy": "false",
+    }
 
 
 def manipulate_time(time_str: str, return_type: str) -> int or str:

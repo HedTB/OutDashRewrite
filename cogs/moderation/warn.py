@@ -40,7 +40,7 @@ class Warn(commands.Cog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
-    @is_moderator()
+    @is_moderator(moderate_members=True)
     async def warn(self, ctx: commands.Context, member: disnake.Member, *, reason: str):
         """Warn a member for their bad actions!"""
         result = warns_col.find_one({
@@ -96,6 +96,9 @@ class Warn(commands.Cog):
             )
 
         embed = disnake.Embed(description=f"{config.yes} **{member.name}#{member.discriminator}** has been warned.", color=config.success_embed_color)
+        dm_embed = disnake.Embed(description=f"{config.moderator} You have been warned in **{ctx.guild.name}**.\n**Reason**: {reason}", color=config.logs_embed_color)
+        
+        await member.send(dm_embed)
         await ctx.send(embed=embed)
         
     
@@ -114,7 +117,7 @@ class Warn(commands.Cog):
         
     
     @commands.slash_command(name="warn", description="Warn a member for their bad actions!")
-    @is_moderator()
+    @is_moderator(moderate_members=True)
     async def slash_warn(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member, reason: str):
         """Warn a member for their bad actions!
         Parameters
@@ -176,8 +179,93 @@ class Warn(commands.Cog):
             )
 
         embed = disnake.Embed(description=f"{config.yes} **{member.name}#{member.discriminator}** has been warned.", color=config.success_embed_color)
+        dm_embed = disnake.Embed(description=f"{config.moderator} You have been warned in **{inter.guild.name}**.\n**Reason**: {reason}", color=config.logs_embed_color)
+        
+        await member.send(dm_embed)
+        await inter.send(embed=embed)
+        
+    
+    @commands.slash_command(name="removewarn", description="Remove a warning from a member.")
+    @is_moderator(moderate_members=True)
+    async def slash_warnremove(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member, warning: int):
+        """Remove a warning from a member.
+        Parameters
+        ----------
+        member: The member you want to remove a warning from.
+        warning: The warning you want to remove.
+        """
+
+        result = warns_col.find_one({
+            "guild_id": str(inter.guild.id)
+        })
+
+        if not result:
+            embed = disnake.Embed(description=f"{config.no} This member doesn't have any warnings!", color=config.error_embed_color)
+            await inter.send(embed=embed, ephemeral=True)
+            return
+
+        if member == inter.author:
+            embed = disnake.Embed(description=f"{config.no} You can't remove warnings from yourself!", color=config.error_embed_color)
+            await inter.send(embed=embed, ephemeral=True)
+            return
+        elif member.bot:
+            embed = disnake.Embed(description=f"{config.no} You can't remove warnings from a bot!", color=config.error_embed_color)
+            await inter.send(embed=embed, ephemeral=True)
+            return
+        elif functions.is_role_above_role(member.top_role, inter.author.top_role) or member.top_role == inter.author.top_role:
+            embed = disnake.Embed(description=f"{config.no} You don't have permission to remove a warning from this member!", color=config.error_embed_color)
+            await inter.send(embed=embed, ephemeral=True)
+            return
+
+        try:
+            warnings = result[str(member.id)]
+            warnings = json.loads(warnings)
+        except Exception as error:
+            embed = disnake.Embed(description=f"{config.no} This member doesn't have any warnings!", color=config.error_embed_color)
+            await inter.send(embed=embed, ephemeral=True)
+            return
+        
+        if not warnings:
+            embed = disnake.Embed(description=f"{config.no} This member doesn't have any warnings!", color=config.error_embed_color)
+            await inter.send(embed=embed, ephemeral=True)
+            return
+        elif not warnings.get(str(warning)):
+            embed = disnake.Embed(description=f"{config.no} Please provide a valid warning!", color=config.error_embed_color)
+            await inter.send(embed=embed, ephemeral=True)
+            return
+        else:
+            temp_warnings = warnings.copy()
+            
+            warnings.clear()
+            for warn_num in temp_warnings:
+                if int(warn_num) != int(warning):
+                    warnings[warn_num] = temp_warnings[warn_num]
+            
+            warnings = json.dumps(warnings)
+            warns_col.update_one(
+                filter = {"guild_id": str(inter.guild.id)},
+                update = {"$set": {
+                    str(member.id): warnings
+                }}
+            )
+
+        embed = disnake.Embed(description=f"{config.yes} Warning `{warning}` has been removed from **{member}**.", color=config.success_embed_color)
+        
         await inter.send(embed=embed)
 
+
+    @slash_warnremove.error
+    async def slash_warnremove_error(self, inter: disnake.ApplicationCommandInteraction, error):
+        if isinstance(error, commands.MissingPermissions):
+            embed = disnake.Embed(description=f"{config.no} You're missing the `Moderate Members` permission.", color=config.error_embed_color)
+            await inter.response.send_message(embed=embed, ephemeral=True)
+        elif isinstance(error, commands.MissingRequiredArgument):
+            if error.param.name == "member":
+                embed = disnake.Embed(description=f"{config.no} Please specify the member you want to remove a warn from.", color=config.error_embed_color)
+                await inter.response.send_message(embed=embed, ephemeral=True)
+            elif error.param.name == "warning":
+                embed = disnake.Embed(description=f"{config.no} Please specify the warning you want to remove.", color=config.error_embed_color)
+                await inter.response.send_message(embed=embed, ephemeral=True)
 
     @slash_warn.error 
     async def slash_warn_error(self, inter: disnake.ApplicationCommandInteraction, error):
@@ -189,10 +277,8 @@ class Warn(commands.Cog):
                 embed = disnake.Embed(description=f"{config.no} Please specify the member you want to warn.", color=config.error_embed_color)
                 await inter.response.send_message(embed=embed, ephemeral=True)
             elif error.param.name == "reason":
-                embed = disnake.Embed(description=f"{config.no} Please specify the the reason for the warn.", color=config.error_embed_color)
+                embed = disnake.Embed(description=f"{config.no} Please specify the reason for the warn.", color=config.error_embed_color)
                 await inter.response.send_message(embed=embed, ephemeral=True)
-            
-    
         
     
 def setup(bot):

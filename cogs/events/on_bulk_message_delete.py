@@ -25,7 +25,7 @@ db = client["db"]
 
 server_data_col = db["server_data"]
 muted_users_col = db["muted_users"]
-privacy_settings_col = db["privacy_settings"]
+user_data_col = db["user_data"]
 
 ## -- COG -- ##
 

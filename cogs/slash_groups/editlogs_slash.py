@@ -28,7 +28,7 @@ db = client["db"]
 
 server_data_col = db["server_data"]
 muted_users_col = db["muted_users"]
-privacy_settings_col = db["privacy_settings"]
+user_data_col = db["user_data"]
 
 type_list = commands.option_enum({"message delete": "message_delete", "message bulk delete": "message_bulk_delete", "message edit": "message_edit", "member join": "member_join"})
 category_list = commands.option_enum({"messages": "messages", "members": "members", "channels": "channels"})

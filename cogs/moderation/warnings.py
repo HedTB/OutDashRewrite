@@ -50,6 +50,7 @@ class Warnings(commands.Cog):
 
         try:
             warnings = result[str(member.id)]
+            warnings = json.loads(warnings)
         except Exception:
             warnings = None
 
@@ -57,7 +58,7 @@ class Warnings(commands.Cog):
             warns_col.insert_one({
                 "guild_id": str(ctx.guild.id)
             })
-        elif not warnings:
+        elif not warnings or len(warnings) == 0:
             embed = disnake.Embed(title=f"0 warnings for {member}", description=f"{config.info} This user doesn't have any warnings.", color=config.embed_color)
         else:
             warnings = json.loads(warnings)
@@ -98,6 +99,7 @@ class Warnings(commands.Cog):
 
         try:
             warnings = result[str(member.id)]
+            warnings = json.loads(warnings)
         except Exception:
             warnings = None
 
@@ -105,7 +107,7 @@ class Warnings(commands.Cog):
             warns_col.insert_one({
                 "guild_id": str(inter.guild.id)
             })
-        elif not warnings:
+        elif not warnings or len(warnings) == 0:
             embed = disnake.Embed(title=f"0 warnings for {member}", description=f"{config.info} This user doesn't have any warnings.", color=config.embed_color)
         else:
             warnings = json.loads(warnings)
