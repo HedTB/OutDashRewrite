@@ -4,6 +4,7 @@
 import multiprocessing
 import os
 import datetime
+from tkinter import E
 import certifi
 import disnake
 import json
@@ -19,7 +20,6 @@ from threading import Thread
 # FILES
 from extra import functions
 from extra import config
-#from app import run_website
 
 
 ## -- VARIABLES / FUNCTIONS -- ##
@@ -186,62 +186,77 @@ class Bot(commands.Bot):
         }
         with open("stats.json", 'w') as jsonfile:
             json.dump(stats_data, jsonfile, indent=4)
+            
+    def load_cogs(self, specific_cog: str = None):
+        if not specific_cog:
+            for folder in os.listdir("./cogs"):
+                for file in os.listdir(f"./cogs/{folder}"):
+                    if not file.endswith(".py"): return
 
+                    file = file[:-3]
+                    try:
+                        self.load_extension(f"cogs.{folder}.{file}")
+                    except Exception as e:
+                        print(e)
+                    
+        else:
+            for folder in os.listdir("./cogs"):
+                for file in os.listdir(f"./cogs/{folder}"):
+                    if not file.endswith(".py") or file[:-3] != specific_cog: return
+
+                    file = file[:-3]
+                    try:
+                        self.load_extension(f"cogs.{folder}.{file}")
+                    except Exception as e:
+                        print(e)
+                    
+    def unload_cogs(self, specific_cog: str = None):
+        if not specific_cog:
+            for folder in os.listdir("./cogs"):
+                for file in os.listdir(f"./cogs/{folder}"):
+                    if not file.endswith(".py"): return
+
+                    file = file[:-3]
+                    try:
+                        self.unload_extension(f"cogs.{folder}.{file}")
+                    except Exception as e:
+                        print(e)
+                    
+        else:
+            for folder in os.listdir("./cogs"):
+                for file in os.listdir(f"./cogs/{folder}"):
+                    if not file.endswith(".py") or file[:-3] != specific_cog: return
+
+                    file = file[:-3]
+                    try:
+                        self.unload_extension(f"cogs.{folder}.{file}")
+                    except Exception as e:
+                        print(e)
+                    
     def get_bot_prefix(self, guild_id: int) -> str:
         query = {"guild_id" : str(guild_id)}
-        data = {
-            "guild_id": str(guild_id),
-            "prefix": "?"
-        }
+        data = functions.get_db_data(guild_id)
         update = { "$set": { "guild_id" : str(guild_id), "prefix" : "?" } }
         
         result = server_data_col.find_one(filter=query, limit=1)
-        result2 = prefixes_col.find_one(filter=query, limit=1)
 
         if not result or not result["prefix"]:
-            if not result2 or not result2["prefix"]:
-                if result:
-                    server_data_col.update_one(filter=query, update=update)
-                elif not result:
-                    server_data_col.insert_one(data)
-            else:
-                if result:
-                    server_data_col.update_one(filter=query, update=update)
-                elif not result and result2["prefix"]:
-                    new_data = {
-                        "guild_id": str(guild_id),
-                        "prefix": str(result2["prefix"])
-                    }
-                    server_data_col.insert_one(new_data)
+            if not result:
+                server_data_col.insert_one(data)
+            elif result and not result["prefix"]:
+                server_data_col.update_one(query, update)
 
         return server_data_col.find_one(query)["prefix"]
 
     def change_prefix(self, guild_id: int, new_prefix: str) -> str:
-        query = {"guild_id": str(guild_id)}
-        data = {
-            "guild_id": str(guild_id),
-            "prefix": "?"
-        }
-        update = { "$set": { "guild_id" : str(guild_id), "prefix" : str(new_prefix) } }
+        query = {"guild_id" : str(guild_id)}
+        data = functions.get_db_data(guild_id)
+        update = { "$set": { "guild_id" : str(guild_id), "prefix" : "?" } }
+        
+        result = server_data_col.find_one(filter=query, limit=1)
 
-        result = server_data_col.find_one(query)
-        result2 = prefixes_col.find_one(query)
-
-        if not result or not result["prefix"]:
-            if not result2 or not result2["prefix"]:
-                if result:
-                    server_data_col.update_one(filter=query, update=update)
-                elif not result:
-                    server_data_col.insert_one(data)
-            else:
-                if result:
-                    server_data_col.update_one(filter=query, update=update)
-                elif not result and result2["prefix"]:
-                    new_data = {
-                        "guild_id": str(guild_id),
-                        "prefix": str(result2["prefix"])
-                    }
-                    server_data_col.insert_one(new_data)
+        if not result:
+            server_data_col.insert_one(data)
         else:
             server_data_col.update_one(filter=query, update=update)
 
@@ -276,7 +291,7 @@ async def loadcog(inter, cog: str):
     except Exception:
         pass
         
-    await load_cogs(bot, cog)
+    bot.load_cogs(cog)
     embed = disnake.Embed(description=f"{config.yes} Loaded `{cog}` successfully.", color=config.success_embed_color)
     
     try:
@@ -295,7 +310,8 @@ async def reloadcogs(inter):
     except Exception:
         pass
     
-    await reload_cogs(bot, None)
+    bot.unload_cogs()
+    bot.load_cogs()
     embed = disnake.Embed(description=f"{config.yes} Reloaded all cogs successfully.", color=config.success_embed_color)
     
     try:
@@ -310,7 +326,7 @@ async def reloadcog(inter, cog: str):
     except Exception:
         pass
     
-    await reload_cogs(bot, cog)
+    bot.reload_cogs(cog)
     embed = disnake.Embed(description=f"{config.yes} Reloaded `{cog}` successfully.", color=config.success_embed_color)
     
     try:
@@ -322,14 +338,15 @@ async def reloadcog(inter, cog: str):
 async def reloadcogs(ctx: commands.Context):
     if ctx.author.id not in config.owners:
         return
-    await reload_cogs(bot, None)
+    
+    bot.unload_cogs()
+    bot.load_cogs()
+    
     embed = disnake.Embed(description=f"{config.yes} Reloaded all cogs successfully.", color=config.success_embed_color)
     await ctx.send(embed=embed)
 
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
-    #Thread(target=run_website, args=(bot, )).start()
-    
-    bot.loop.create_task(load_cogs(bot, None))
-    bot.run(bot_token)
+    bot.load_cogs()
+    bot.run(test_bot_token)
