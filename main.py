@@ -58,108 +58,15 @@ def get_prefix(bot, message: disnake.Message):
     data = functions.get_db_data(message.guild.id)
     
     result = server_data_col.find_one(query)
-    result2 = prefixes_col.find_one(query)
     
     if not result:
         server_data_col.insert_one(data)
         return commands.when_mentioned_or("?")(bot, message)
-    
-    if not result["prefix"]:
-        if not result2["prefix"]:
-            if result:
-                server_data_col.replace_one(query, data)
-                return commands.when_mentioned_or("?")(bot, message)
-            elif not result:
-                server_data_col.insert_one(data)
-                return commands.when_mentioned_or("?")(bot, message)
-        else:
-            if result:
-                server_data_col.replace_one(query, data)
-                return commands.when_mentioned_or("?")(bot, message)
-            elif not result:
-                server_data_col.insert_one(data)
-                return commands.when_mentioned_or("?")(bot, message)
+    elif not result["prefix"]:
+        server_data_col.update_one(query, {"$set": {"prefix": "?"}})
+        return commands.when_mentioned_or("?")(bot, message)
     
     return commands.when_mentioned_or(result["prefix"])(bot, message)
-    
-    
-async def load_cogs(bot, cog = None):
-    if not cog:
-        await bot.wait_until_ready()
-        start = time.time()
-        amount = 0
-
-        for foldername in os.listdir("./cogs"):
-            for filename in os.listdir(f"./cogs/{foldername}"):
-                if filename.endswith(".py"):
-                    try:
-                        bot.load_extension(f"cogs.{foldername}.{filename[:-3]}")
-                        amount += 1
-                    except Exception as e:
-                        print(e)
-                        continue
-
-        end = time.time()
-
-        print(f"Loaded {amount} cogs, took {round(end - start)} seconds.")
-    
-    else:
-        for foldername in os.listdir("./cogs"):
-            for filename in os.listdir(f"./cogs/{foldername}"):
-                if filename.endswith(".py") and filename[:3] == cog:
-                    try:
-                        bot.load_extension(f"cogs.{foldername}.{filename[:-3]}")
-                    except Exception as e:
-                        print(e)
-                        continue
-        
-        print(f"Loaded {cog} successfully.")
-                
-async def unload_cogs(bot):
-    start = time.time()
-    amount = 0
-
-    for foldername in os.listdir("./cogs"):
-        for filename in os.listdir(f"./cogs/{foldername}"):
-            if filename.endswith(".py"):
-                try:
-                    bot.unload_extension(f"cogs.{foldername}.{filename[:-3]}")
-                    amount += 1
-                except Exception as e:
-                    print(e)
-                    continue
-
-    end = time.time()
-    print(f"Unloaded {amount} cogs, took {round(end - start)} seconds.")
-
-async def reload_cogs(bot, cog: str):
-    if not cog:
-        start = time.time()
-        amount = 0
-        for foldername in os.listdir("./cogs"):
-            for filename in os.listdir(f"./cogs/{foldername}"):
-                if filename.endswith(".py"):
-                    try:
-                        bot.reload_extension(f"cogs.{foldername}.{filename[:-3]}")
-                        amount += 1
-                    except Exception as e:
-                        print(e)
-                        continue
-
-        end = time.time()
-        print(f"Reloaded {amount} cogs, took {round(end - start)} seconds.")
-
-    else:
-        for foldername in os.listdir("./cogs"):
-            for filename in os.listdir(f"./cogs/{foldername}"):
-                if filename.endswith(".py") and filename[:-3] == cog:
-                    try:
-                        bot.reload_extension(f"cogs.{foldername}.{filename[:-3]}")
-                    except Exception as e:
-                        print(e)
-                        continue
-        
-        print(f"Reloaded {cog} successfully.")
 
 
 # BOT
@@ -349,4 +256,4 @@ async def reloadcogs(ctx: commands.Context):
 
 if __name__ == "__main__":
     bot.load_cogs()
-    bot.run(test_bot_token)
+    bot.run(bot_token)
