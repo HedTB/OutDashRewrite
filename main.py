@@ -4,7 +4,6 @@
 import multiprocessing
 import os
 import datetime
-from tkinter import E
 import certifi
 import disnake
 import json
