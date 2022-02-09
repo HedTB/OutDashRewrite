@@ -70,7 +70,7 @@ def get_prefix(bot, message: disnake.Message):
 async def load_cogs(bot: commands.Bot):
     for folder in os.listdir("./cogs"):
         for file in os.listdir(f"./cogs/{folder}"):
-            if not file.endswith(".py"): continnue
+            if not file.endswith(".py"): continue
 
             file = file[:-3]
             try:
