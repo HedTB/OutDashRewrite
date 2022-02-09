@@ -67,14 +67,14 @@ def get_prefix(bot, message: disnake.Message):
     
     return commands.when_mentioned_or(result["prefix"])(bot, message)
 
-async def load_cogs(bot):
+async def load_cogs(bot: commands.Bot):
     for folder in os.listdir("./cogs"):
         for file in os.listdir(f"./cogs/{folder}"):
             if not file.endswith(".py"): return
 
             file = file[:-3]
             try:
-                self.load_extension(f"cogs.{folder}.{file}")
+                bot.load_extension(f"cogs.{folder}.{file}")
             except Exception as e:
                 print(e)
 
