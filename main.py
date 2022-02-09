@@ -105,7 +105,7 @@ class Bot(commands.Bot):
                     except Exception as e:
                         print(e)
                         
-             print("Loaded all cogs.")
+            print("Loaded all cogs.")
                     
         else:
             for folder in os.listdir("./cogs"):
