@@ -93,7 +93,7 @@ class Bot(commands.Bot):
         with open("stats.json", 'w') as jsonfile:
             json.dump(stats_data, jsonfile, indent=4)
             
-    def load_cogs(self, specific_cog: str = None):
+    async def load_cogs(self, specific_cog: str = None):
         if not specific_cog:
             for folder in os.listdir("./cogs"):
                 for file in os.listdir(f"./cogs/{folder}"):
@@ -116,7 +116,7 @@ class Bot(commands.Bot):
                     except Exception as e:
                         print(e)
                     
-    def unload_cogs(self, specific_cog: str = None):
+    async def unload_cogs(self, specific_cog: str = None):
         if not specific_cog:
             for folder in os.listdir("./cogs"):
                 for file in os.listdir(f"./cogs/{folder}"):
@@ -197,7 +197,7 @@ async def loadcog(inter, cog: str):
     except Exception:
         pass
         
-    bot.load_cogs(cog)
+    await bot.load_cogs(cog)
     embed = disnake.Embed(description=f"{config.yes} Loaded `{cog}` successfully.", color=config.success_embed_color)
     
     try:
@@ -216,8 +216,8 @@ async def reloadcogs(inter):
     except Exception:
         pass
     
-    bot.unload_cogs()
-    bot.load_cogs()
+    await bot.unload_cogs()
+    await bot.load_cogs()
     embed = disnake.Embed(description=f"{config.yes} Reloaded all cogs successfully.", color=config.success_embed_color)
     
     try:
@@ -232,7 +232,7 @@ async def reloadcog(inter, cog: str):
     except Exception:
         pass
     
-    bot.reload_cogs(cog)
+    await bot.reload_cogs(cog)
     embed = disnake.Embed(description=f"{config.yes} Reloaded `{cog}` successfully.", color=config.success_embed_color)
     
     try:
@@ -245,8 +245,8 @@ async def reloadcogs(ctx: commands.Context):
     if ctx.author.id not in config.owners:
         return
     
-    bot.unload_cogs()
-    bot.load_cogs()
+    await bot.unload_cogs()
+    await bot.load_cogs()
     
     embed = disnake.Embed(description=f"{config.yes} Reloaded all cogs successfully.", color=config.success_embed_color)
     await ctx.send(embed=embed)
@@ -254,5 +254,5 @@ async def reloadcogs(ctx: commands.Context):
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
-    bot.load_cogs()
+    bot.loop.create_task(bot.load_cogs())
     bot.run(bot_token)
