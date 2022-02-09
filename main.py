@@ -104,6 +104,8 @@ class Bot(commands.Bot):
                         self.load_extension(f"cogs.{folder}.{file}")
                     except Exception as e:
                         print(e)
+                        
+             print("Loaded all cogs.")
                     
         else:
             for folder in os.listdir("./cogs"):
