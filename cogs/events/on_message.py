@@ -119,7 +119,8 @@ class OnMessage(commands.Cog):
             }
 
             params = {"msg":message.content,"bot_name":"OutDash","bot_gender":"male","bot_master":"HedTB","bot_age":"9","bot_company":"OutDash","bot_location":"Sweden","bot_build":"Beta","bot_birth_year":"2021","bot_birth_place":"Sweden","bot_favorite_color":"Blue","bot_favorite_band":"Imagine Dragons","bot_favorite_artist":"Eminem","id":str(message.author.id)}
-
+            
+            """
             response = requests.get(headers=headers, url = "https://random-stuff-api.p.rapidapi.com/ai"
 , params=params)
 
@@ -127,6 +128,8 @@ class OnMessage(commands.Cog):
                 await message.reply(response.json().get("AIResponse"))
             except HTTPException:
                 pass
+            """
+            await message.reply("The chat bot feature is temporarily disabled.")
 
 
 
