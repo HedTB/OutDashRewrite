@@ -2,7 +2,7 @@ gunicorn
 praw==7.5.0
 pymongo==4.0.1
 python-dotenv==0.19.2
-disnake==2.3.0
+disnake
 dnspython==2.1.0
 aiohttp<=3.8.0
 cachetools==4.2.4
