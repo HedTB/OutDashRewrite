@@ -1,6 +1,7 @@
 from disnake.ext import commands
 
 import disnake
+import statcord
 
 
 class StatcordPost(commands.Cog):
@@ -14,6 +15,10 @@ class StatcordPost(commands.Cog):
     @commands.Cog.listener()
     async def on_command(self,ctx):
         self.api.command_run(ctx)
+        
+    @commands.Cog.listener()
+    async def on_slash_command(self, inter):
+        self.api.command_run(inter)
 
 
 def setup(bot):
