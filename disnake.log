@@ -1,1 +1,3 @@
-2022-02-28 16:58:37,657:INFO:disnake.client: logging in using static token
+2022-02-28 19:45:59,611:INFO:disnake.client: logging in using static token
+2022-02-28 19:46:03,242:INFO:disnake.gateway: Shard ID None has sent the IDENTIFY payload.
+2022-02-28 19:46:03,510:INFO:disnake.gateway: Shard ID None has connected to Gateway: ["gateway-prd-main-g8g3",{"micros":118575,"calls":["discord-sessions-green-prd-2-118",{"micros":117256,"calls":["start_session",{"micros":98654,"calls":["api-prd-main-n1wd",{"micros":94555,"calls":["get_user",{"micros":6427},"add_authorized_ip",{"micros":11174},"get_guilds",{"micros":18256},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":2,"calls":[]},"presence_connect",{"micros":3,"calls":[]}]}]}] (Session ID: 1e545155ca986e537a2b9132dc2d5634).

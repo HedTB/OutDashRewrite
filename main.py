@@ -19,6 +19,7 @@ from threading import Thread
 # FILES
 from extra import functions
 from extra import config
+from app import run_api
 
 
 ## -- VARIABLES / FUNCTIONS -- ##
@@ -68,17 +69,17 @@ def get_prefix(bot, message: disnake.Message):
     return commands.when_mentioned_or(result["prefix"])(bot, message)
 
 async def load_cogs(bot: commands.Bot):
-    for folder in os.listdir("./cogs"):
-        for file in os.listdir(f"./cogs/{folder}"):
+    for folder in os.listdir("./commands"):
+        for file in os.listdir(f"./commands/{folder}"):
             if not file.endswith(".py"): continue
 
             file = file[:-3]
             try:
-                bot.load_extension(f"cogs.{folder}.{file}")
+                bot.load_extension(f"commands.{folder}.{file}")
             except Exception as e:
                 print(e)
 
-    print("Loaded all cogs.")
+    print("Loaded all commands.")
 
 
 # BOT
@@ -107,49 +108,49 @@ class Bot(commands.Bot):
             
     async def load_cogs(self, specific_cog: str = None):
         if not specific_cog:
-            for folder in os.listdir("./cogs"):
-                for file in os.listdir(f"./cogs/{folder}"):
+            for folder in os.listdir("./commands"):
+                for file in os.listdir(f"./commands/{folder}"):
                     if not file.endswith(".py"): return
 
                     file = file[:-3]
                     try:
-                        self.load_extension(f"cogs.{folder}.{file}")
+                        self.load_extension(f"commands.{folder}.{file}")
                     except Exception as e:
                         print(e)
                         
-            print("Loaded all cogs.")
+            print("Loaded all commands.")
                     
         else:
-            for folder in os.listdir("./cogs"):
-                for file in os.listdir(f"./cogs/{folder}"):
+            for folder in os.listdir("./commands"):
+                for file in os.listdir(f"./commands/{folder}"):
                     if not file.endswith(".py") or file[:-3] != specific_cog: return
 
                     file = file[:-3]
                     try:
-                        self.load_extension(f"cogs.{folder}.{file}")
+                        self.load_extension(f"commands.{folder}.{file}")
                     except Exception as e:
                         print(e)
                     
     async def unload_cogs(self, specific_cog: str = None):
         if not specific_cog:
-            for folder in os.listdir("./cogs"):
-                for file in os.listdir(f"./cogs/{folder}"):
+            for folder in os.listdir("./commands"):
+                for file in os.listdir(f"./commands/{folder}"):
                     if not file.endswith(".py"): return
 
                     file = file[:-3]
                     try:
-                        self.unload_extension(f"cogs.{folder}.{file}")
+                        self.unload_extension(f"commands.{folder}.{file}")
                     except Exception as e:
                         print(e)
                     
         else:
-            for folder in os.listdir("./cogs"):
-                for file in os.listdir(f"./cogs/{folder}"):
+            for folder in os.listdir("./commands"):
+                for file in os.listdir(f"./commands/{folder}"):
                     if not file.endswith(".py") or file[:-3] != specific_cog: return
 
                     file = file[:-3]
                     try:
-                        self.unload_extension(f"cogs.{folder}.{file}")
+                        self.unload_extension(f"commands.{folder}.{file}")
                     except Exception as e:
                         print(e)
                     
@@ -223,7 +224,7 @@ async def loadcog(inter, cog: str):
 async def reload(inter):
     pass
 
-@reload.sub_command(name="all", description="Reload all cogs.")
+@reload.sub_command(name="all", description="Reload all commands.")
 async def reloadcogs(inter):
     try:
         await inter.response.defer()
@@ -268,5 +269,8 @@ async def reloadcogs(ctx: commands.Context):
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
+    if not config.is_server:
+        Thread(target=run_api).start()
+    
     bot.loop.create_task(load_cogs(bot))
     bot.run(bot_token if config.is_server else test_bot_token)
