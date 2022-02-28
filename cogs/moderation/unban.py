@@ -36,7 +36,6 @@ warns_col = db["warns"]
 
 async def is_banned(bot: commands.Bot, guild: disnake.Guild, user: int):
     user = bot.get_user(user)
-    print(user)
     
     try:
         return True if await guild.fetch_ban(user) else False
@@ -103,7 +102,7 @@ class Unban(commands.Cog):
         
         if not await is_banned(self.bot, inter.guild, user.id):
             embed = disnake.Embed(description=f"{config.no} This user isn't banned!", color=config.error_embed_color)
-            await inter.send(embed=embed)
+            await inter.send(embed=embed, ephemeral=True)
             return
         
         embed = disnake.Embed(description=f"{config.yes} **{user}** was unbanned.", color=config.success_embed_color)

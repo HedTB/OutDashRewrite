@@ -215,7 +215,7 @@ async def loadcog(inter, cog: str):
     embed = disnake.Embed(description=f"{config.yes} Loaded `{cog}` successfully.", color=config.success_embed_color)
     
     try:
-        await inter.send(embed=embed)
+        await inter.send(embed=embed, ephemeral=True)
     except Exception:
         pass
 
@@ -235,7 +235,7 @@ async def reloadcogs(inter):
     embed = disnake.Embed(description=f"{config.yes} Reloaded all cogs successfully.", color=config.success_embed_color)
     
     try:
-        await inter.send(embed=embed)
+        await inter.send(embed=embed, ephemeral=True)
     except Exception:
         pass
 
@@ -250,7 +250,7 @@ async def reloadcog(inter, cog: str):
     embed = disnake.Embed(description=f"{config.yes} Reloaded `{cog}` successfully.", color=config.success_embed_color)
     
     try:
-        await inter.send(embed=embed)
+        await inter.send(embed=embed, ephemeral=True)
     except Exception:
         pass
     
