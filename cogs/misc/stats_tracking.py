@@ -1,6 +1,6 @@
-from disnake.ext import commands
+from discord.ext import commands
 
-import disnake
+import discord
 import statcord
 
 
@@ -8,7 +8,7 @@ class StatcordPost(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.key = "statcord.com-pA1Iet9GBe9D8lq1b5WD"
-        self.api = statcord.Client(self.bot,self.key)
+        self.api = statcord.Client(self.bot, self.key)
         self.api.start_loop()
 
 
