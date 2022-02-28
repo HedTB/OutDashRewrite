@@ -61,7 +61,7 @@ def get_prefix(bot, message: disnake.Message):
     if not result:
         server_data_col.insert_one(data)
         return commands.when_mentioned_or("?")(bot, message)
-    elif not result["prefix"]:
+    elif not result.get("prefix"):
         server_data_col.update_one(query, {"$set": {"prefix": "?"}})
         return commands.when_mentioned_or("?")(bot, message)
     
