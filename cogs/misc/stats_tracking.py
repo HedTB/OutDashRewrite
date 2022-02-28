@@ -1,25 +1,18 @@
+from statcord import StatcordClient
 from discord.ext import commands
 
-import discord
-import statcord
 
-
-class StatcordPost(commands.Cog):
+class MyStatcordCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.key = "statcord.com-pA1Iet9GBe9D8lq1b5WD"
-        self.api = statcord.Client(self.bot, self.key)
-        self.api.start_loop()
+        self.statcord_client = StatcordClient(bot, "statcord.com-pA1Iet9GBe9D8lq1b5WD", self.custom_graph_1)
 
+    def cog_unload(self):
+        self.statcord_client.close()
 
-    @commands.Cog.listener()
-    async def on_command(self,ctx):
-        self.api.command_run(ctx)
-        
-    @commands.Cog.listener()
-    async def on_slash_command(self, inter):
-        self.api.command_run(inter)
+    async def custom_graph_1(self):
+        return 1 + 2 + 3
 
 
 def setup(bot):
-    bot.add_cog(StatcordPost(bot))
+    bot.add_cog(MyStatcordCog(bot))
