@@ -39,7 +39,7 @@ perspective_client = discovery.build(
 )
 client = MongoClient(f"{mongo_token}", tlsCAFile=certifi.where())
 
-db = client["db"]
+db = client[config.database_collection]
 server_data_col = db["server_data"]
 
 ## -- FUNCTIONS -- ##

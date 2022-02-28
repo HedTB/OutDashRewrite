@@ -54,7 +54,7 @@ app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 discord = DiscordOAuth2Session(app)
 
 client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
-db = client["db"]
+db = client[config.database_collection]
 
 server_data_col = db["server_data"]
 

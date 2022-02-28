@@ -1,5 +1,7 @@
 import disnake
+
 from disnake.ext import commands, tasks
+from extra import config
 
 class PresenceLoop(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -8,13 +10,12 @@ class PresenceLoop(commands.Cog):
 
     @tasks.loop(seconds = 30)
     async def presence_loop(self):
-        
         global bot
         bot = self.bot
         
         await bot.wait_until_ready()
         
-        bot.presence_list = [f"{len(bot.guilds)} servers | ?help", f"{len(bot.users)} users | ?help", f"outdash.ga | ?help"]
+        bot.presence_list = [f"{len(bot.guilds)} servers | {config.default_prefix}help", f"{len(bot.users)} users | {config.default_prefix}help", f"outdash.ga | {config.default_prefix}help"]
         try:
             if not bot.current_index:
                 bot.current_index = 0

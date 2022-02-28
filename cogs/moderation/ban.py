@@ -88,7 +88,7 @@ class Ban(commands.Cog):
         
         embed = disnake.Embed(description=f"{config.yes} **{member}** was banned.", color=config.success_embed_color)
         embed2 = disnake.Embed(description=f"{config.yes} **{member}** was banned. I couldn't DM them though.", color=config.success_embed_color)
-        dmEmbed = disnake.Embed(description=f"{config.moderator} You got banned from **{inter.guild.name}**. \nReason: {reason}", color=config.embed_color)
+        dmEmbed = disnake.Embed(description=f"{config.moderator} You was banned in **{inter.guild.name}**. \nReason: {reason}", color=config.embed_color)
         
         try:
             await member.send(embed=dmEmbed)

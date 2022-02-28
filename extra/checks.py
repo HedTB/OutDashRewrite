@@ -17,7 +17,7 @@ import extra.functions as functions
 
 mongo_login = os.environ.get("MONGO_LOGIN")
 client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
-db = client["db"]
+db = client[config.database_collection]
 
 server_data_col = db["server_data"]
 warns_col = db["warns"]

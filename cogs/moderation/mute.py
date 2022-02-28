@@ -26,7 +26,7 @@ from extra.checks import is_moderator
 
 mongo_login = os.environ.get("MONGO_LOGIN")
 client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
-db = client["db"]
+db = client[config.database_collection]
 
 server_data_col = db["server_data"]
 muted_users_col = db["muted_users"]

@@ -44,7 +44,7 @@ api_key = os.environ.get("API_KEY")
 
 # DATABASE VARIABLES
 client = MongoClient(f"{mongo_token}", tlsCAFile=certifi.where())
-db = client["db"]
+db = client[config.database_collection]
 
 prefixes_col = db["prefixes"]
 confirmations_col = db["bot_farm_confirmations"]
@@ -60,10 +60,10 @@ def get_prefix(bot, message: disnake.Message):
     
     if not result:
         server_data_col.insert_one(data)
-        return commands.when_mentioned_or("?")(bot, message)
+        return commands.when_mentioned_or(config.default_prefix)(bot, message)
     elif not result.get("prefix"):
         server_data_col.update_one(query, {"$set": {"prefix": "?"}})
-        return commands.when_mentioned_or("?")(bot, message)
+        return commands.when_mentioned_or(config.default_prefix)(bot, message)
     
     return commands.when_mentioned_or(result["prefix"])(bot, message)
 
@@ -92,13 +92,12 @@ class Bot(commands.Bot):
         self.avatar = await self.user.avatar.read()
         status_channel = self.get_channel(config.messages_channel)
         embed = disnake.Embed(title=f"Singed In As: {bot.user.name} ({bot.user.id})", 
-                            description=f"Bot started in `{str(len(bot.guilds))}` server(s), with total of `{len(bot.users)}` member(s), on an average latency of `{round(bot.latency * 1000)} ms`.", 
+                            description=f"Bot started in `{str(len(bot.guilds))}` servers, with total of `{len(bot.users)}` users, on an average latency of `{round(bot.latency * 1000)} ms`.", 
                             color=config.success_embed_color)
         
         await status_channel.send(embed=embed)
 
-        print(f"Signed In As: {bot.user.name} ({bot.user.id})")
-        print(f"Bot started in {len(bot.guilds)} server(s), with {len(bot.users)} total members.")
+        print(f"Bot started on {'the server' if config.is_server else 'a local computer'}. Stats: {len(bot.guilds)} servers, {len(bot.users)} users.")
         
         stats_data = {
             "commands_run": 0
@@ -200,7 +199,7 @@ bot = Bot(
 
 ## -- COGS -- ##
 
-@bot.slash_command(name="cogs", default_permission=False)
+@bot.slash_command(name="cogs", default_permission=False, guild_ids=[config.bot_server])
 @commands.guild_permissions(guild_id=int(config.bot_server), roles={871899070283800636: True})
 async def cogs(inter):
     pass
@@ -270,4 +269,4 @@ async def reloadcogs(ctx: commands.Context):
 
 if __name__ == "__main__":
     bot.loop.create_task(load_cogs(bot))
-    bot.run(bot_token)
+    bot.run(bot_token if config.is_server else test_bot_token)

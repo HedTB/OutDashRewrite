@@ -27,7 +27,7 @@ import extra.functions as functions
 google_api_key = os.environ.get("GOOGLE_API_KEY")
 mongo_login = os.environ.get("MONGO_LOGIN")
 client = MongoClient(f"{mongo_login}", tlsCAFile=certifi.where())
-db = client["db"]
+db = client[config.database_collection]
 
 youtube_uploads_col = db["youtube_uploads"]
 
