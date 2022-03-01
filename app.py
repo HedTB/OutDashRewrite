@@ -3,6 +3,7 @@
 import os
 import certifi
 import requests
+import logging
 
 from pymongo import MongoClient
 from dotenv import load_dotenv
