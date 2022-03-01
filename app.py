@@ -27,7 +27,7 @@ bot_token = os.environ.get("BOT_TOKEN" if config.is_server else "TEST_BOT_TOKEN"
 api_key = os.environ.get("API_KEY")
 
 app = Flask(__name__)
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}}, send_wildcard=True, orgins=True)
+cors = CORS(app, resources={r"/*": {"origins": "*"}}, send_wildcard=True, origins="*")
 
 logging.getLogger("flask_cors").level = logging.DEBUG
 
@@ -127,7 +127,7 @@ def get_bot_guilds():
 
 @app.route("/api/get-guild-count", methods=["GET", "OPTIONS"])
 @requires_api_authorization
-@cross_origin()
+#@cross_origin()
 def get_guild_count():
     bot_guilds = get_guilds().json()
     
