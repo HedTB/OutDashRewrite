@@ -28,9 +28,6 @@ load_dotenv()
 DATA_REFRESH_DELAY = 10 * 60
 
 # BOT DATA
-guild_count = 0
-guild_count_refresh = 0
-
 bot_guilds = {}
 bot_guilds_refresh = 0
 
@@ -99,11 +96,14 @@ def bot_request(endpoint, params=None) -> requests.Response:
     )
     
 def get_guilds():
+    print(time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY)
+    
     if bot_guilds == {} or time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY:
         result = bot_request("users/@me/guilds")
         
         if result.status_code == 200:
             bot_guilds = result
+            bot_guilds_refresh = time.time()
         return result
     else:
         return bot_guilds
@@ -143,20 +143,20 @@ def corsify_response(response):
 def save_guild_settings():
     guild_id = request.args.get("guild_id")
     form = request.form
+
+    if not guild_id:
+        return {"message": "Missing guild ID"}, 400
     
-    guild = get_guild(guild_id).json()
+    guild = get_guild(guild_id)
     guild_data = server_data_col.find_one({"guild_id": str(guild_id)})
     
-    if not guild_data:
+    if not guild:
+        return {"message": "Invalid guild ID"}, 400
+    elif guild and not guild_data:
         server_data_col.insert_one(functions.get_db_data(guild_id))
         return {"message": "An error occured, please try again."}, 500
     
     updated_settings = {}
-
-    if not guild_id:
-        return {"message": "Missing guild ID"}, 400
-    elif not guild:
-        return {"message": "Invalid guild ID"}, 400
     
     for argument in form:
         value = form.get(argument)
