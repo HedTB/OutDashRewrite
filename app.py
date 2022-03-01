@@ -97,7 +97,7 @@ def get_guilds():
     bot_guilds_refresh = data.get("bot_guilds_refresh")
     bot_guilds = data.get("bot_guilds")
     
-    if len(bot_guilds) == 0 or time.time() - bot_guilds_refresh > 60:
+    if len(bot_guilds) == 0 or time.time() - bot_guilds_refresh > 180:
         result = bot_request("users/@me/guilds")
         
         if result.status_code == 200:
