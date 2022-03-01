@@ -7,7 +7,7 @@ import logging
 
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from flask import Flask, request
+from flask import Flask, make_response, request
 from functools import wraps
 from flask_cors import CORS, cross_origin
 from threading import Thread
@@ -29,7 +29,7 @@ api_key = os.environ.get("API_KEY")
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, send_wildcard=True, origins="*")
 
-logging.getLogger("flask_cors").level = logging.DEBUG
+# logging.getLogger("flask_cors").level = logging.DEBUG
 
 app.config["CORS_HEADERS"] = "Content-Type"
 
@@ -50,11 +50,15 @@ request_headers = {
 
 ## -- CHECKS -- ##
 
-def requires_api_authorization(f):
+def api_endpoint(f):
     @wraps(f)
     
     def decorated_function(*args, **kwargs):
         headers = request.headers
+        method = request.method
+        
+        if method == "OPTIONS":
+            return preflight_response()
         
         if not headers.get("api-key"):
             return {"message": "Missing API key"}, 403
@@ -79,10 +83,26 @@ def get_guilds():
 def get_guild(guild_id):
     return bot_request(f"guilds/{guild_id}")
 
+def preflight_response():
+    response = make_response()
+    headers = response.headers
+    
+    headers.add("Access-Control-Allow-Origin", "*")
+    headers.add('Access-Control-Allow-Headers', "*")
+    headers.add('Access-Control-Allow-Methods', "*")
+    
+    return response
+
+def corsify_response(response):
+    headers = response.headers
+    
+    headers.add("Access-Control-Allow-Origin", "*")
+    return response
+
 ## -- ROUTES -- ##
 
 @app.route("/api/save-settings", methods=["POST", "OPTIONS"])
-@requires_api_authorization
+@api_endpoint
 @cross_origin()
 def save_guild_settings():
     guild_id = request.args.get("guild_id")
@@ -117,7 +137,7 @@ def save_guild_settings():
 
 
 @app.route("/api/get-bot-guilds", methods=["GET", "OPTIONS"])
-@requires_api_authorization
+@api_endpoint
 @cross_origin()
 def get_bot_guilds():
     bot_guilds = get_guilds()
@@ -126,7 +146,7 @@ def get_bot_guilds():
 
 
 @app.route("/api/get-guild-count", methods=["GET", "OPTIONS"])
-@requires_api_authorization
+@api_endpoint
 #@cross_origin()
 def get_guild_count():
     bot_guilds = get_guilds().json()
