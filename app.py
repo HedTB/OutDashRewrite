@@ -1,5 +1,6 @@
 ## -- IMPORTS -- ##
 
+import json
 import os
 import certifi
 import requests
@@ -96,16 +97,25 @@ def bot_request(endpoint, params=None) -> requests.Response:
     )
     
 def get_guilds():
-    global bot_guilds, bot_guilds_refresh, DATA_REFRESH_DELAY
+    file = open("api.json")
+    data = json.load(file)
     
-    if bot_guilds == {} or time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY:
+    print(data)
+    
+    bot_guilds_refresh = data.get("bot_guilds_refresh")
+    bot_guilds = data.get("bot_guilds")
+    
+    if len(bot_guilds) == 0 or time.time() - bot_guilds_refresh > 600:
         print("reloading guild data")
         result = bot_request("users/@me/guilds")
         
         if result.status_code == 200:
-            bot_guilds = result
-            bot_guilds_refresh = time.time()
-        return result
+            json.dump(json.dumps({
+                "bot_guilds_refresh": time.time(),
+                "bot_guilds": result.json()
+            }), file, indent=4)
+            
+        return result.json()
     else:
         return bot_guilds
 
@@ -188,7 +198,6 @@ def get_bot_guilds():
 @api_endpoint
 def get_guild_count():
     bot_guilds = get_guilds()
-    print(bot_guilds)
     
     if bot_guilds.status_code != 200:
         return {"message": "An error occurred, please try again later."}
