@@ -24,3 +24,4 @@ captcha==0.3
 Flask-Cors==3.0.10
 discord.py==1.7.3
 betterstatcord.py
+flask-limiter
