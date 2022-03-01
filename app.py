@@ -96,6 +96,7 @@ def bot_request(endpoint, params=None) -> requests.Response:
     )
     
 def get_guilds():
+    global bot_guilds_refresh, DATA_REFRESH_DELAY
     print(time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY)
     
     if bot_guilds == {} or time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY:
