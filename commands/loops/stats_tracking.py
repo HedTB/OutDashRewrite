@@ -16,7 +16,7 @@ class StatsTracking(commands.Cog):
     async def custom_graph_1(self):
         return 1 + 2 + 3
     
-    @tasks.loop(seconds=300)
+    @tasks.loop(minutes=30)
     async def statcord_loop(self):
         response = requests.post(
             url = "https://statcord.com/bot/836494578135072778/clearcache",

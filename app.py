@@ -3,7 +3,7 @@
 import os
 import certifi
 import requests
-import logging
+import time
 
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -24,23 +24,36 @@ load_dotenv()
 
 ## -- VARIABLES -- ##
 
+# CONSTANTS
+DATA_REFRESH_DELAY = 10 * 60
+
+# BOT DATA
+guild_count = 0
+guild_count_refresh = 0
+
+bot_guilds = {}
+bot_guilds_refresh = 0
+
+# SECRETS
 mongo_token = os.environ.get("MONGO_LOGIN")
 bot_token = os.environ.get("BOT_TOKEN" if config.is_server else "TEST_BOT_TOKEN")
 api_key = os.environ.get("API_KEY")
 
+# APP VARIABLES
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, send_wildcard=True, origins="*")
 
+# APP CONFIG
+app.config["CORS_HEADERS"] = "Content-Type"
+
+# OTHER VARIABLES
 limiter = Limiter(
-    app,
+    app=app,
     key_func=get_remote_address,
     default_limits=["2/second"]
 )
 
-# logging.getLogger("flask_cors").level = logging.DEBUG
-
-app.config["CORS_HEADERS"] = "Content-Type"
-
+# DATABASE VARIABLES
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
@@ -78,7 +91,7 @@ def api_endpoint(f):
 
 ## -- FUNCTIONS -- ##
 
-def bot_request(endpoint, params=None):
+def bot_request(endpoint, params=None) -> requests.Response:
     return requests.get(
         url = f"https://discordapp.com/api/v9/{endpoint}",
         headers = request_headers,
@@ -86,10 +99,26 @@ def bot_request(endpoint, params=None):
     )
     
 def get_guilds():
-    return bot_request("users/@me/guilds")
+    if bot_guilds == {} or time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY:
+        result = bot_request("users/@me/guilds")
+        
+        if result.status_code == 200:
+            bot_guilds = result
+        return result
+    else:
+        return bot_guilds
 
 def get_guild(guild_id):
-    return bot_request(f"guilds/{guild_id}")
+    guilds = get_guilds()
+    
+    if guilds.status_code != 200:
+        return 0
+    else:
+        for guild in guilds.json():
+            if guild.get("id") == str(guild_id):
+                return guild
+        
+        return None
 
 def preflight_response():
     response = make_response()
@@ -147,16 +176,24 @@ def save_guild_settings():
 @api_endpoint
 def get_bot_guilds():
     bot_guilds = get_guilds()
+    print(bot_guilds)
     
-    return {"guilds": bot_guilds.text}, 200
+    if bot_guilds.status_code != 200:
+        return {"message": "An error occurred, please try again later."}
+    
+    return {"guilds": bot_guilds.json()}, 200
 
 
 @app.route("/api/get-guild-count", methods=["GET", "OPTIONS"])
 @api_endpoint
 def get_guild_count():
-    bot_guilds = get_guilds().json()
+    bot_guilds = get_guilds()
+    print(bot_guilds)
     
-    return {"guild_count": len(bot_guilds)}, 200
+    if bot_guilds.status_code != 200:
+        return {"message": "An error occurred, please try again later."}
+    
+    return {"guild_count": len(bot_guilds.json())}, 200
 
 @app.route("/")
 @cross_origin()
@@ -166,14 +203,7 @@ def index():
 
 ## -- EXTRA METHODS -- ##
 
-"""
-@app.after_request
-def after_request(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    #response.headers.add("Access-Control-Allow-Origin", "Access-Control-Allow-Headers,Origin,Accept,X-Requested-With,Content-Type,Access-Control-Request-Method,Access-Control-Request-Headers")
-    
-    return response
-"""
+
 
 ## -- START -- ##
 
