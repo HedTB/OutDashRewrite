@@ -11,6 +11,8 @@ from flask import Flask, make_response, request
 from functools import wraps
 from flask_cors import CORS, cross_origin
 from threading import Thread
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # FILES
 from extra import config
@@ -28,6 +30,12 @@ api_key = os.environ.get("API_KEY")
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, send_wildcard=True, origins="*")
+
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["2/second"]
+)
 
 # logging.getLogger("flask_cors").level = logging.DEBUG
 
@@ -103,7 +111,6 @@ def corsify_response(response):
 
 @app.route("/api/save-settings", methods=["POST", "OPTIONS"])
 @api_endpoint
-@cross_origin()
 def save_guild_settings():
     guild_id = request.args.get("guild_id")
     form = request.form
@@ -138,7 +145,6 @@ def save_guild_settings():
 
 @app.route("/api/get-bot-guilds", methods=["GET", "OPTIONS"])
 @api_endpoint
-@cross_origin()
 def get_bot_guilds():
     bot_guilds = get_guilds()
     
@@ -147,7 +153,6 @@ def get_bot_guilds():
 
 @app.route("/api/get-guild-count", methods=["GET", "OPTIONS"])
 @api_endpoint
-#@cross_origin()
 def get_guild_count():
     bot_guilds = get_guilds().json()
     
