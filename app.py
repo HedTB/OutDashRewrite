@@ -97,9 +97,9 @@ def bot_request(endpoint, params=None) -> requests.Response:
     
 def get_guilds():
     global bot_guilds, bot_guilds_refresh, DATA_REFRESH_DELAY
-    print(time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY)
     
     if bot_guilds == {} or time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY:
+        print("reloading guild data")
         result = bot_request("users/@me/guilds")
         
         if result.status_code == 200:
@@ -177,7 +177,6 @@ def save_guild_settings():
 @api_endpoint
 def get_bot_guilds():
     bot_guilds = get_guilds()
-    print(bot_guilds)
     
     if bot_guilds.status_code != 200:
         return {"message": "An error occurred, please try again later."}
