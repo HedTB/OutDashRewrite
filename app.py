@@ -29,7 +29,7 @@ DATA_REFRESH_DELAY = 10 * 60
 
 # BOT DATA
 bot_guilds = {}
-bot_guilds_refresh = 0
+bot_guilds_refresh = 1e100
 
 # SECRETS
 mongo_token = os.environ.get("MONGO_LOGIN")
