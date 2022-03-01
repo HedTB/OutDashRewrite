@@ -1,6 +1,7 @@
 ## -- IMPORTS -- ##
 
 import json
+import logging
 import os
 import certifi
 import requests
@@ -24,13 +25,6 @@ from extra import functions
 load_dotenv()
 
 ## -- VARIABLES -- ##
-
-# CONSTANTS
-DATA_REFRESH_DELAY = 10 * 60
-
-# BOT DATA
-bot_guilds = {}
-bot_guilds_refresh = 1e100
 
 # SECRETS
 mongo_token = os.environ.get("MONGO_LOGIN")
@@ -97,26 +91,26 @@ def bot_request(endpoint, params=None) -> requests.Response:
     )
     
 def get_guilds():
-    file = open("api.json")
+    file = open("data/api.json", "r")
     data = json.load(file)
-    
-    print(data)
     
     bot_guilds_refresh = data.get("bot_guilds_refresh")
     bot_guilds = data.get("bot_guilds")
     
-    if len(bot_guilds) == 0 or time.time() - bot_guilds_refresh > 600:
-        print("reloading guild data")
+    if len(bot_guilds) == 0 or time.time() - bot_guilds_refresh > 60:
         result = bot_request("users/@me/guilds")
         
         if result.status_code == 200:
-            json.dump(json.dumps({
-                "bot_guilds_refresh": time.time(),
-                "bot_guilds": result.json()
-            }), file, indent=4)
+            with open("data/api.json", "w") as file:
+                json.dump({
+                    "bot_guilds_refresh": time.time(),
+                    "bot_guilds": result.json()
+                }, file, indent=4)
             
+        file.close()
         return result.json()
     else:
+        file.close()
         return bot_guilds
 
 def get_guild(guild_id):
@@ -188,10 +182,15 @@ def save_guild_settings():
 def get_bot_guilds():
     bot_guilds = get_guilds()
     
-    if bot_guilds.status_code != 200:
-        return {"message": "An error occurred, please try again later."}
+    if type(bot_guilds) != list:
+        try:
+            bot_guilds = json.loads(bot_guilds)
+        except Exception as error:
+            logging.warning(bot_guilds)
+            
+            return {"message": "An error occurred, please try again later."}
     
-    return {"guilds": bot_guilds.json()}, 200
+    return {"guilds": bot_guilds}, 200
 
 
 @app.route("/api/get-guild-count", methods=["GET", "OPTIONS"])
@@ -199,15 +198,20 @@ def get_bot_guilds():
 def get_guild_count():
     bot_guilds = get_guilds()
     
-    if bot_guilds.status_code != 200:
-        return {"message": "An error occurred, please try again later."}
+    if type(bot_guilds) != list:
+        try:
+            bot_guilds = json.loads(bot_guilds)
+        except Exception as error:
+            logging.warning(bot_guilds)
+            
+            return {"message": "An error occurred, please try again later."}
     
-    return {"guild_count": len(bot_guilds.json())}, 200
+    return {"guild_count": len(bot_guilds)}, 200
 
 @app.route("/")
 @cross_origin()
 def index():
-    return {"message": "Seems like you have found the API page for OutDash. Well, there's nothing you can do here, so you may aswell just exit this page and move on :)"}
+    return {"message": "Seems like you have found the API for OutDash. Well, there's nothing you can really do here, so you may aswell just exit this page and move on :)"}
     
 
 ## -- EXTRA METHODS -- ##

@@ -1,4 +1,68 @@
 {
-    "bot_guilds_refresh": 1e50,
-    "bot_guilds": {}
+    "bot_guilds_refresh": 1646159657.1406577,
+    "bot_guilds": [
+        {
+            "id": "743770913924972554",
+            "name": "rainydays's server",
+            "icon": null,
+            "owner": false,
+            "permissions": "2199023255551",
+            "features": []
+        },
+        {
+            "id": "746363347829784646",
+            "name": "The Mythical Kingdom",
+            "icon": "f42d6d88502357302f1869386aad40ab",
+            "owner": false,
+            "permissions": "2199023255551",
+            "features": [
+                "PREVIEW_ENABLED",
+                "MEMBER_VERIFICATION_GATE_ENABLED",
+                "COMMUNITY",
+                "THREADS_ENABLED",
+                "NEW_THREAD_PERMISSIONS",
+                "NEWS",
+                "WELCOME_SCREEN_ENABLED"
+            ]
+        },
+        {
+            "id": "787689489186553856",
+            "name": "Bot Test",
+            "icon": null,
+            "owner": false,
+            "permissions": "1099511627767",
+            "features": []
+        },
+        {
+            "id": "836495137651294258",
+            "name": "OutDash Support",
+            "icon": "76a6188eddb1ac0216779a2a50b6ac4a",
+            "owner": false,
+            "permissions": "2199023255551",
+            "features": [
+                "NEW_THREAD_PERMISSIONS",
+                "NEWS",
+                "COMMUNITY",
+                "THREADS_ENABLED"
+            ]
+        },
+        {
+            "id": "914246946707890176",
+            "name": "YPYD",
+            "icon": "91b0064b981f5e54fc79c0d8161f2b9d",
+            "owner": false,
+            "permissions": "2199023255551",
+            "features": [
+                "WELCOME_SCREEN_ENABLED"
+            ]
+        },
+        {
+            "id": "932022917317939220",
+            "name": "nodejs bot test",
+            "icon": null,
+            "owner": false,
+            "permissions": "2199023255551",
+            "features": []
+        }
+    ]
 }
