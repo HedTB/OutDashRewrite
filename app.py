@@ -39,11 +39,11 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}}, send_wildcard=True, origin
 app.config["CORS_HEADERS"] = "Content-Type"
 
 # OTHER VARIABLES
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["2/second"]
-)
+# limiter = Limiter(
+#     app=app,
+#     key_func=get_remote_address,
+#     default_limits=["2/second"]
+# )
 
 # DATABASE VARIABLES
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
