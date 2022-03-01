@@ -26,7 +26,7 @@ bot_token = os.environ.get("BOT_TOKEN" if config.is_server else "TEST_BOT_TOKEN"
 api_key = os.environ.get("API_KEY")
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app.config["CORS_HEADERS"] = "Content-Type"
 
@@ -80,7 +80,7 @@ def get_guild(guild_id):
 
 @app.route("/api/save-settings", methods=["POST", "OPTIONS"])
 @requires_api_authorization
-@cross_origin(supports_credentials=True)
+@cross_origin()
 def save_guild_settings():
     guild_id = request.args.get("guild_id")
     form = request.form
@@ -115,7 +115,7 @@ def save_guild_settings():
 
 @app.route("/api/get-bot-guilds", methods=["GET", "OPTIONS"])
 @requires_api_authorization
-@cross_origin(supports_credentials=True)
+@cross_origin()
 def get_bot_guilds():
     bot_guilds = get_guilds()
     
@@ -124,28 +124,28 @@ def get_bot_guilds():
 
 @app.route("/api/get-guild-count", methods=["GET", "OPTIONS"])
 @requires_api_authorization
-@cross_origin(supports_credentials=True)
+@cross_origin()
 def get_guild_count():
     bot_guilds = get_guilds().json()
     
     return {"guild_count": len(bot_guilds)}, 200
 
 @app.route("/")
+@cross_origin()
 def index():
-    return {"message": """
-                       Seems like you have found the API page for OutDash.
-                       Well, there's nothing to see here, so you may aswell just exit this page and move on :)
-                       """}
+    return {"message": "Seems like you have found the API page for OutDash. Well, there's nothing you can do here, so you may aswell just exit this page and move on :)"}
     
 
 ## -- EXTRA METHODS -- ##
 
+"""
 @app.after_request
 def after_request(response):
     response.headers.add("Access-Control-Allow-Origin", "*")
     #response.headers.add("Access-Control-Allow-Origin", "Access-Control-Allow-Headers,Origin,Accept,X-Requested-With,Content-Type,Access-Control-Request-Method,Access-Control-Request-Headers")
     
     return response
+"""
 
 ## -- START -- ##
 
