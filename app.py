@@ -26,7 +26,7 @@ bot_token = os.environ.get("BOT_TOKEN" if config.is_server else "TEST_BOT_TOKEN"
 api_key = os.environ.get("API_KEY")
 
 app = Flask(__name__)
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}}, cors_send_wildcard=true, cors_orgins=true)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}}, cors_send_wildcard=True, cors_orgins=True)
 
 logging.getLogger("flask_cors").level = logging.DEBUG
 
