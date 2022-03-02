@@ -52,6 +52,8 @@ app.config["CORS_HEADERS"] = "Content-Type"
 # CONSTANTS
 BASE_DISCORD_URL = "https://discordapp.com/api/v9{}"
 DATA_REFRESH_DELAY = 180
+
+SERVER_URL = "http://127.0.0.1:8080" if not config.is_server else "https://outdash-beta-alt.herokuapp.com"
 REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.is_server else "https://outdash-beta-alt.herokuapp.com/callback"
 
 # DATABASE VARIABLES
@@ -393,7 +395,7 @@ def callback():
 
     code = params.get("code")
     response = requests.post(
-        url = "http://127.0.0.1:8080/api/authorize",
+        url = f"{SERVER_URL}/api/authorize",
         headers = {
             "oauth-code": code
         }
