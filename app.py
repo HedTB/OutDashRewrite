@@ -56,8 +56,8 @@ guild_setting_names = [
     "message_bulk_delete_logs_webhook"
 ]
 request_headers = {
-    "Authorization": "Bot " + bot_token,
-    "User-Agent": "myBotThing (http://some.url, v0.1)",
+    "Authorization": f"Bot {bot_token}",
+    "User-Agent": "OutDash (https://outdash.ga, v0.1)",
     "Content-Type": "application/json",
 }
 
@@ -147,16 +147,16 @@ def save_guild_settings():
     form = request.form
 
     if not guild_id:
-        return jsonify({"message": "Missing guild ID"}), 400
+        return {"message": "Missing guild ID"}, 400
     
     guild = get_guild(guild_id)
-    guild_data = server_data_col.find_one({"guild_id": str(guild_id)})
+    guild_data = server_data_col.find_one({"guild_id": guild_id})
     
     if not guild:
-        return jsonify({"message": "Invalid guild ID"}), 400
+        return {"message": "Invalid guild ID"}, 400
     elif guild and not guild_data:
         server_data_col.insert_one(functions.get_db_data(guild_id))
-        return jsonify({"message": "An error occured, please try again."}), 500
+        return {"message": "An error occured, please try again."}, 500
     
     updated_settings = {}
     
@@ -171,7 +171,11 @@ def save_guild_settings():
         updated_settings[argument] = value
         
     server_data_col.update_one({"guild_id": str(guild_id)}, {"$set": updated_settings})
-    return jsonify({"changed_settings": argument_name for argument_name in list(updated_settings.keys())}), 200
+    
+    if len(updated_settings) == 0:
+        return {"message": "No settings were updated."}, 200
+    else:
+        return {"changed_settings": argument for argument in list(updated_settings.keys())}, 200
 
 
 @app.route("/api/get-bot-guilds", methods=["GET", "OPTIONS"])
@@ -185,7 +189,7 @@ def get_bot_guilds():
         except Exception as error:
             logging.warning(bot_guilds)
             
-            return {"message": "An error occurred, please try again later."}
+            return {"message": "An error occurred, please try again later."}, 500
     
     return {"guilds": bot_guilds}, 200
 
@@ -201,7 +205,7 @@ def get_guild_count():
         except Exception as error:
             logging.warning(bot_guilds)
             
-            return {"message": "An error occurred, please try again later."}
+            return {"message": "An error occurred, please try again later."}, 500
     
     return {"guild_count": len(bot_guilds)}, 200
 
@@ -213,7 +217,13 @@ def index():
 
 ## -- EXTRA METHODS -- ##
 
+@app.errorhandler(404)
+def page_not_found(error):
+    return {"message": "The page you requested does not exist."}, 404
 
+@app.errorhandler(500)
+def internal_server_error(error):
+    return {"message": "Something went wrong (internally) while trying to process your request."}, 500
 
 ## -- START -- ##
 
