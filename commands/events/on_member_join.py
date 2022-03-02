@@ -72,6 +72,8 @@ class OnMemberJoin(commands.Cog):
         server_data = server_data_col.find_one(query)
         if not server_data:
             server_data_col.insert_one(data)
+            await self.on_member_join(member)
+            
             return
             
         webhook_url = server_data.get("member_join_logs_webhook")
@@ -86,15 +88,15 @@ class OnMemberJoin(commands.Cog):
         
         if webhook_url == "None" or not webhook_url:
             if not webhook_url:
-                server_data_col.update_one(query, update)
+                server_data_col.update_one(query, {"$set": update})
                 return
             return
         if welcome_channel_id == "None" or not welcome_channel_id:
             if not welcome_channel_id:
-                server_data_col.update_one(query, update)
+                server_data_col.update_one(query, {"$set": update})
                 return
         if not welcome_toggle:
-            server_data_col.update_one(query, update)
+            server_data_col.update_one(query, {"$set": update})
             return
         if welcome_channel_id and welcome_channel_id != "None":
             welcome_channel = self.bot.get_channel(int(welcome_channel_id))

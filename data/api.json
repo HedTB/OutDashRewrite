@@ -1,5 +1,5 @@
 {
-    "bot_guilds_refresh": 1646232303.7941124,
+    "bot_guilds_refresh": 1646248038.0819674,
     "bot_guilds": [
         {
             "id": "743770913924972554",
@@ -16,13 +16,13 @@
             "owner": false,
             "permissions": "2199023255551",
             "features": [
-                "MEMBER_VERIFICATION_GATE_ENABLED",
                 "PREVIEW_ENABLED",
                 "NEW_THREAD_PERMISSIONS",
-                "WELCOME_SCREEN_ENABLED",
-                "THREADS_ENABLED",
+                "NEWS",
+                "MEMBER_VERIFICATION_GATE_ENABLED",
                 "COMMUNITY",
-                "NEWS"
+                "THREADS_ENABLED",
+                "WELCOME_SCREEN_ENABLED"
             ]
         },
         {
@@ -41,9 +41,9 @@
             "permissions": "2199023255551",
             "features": [
                 "NEW_THREAD_PERMISSIONS",
-                "THREADS_ENABLED",
+                "NEWS",
                 "COMMUNITY",
-                "NEWS"
+                "THREADS_ENABLED"
             ]
         },
         {
