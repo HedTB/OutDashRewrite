@@ -43,11 +43,11 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}}, send_wildcard=True, origin
 app.config["CORS_HEADERS"] = "Content-Type"
 
 # OTHER VARIABLES
-# limiter = Limiter(
-#     app=app,
-#     key_func=get_remote_address,
-#     default_limits=["2/second"]
-# )
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["1/second"]
+)
 
 # CONSTANTS
 BASE_DISCORD_URL = "https://discordapp.com/api/v9{}"
@@ -319,6 +319,7 @@ def save_guild_settings():
 
 @app.route("/api/get-bot-guilds", methods=["GET", "OPTIONS"])
 @api_endpoint
+@limiter.exempt
 def get_bot_guilds():
     bot_guilds = get_guilds()
     
@@ -335,6 +336,7 @@ def get_bot_guilds():
 
 @app.route("/api/get-guild-count", methods=["GET", "OPTIONS"])
 @api_endpoint
+@limiter.exempt
 def get_guild_count():
     bot_guilds = get_guilds()
     
@@ -386,10 +388,12 @@ def authorize():
         return {"message": "You have been authorized"}, 200
     
 @app.route("/login")
+@limiter.exempt
 def login():
     return redirect(f"https://discord.com/api/oauth2/authorize?response_type=code&client_id={bot_id}&scope=identify&prompt=none&redirect_uri={REDIRECT_URI}")
 
 @app.route("/callback")
+@limiter.exempt
 def callback():
     params = request.args
 
