@@ -116,7 +116,7 @@ def get_guilds():
 def get_guild(guild_id):
     guilds = get_guilds()
     
-    for guild in guilds.json():
+    for guild in guilds:
         if guild.get("id") == str(guild_id):
             return guild
 
