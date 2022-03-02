@@ -52,6 +52,7 @@ app.config["CORS_HEADERS"] = "Content-Type"
 # CONSTANTS
 BASE_DISCORD_URL = "https://discordapp.com/api/v9{}"
 DATA_REFRESH_DELAY = 180
+REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.is_server else "https://outdash-beta-alt.herokuapp.com/callback"
 
 # DATABASE VARIABLES
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
@@ -225,7 +226,7 @@ def exchange_code(code: str) -> dict:
             "client_secret": bot_secret,
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": "http://127.0.0.1:8080/callback"
+            "redirect_uri": REDIRECT_URI
         },
         headers = {
             "Content-Type": "application/x-www-form-urlencoded"
@@ -384,7 +385,7 @@ def authorize():
     
 @app.route("/login")
 def login():
-    return redirect(f"https://discord.com/api/oauth2/authorize?response_type=code&client_id={bot_id}&scope=identify&prompt=none&redirect_uri=http://127.0.0.1:8080/callback")
+    return redirect(f"https://discord.com/api/oauth2/authorize?response_type=code&client_id={bot_id}&scope=identify&prompt=none&redirect_uri={REDIRECT_URI}")
 
 @app.route("/callback")
 def callback():
