@@ -116,14 +116,11 @@ def get_guilds():
 def get_guild(guild_id):
     guilds = get_guilds()
     
-    if guilds.status_code != 200:
-        return 0
-    else:
-        for guild in guilds.json():
-            if guild.get("id") == str(guild_id):
-                return guild
-        
-        return None
+    for guild in guilds.json():
+        if guild.get("id") == str(guild_id):
+            return guild
+
+    return None
 
 def preflight_response():
     response = make_response()
