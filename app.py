@@ -49,7 +49,7 @@ app.config["CORS_HEADERS"] = "Content-Type"
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
-server_data_col = db["server_data_col"]
+server_data_col = db["server_data"]
 
 guild_setting_names = [
     "prefix", "message_delete_logs_webhook", "message_edit_logs_webhook",
