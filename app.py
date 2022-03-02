@@ -9,7 +9,7 @@ import time
 
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from flask import Flask, make_response, request
+from flask import Flask, make_response, request, jsonify
 from functools import wraps
 from flask_cors import CORS, cross_origin
 from threading import Thread
@@ -147,16 +147,16 @@ def save_guild_settings():
     form = request.form
 
     if not guild_id:
-        return {"message": "Missing guild ID"}, 400
+        return jsonify({"message": "Missing guild ID"}), 400
     
     guild = get_guild(guild_id)
     guild_data = server_data_col.find_one({"guild_id": str(guild_id)})
     
     if not guild:
-        return {"message": "Invalid guild ID"}, 400
+        return jsonify({"message": "Invalid guild ID"}), 400
     elif guild and not guild_data:
         server_data_col.insert_one(functions.get_db_data(guild_id))
-        return {"message": "An error occured, please try again."}, 500
+        return jsonify({"message": "An error occured, please try again."}), 500
     
     updated_settings = {}
     
@@ -171,7 +171,7 @@ def save_guild_settings():
         updated_settings[argument] = value
         
     server_data_col.update_one({"guild_id": str(guild_id)}, {"$set": updated_settings})
-    return {"changed_settings": argument_name for argument_name in list(updated_settings.keys())}
+    return jsonify({"changed_settings": argument_name for argument_name in list(updated_settings.keys())}), 200
 
 
 @app.route("/api/get-bot-guilds", methods=["GET", "OPTIONS"])
