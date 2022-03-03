@@ -6,6 +6,8 @@ import os
 import certifi
 import requests
 import time
+import random  
+import string  
 
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -104,6 +106,8 @@ def user_endpoint(f):
         file = open("data/oauth_tokens.json", "r")
         data = json.load(file)
         
+        # data = compress_json.load("data/oauth_tokens.gz")
+        
         if method == "OPTIONS":
             return preflight_response()
         
@@ -118,6 +122,17 @@ def user_endpoint(f):
     return decorated_function
 
 ## -- FUNCTIONS -- ##
+
+# MISC
+def generate_random_string(letter_count: int, digit_count: int) -> str:
+    generated_str = "".join((random.choice(string.ascii_letters) for i in range(letter_count)))  
+    generated_str += "".join((random.choice(string.digits) for i in range(digit_count)))  
+  
+    letter_list = list(generated_str)
+    random.shuffle(letter_list)
+    final_string = "".join(letter_list)
+    
+    return final_string
 
 # REQUESTS
 def bot_request(endpoint, params=None) -> requests.Response:
@@ -136,37 +151,55 @@ def user_request(endpoint, bearer_token, params=None) -> requests.Response:
         },
         params = params
     )
+    
+# USER DATA
+def get_user_guilds(bearer_token=None, oauth_code=None) -> dict:
+    file = open("data/oauth_tokens.json", "r+")
+    data = json.load(file)
+    
+    # data = compress_json.load("data/oauth_tokens.gz")
+    # data = load_compressed("data/oauth_tokens.gz")
+    
+    user_data = data.get(oauth_code)
+    user_guilds_cache = user_data.get("guilds")
+    user_guilds_refresh = user_data.get("guilds_refresh")
+    
+    if not user_guilds_cache or not user_guilds_refresh or len(user_guilds_cache) == 0 or time.time() - user_guilds_refresh > DATA_REFRESH_DELAY:
+        user_result = user_request("/users/@me/guilds", bearer_token)
+        user_guilds = user_result.json()
+        
+        for guild in user_guilds:
+            guild.pop("features")
+        
+        user_data["guilds_refresh"] = time.time()
+        user_data["guilds"] = user_guilds
+        
+        file.seek(0)
+        json.dump(data, file)
+        
+        # compress_json.dump(data, "data/oauth_tokens.gz")
+        # dump_compressed(data, "data/oauth_tokens.gz")
+        
+        user_guilds_cache = user_guilds
+        
+    return user_guilds_cache
+
 
 # BOT DATA
 def get_guilds(bearer_token=None, oauth_code=None) -> dict:
     file = open("data/api.json", "r+")
     data = json.load(file)
     
+    # data = compress_json.load("data/api.gz")
+    # data = load_compressed("data/api.gz")
+    
     bot_guilds_refresh = data.get("bot_guilds_refresh")
     bot_guilds_cache = data.get("bot_guilds")
     
     if bearer_token and oauth_code:
-        oauth_file = open("data/oauth_tokens.json", "r+")
-        oauth_data = json.load(oauth_file)
-        
-        user_data = oauth_data.get(oauth_code)
-        user_guilds_cache = user_data.get("guilds")
-        user_guilds_refresh = user_data.get("guilds_refresh")
-        
-        if not user_guilds_cache or not user_guilds_refresh or len(user_guilds_cache) == 0 or time.time() - user_guilds_refresh > DATA_REFRESH_DELAY:
-            user_result = user_request("/users/@me/guilds", bearer_token)
-            user_guilds = user_result.json()
-            
-            user_data["guilds_refresh"] = time.time()
-            user_data["guilds"] = user_guilds
-            
-            oauth_file.seek(0)
-            json.dump(oauth_data, oauth_file, indent=4)
-            
-            user_guilds_cache = user_guilds
-            
+        user_guilds = get_user_guilds(bearer_token, oauth_code)
     
-    if len(bot_guilds_cache) == 0 or time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY:
+    if not (bot_guilds_cache or bot_guilds_refresh) or len(bot_guilds_cache) == 0 or time.time() - bot_guilds_refresh > DATA_REFRESH_DELAY:
         bot_guilds = bot_request("/users/@me/guilds")
         bot_guilds_dict = bot_guilds.json()
         
@@ -174,12 +207,18 @@ def get_guilds(bearer_token=None, oauth_code=None) -> dict:
             data["bot_guilds_refresh"] = time.time()
             data["bot_guilds"] = bot_guilds_dict
             
+            for guild in bot_guilds_dict:
+                guild.pop("features")
+            
             file.seek(0)
-            json.dump(data, file, indent=4)
+            json.dump(data, file)
+            
+            # compress_json.dump(data, "data/api.gz")
+            # dump_compressed(data, "data/api.gz")
                 
         if bearer_token and bot_guilds.status_code == 200:
             for index, guild in enumerate(bot_guilds_dict):
-                if not guild in user_guilds_cache:
+                if not guild in user_guilds:
                     bot_guilds_dict.pop(index)
                 
         file.close()
@@ -187,7 +226,7 @@ def get_guilds(bearer_token=None, oauth_code=None) -> dict:
     else:
         if bearer_token:
             for index, guild in enumerate(bot_guilds_cache):
-                if not guild in user_guilds_cache:
+                if not guild in user_guilds:
                     bot_guilds_cache.pop(index)
                     
         file.close()
@@ -269,6 +308,19 @@ def identify_user(bearer_token: str) -> dict:
     response.raise_for_status()
     return response.json()
 
+def get_bearer(oauth_code: str) -> str | None:
+    file = open("data/oauth_tokens.json", "r")
+    data = json.load(file)
+    
+    # data = compress_json.load("data/oauth_tokens.gz")
+    # data = load_compressed("data/oauth_tokens.gz")
+    
+    user_data = data.get(oauth_code)
+    if not user_data:
+        return None
+    else:
+        return user_data["token"]["access_token"]
+
 ## -- ROUTES -- ##
 
 @app.route("/api/save-settings", methods=["POST", "OPTIONS"])
@@ -281,11 +333,9 @@ def save_guild_settings():
     guild_id = params.get("guild_id")
     oauth_code = headers.get("oauth-code")
     
-    file = open("data/oauth_tokens.json", "r")
-    data = json.load(file)
-    
-    bearer_token = data[oauth_code]["token"]["access_token"]
-
+    bearer_token = get_bearer(oauth_code)
+    if not bearer_token:
+        return {"message": "An error occurred, please try again later."}, 500
     if not guild_id:
         return {"message": "Missing guild ID"}, 400
     
@@ -311,7 +361,6 @@ def save_guild_settings():
         updated_settings[argument] = value
         
     server_data_col.update_one({"guild_id": str(guild_id)}, {"$set": updated_settings})
-    file.close()
     
     if len(updated_settings) == 0:
         return {"message": "No settings were updated."}, 200
@@ -335,6 +384,29 @@ def get_bot_guilds():
     
     return {"guilds": bot_guilds}, 200
 
+@app.route("/api/get-user-guilds", methods=["GET", "OPTIONS"])
+@user_endpoint
+@limiter.exempt
+def get_user_guilds_():
+    headers = request.headers
+    oauth_code = headers["oauth-code"]
+    
+    bearer_token = get_bearer(oauth_code)
+    if not bearer_token:
+        return {"message": "An error occurred, please try again later."}, 500
+    
+    user_guilds = get_user_guilds(bearer_token, oauth_code)
+    
+    if type(user_guilds) != list:
+        try:
+            user_guilds = json.loads(user_guilds)
+        except Exception as error:
+            logging.warning(user_guilds)
+            
+            return {"message": "An error occurred, please try again later."}, 500
+    
+    return {"guilds": user_guilds}, 200
+    
 
 @app.route("/api/get-guild-count", methods=["GET", "OPTIONS"])
 @api_endpoint
@@ -360,6 +432,9 @@ def authorize():
     file = open("data/oauth_tokens.json", "r+")
     data = json.load(file)
     
+    # data = compress_json.load("data/oauth_tokens.gz")
+    # data = load_compressed("data/oauth_tokens.gz")
+    
     if not oauth_code:
         return {"message": "Missing OAuth token"}, 403
     elif oauth_code and data.get(oauth_code):
@@ -370,6 +445,7 @@ def authorize():
             return result
         
         bearer_token = result.get("access_token")
+        access_code = generate_random_string(random.randint(7, 10), random.randint(6, 9))
         
         to_pop = []
         for oauth_token in data:
@@ -381,16 +457,18 @@ def authorize():
         
         auth_info = identify_user(bearer_token)
         
-        data[oauth_code] = {
+        data[access_code] = {
             "token": result,
             "expires": auth_info["expires"],
             "user": auth_info["user"],
         }
         file.seek(0)
-        json.dump(data, file, indent=4)
+        json.dump(data, file)
         file.close()
+        
+        # compress_json.dump(data, "data/oauth_tokens.gz")
 
-        return {"message": "You have been authorized"}, 200
+        return {"message": "You have been authorized", "access_code": access_code}, 200
     
 @app.route("/login")
 @limiter.exempt
@@ -398,7 +476,6 @@ def login():
     return redirect(f"https://discord.com/api/oauth2/authorize?response_type=code&client_id={bot_id}&scope=identify&prompt=none&redirect_uri={REDIRECT_URI}")
 
 @app.route("/callback")
-@limiter.exempt
 def callback():
     params = request.args
 
