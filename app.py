@@ -235,8 +235,10 @@ def exchange_code(code: str) -> dict:
         }
     )
     
-    response.raise_for_status()
-    return response.json()
+    if response.status_code != 200:
+        return {"message": "Invalid OAuth code"}
+    else:
+        return response.json()
 
 def refresh_token(refresh_token: str) -> dict:
     response = requests.post(
@@ -363,8 +365,11 @@ def authorize():
     elif oauth_code and data.get(oauth_code):
         return {"message": "You have already authorized"}, 200
     else:
-        token = exchange_code(oauth_code)
-        bearer_token = token.get("access_token")
+        result = exchange_code(oauth_code)
+        if token == {"message": "Invalid OAuth code"}:
+            return token
+        
+        bearer_token = result.get("access_token")
         
         to_pop = []
         for oauth_token in data:
