@@ -382,7 +382,7 @@ def authorize():
         auth_info = identify_user(bearer_token)
         
         data[oauth_code] = {
-            "token": token,
+            "token": result,
             "expires": auth_info["expires"],
             "user": auth_info["user"],
         }
