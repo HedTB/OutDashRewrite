@@ -118,18 +118,23 @@ class OnMessage(commands.Cog):
                 "x-rapidapi-key": "6eaccb2fa7mshb708280fd913d54p145fffjsne7f88976a2ac"
             }
 
-            params = {"msg":message.content,"bot_name":"OutDash","bot_gender":"male","bot_master":"HedTB","bot_age":"9","bot_company":"OutDash","bot_location":"Sweden","bot_build":"Beta","bot_birth_year":"2021","bot_birth_place":"Sweden","bot_favorite_color":"Blue","bot_favorite_band":"Imagine Dragons","bot_favorite_artist":"Eminem","id":str(message.author.id)}
+            params = {"msg":message.content,"bot_name":"OutDash","bot_gender":"male","bot_master":"HedTB","bot_age":"1","bot_company":"OutDash","bot_location":"Sweden","bot_build":"Stable","bot_birth_year":"2021","bot_birth_place":"Sweden","bot_favorite_color":"Blue","bot_favorite_band":"Imagine Dragons","bot_favorite_artist":"Eminem","id":str(message.author.id)}
             
-            """
-            response = requests.get(headers=headers, url = "https://random-stuff-api.p.rapidapi.com/ai"
-, params=params)
+            # """
+            response = requests.get(
+                url = "https://random-stuff-api.p.rapidapi.com/ai",
+                headers = headers,
+                params=params
+            )
 
             try:
                 await message.reply(response.json().get("AIResponse"))
-            except HTTPException:
+            except Exception as error:
+                print("Error occurred while getting chatbot response | " + str(error))
                 pass
-            """
-            await message.reply("The chat bot feature is temporarily disabled.")
+            
+            # """
+            # await message.reply("The chat bot feature is temporarily disabled.")
 
 
 
