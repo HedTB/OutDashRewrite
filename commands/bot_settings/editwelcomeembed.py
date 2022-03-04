@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 # FILES
 import extra.config as config
 import extra.functions as functions
+from extra.checks import *
 
 load_dotenv()
 
@@ -68,6 +69,7 @@ class EditWelcomeEmbed(commands.Cog):
     @commands.command()
     @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
     @commands.has_permissions(manage_guild=True)
+    @server_setting()
     async def editwelcomeembed(self, ctx: commands.Context, embed_part: str, *, value: str):
         """Toggles if welcome messages should be sent."""
         embed_part = embed_part.lower()
@@ -78,16 +80,7 @@ class EditWelcomeEmbed(commands.Cog):
         if not result:
             server_data_col.insert_one(functions.get_db_data(ctx.guild.id))
             self.editwelcomeembed(ctx, embed_part, value)
-
-        if result["settings_locked"] == "true":
-            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-            await ctx.send(embed=embed)
             return
-        elif not result["settings_locked"]:
-            update = {"$set": {
-                "settings_locked": "false"
-            }}
-            server_data_col.update_one(query, update)
 
         if not embed_part in embed_values:
             embed = disnake.Embed(description=f"{config.no} Please specify a valid part of the embed!\nEmbed parts:\n```{', '.join(e for e in embed_values)}```", color=config.error_embed_color)
@@ -99,10 +92,13 @@ class EditWelcomeEmbed(commands.Cog):
     @editwelcomeembed.error 
     async def setwelcomechannel_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Manage Guild` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} Please specify a toggle value!\nToggles:\n```on, yes, true, enabled - welcome messages enabled\noff, no, false, disabled - welcome messages disabled```", color=config.error_embed_color)
+            await ctx.send(embed=embed)
+        elif isinstance(error, SettingsLocked):
+            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
             await ctx.send(embed=embed)
             
     

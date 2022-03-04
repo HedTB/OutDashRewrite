@@ -93,11 +93,6 @@ class OnMemberRemove(commands.Cog):
         
         webhook.add_embed(embed)
         webhook.post()
-
-    @commands.command()
-    async def test_leave(self, ctx: commands.Context):
-        await self.on_member_remove(ctx.author)
-        await ctx.send("ok")
     
     
 def setup(bot):

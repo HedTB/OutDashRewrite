@@ -173,7 +173,7 @@ class EditWelcomeSlash(commands.Cog):
     @slash_setwelcomechannel.error 
     async def slash_setwelcomechannel_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Manage Guild` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} Please specify a channel!\n If you're looking to disable the welcome message, run `/welcome toggle off`.", color=config.error_embed_color)
@@ -213,7 +213,7 @@ class EditWelcomeSlash(commands.Cog):
     @slash_welcome.error 
     async def slash_welcome_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Manage Guild` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         
     

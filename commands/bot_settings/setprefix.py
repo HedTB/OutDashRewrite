@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 # FILES
 import extra.config as config
 import extra.functions as functions
+from extra.checks import *
 
 load_dotenv()
 
@@ -39,6 +40,7 @@ class SetPrefix(commands.Cog):
     @commands.command(aliases=["changeprefix", "prefix"])
     @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
     @commands.has_permissions(manage_guild=True)
+    @server_setting()
     async def setprefix(self, ctx, new_prefix: str):
         """Changes the server prefix."""
 
@@ -49,17 +51,7 @@ class SetPrefix(commands.Cog):
         if not result:
             server_data_col.insert_one(data)
             self.setprefix(ctx, new_prefix)
-
-        settings_locked = result.get("settings_locked")
-        if settings_locked == "true":
-            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-            await ctx.send(embed=embed)
             return
-        elif not settings_locked:
-            update = {"$set": {
-                "settings_locked": "false"
-            }}
-            server_data_col.update_one(query, update)
 
         if self.bot.get_bot_prefix(ctx.guild.id) == new_prefix:
             embed = disnake.Embed(description=f"{config.no} The prefix is already set to `{new_prefix}`.", color=config.error_embed_color)
@@ -73,15 +65,19 @@ class SetPrefix(commands.Cog):
     @setprefix.error 
     async def prefix_error(self, ctx, error):
         if isinstance(error, errors.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Manage Guild` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify the new prefix.", color=config.error_embed_color)
+            await ctx.send(embed=embed)
+        elif isinstance(error, SettingsLocked):
+            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
             await ctx.send(embed=embed)
 
 
     @commands.slash_command(name="setprefix", description="Change the prefix for text commands.")
     @commands.has_permissions(manage_guild=True)
+    @server_setting()
     async def slash_setprefix(self, inter: disnake.ApplicationCommandInteraction, new_prefix: str):
         """Change the prefix for text commands.
         Parameters
@@ -95,25 +91,27 @@ class SetPrefix(commands.Cog):
         if not result:
             server_data_col.insert_one(data)
             self.slash_setprefix(inter, new_prefix)
-
-        if result["settings_locked"] == "true":
-            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-            await inter.send(embed=embed)
             return
-        elif not result["settings_locked"]:
-            update = {"$set": {
-                "settings_locked": "false"
-            }}
-            server_data_col.update_one(query, update)
 
         if self.bot.get_bot_prefix(inter.guild.id) == new_prefix:
             embed = disnake.Embed(description=f"{config.no} The prefix is already set to `{new_prefix}`.", color=config.error_embed_color)
             await inter.send(embed=embed, ephemeral=True)
-            
         else:
             self.bot.change_prefix(inter.guild.id, new_prefix)
             embed = disnake.Embed(description=f"{config.yes} Changed the prefix to `{new_prefix}` successfully.", color=config.success_embed_color)
             await inter.send(embed=embed)
+    
+    @slash_setprefix.error 
+    async def prefix_error(self, inter, error):
+        if isinstance(error, errors.MissingPermissions):
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            await inter.response.send_message(embed=embed, ephemeral=True)
+        elif isinstance(error, errors.MissingRequiredArgument):
+            embed = disnake.Embed(description=f"{config.no} You need to specify the new prefix.", color=config.error_embed_color)
+            await inter.response.send_message(embed=embed, ephemeral=True)
+        elif isinstance(error, SettingsLocked):
+            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
+            await inter.response.send_message(embed=embed, ephemeral=True)
     
         
     

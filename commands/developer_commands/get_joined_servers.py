@@ -32,7 +32,7 @@ class GetJoinedServers(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def getjoinedservers(self, ctx: commands.Context):
         if ctx.author.id not in config.owners:
             return

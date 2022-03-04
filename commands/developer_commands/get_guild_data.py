@@ -32,7 +32,7 @@ class GetGuildData(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def getguilddata(self, ctx: commands.Context, guild_id: int = 836495137651294258):
         if ctx.author.id not in config.owners:
             return

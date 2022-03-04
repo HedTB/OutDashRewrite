@@ -55,10 +55,5 @@ class OnGuildJoin(commands.Cog):
         await channel.send(embed=embed)
 
 
-    @commands.command()
-    async def test_join(self, ctx):
-        await self.on_guild_join(ctx.guild)
-
-
 def setup(bot):
     bot.add_cog(OnGuildJoin(bot))

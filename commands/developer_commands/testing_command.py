@@ -32,7 +32,7 @@ class Test(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def test(self, ctx: commands.Context):
         if ctx.author.id not in config.owners:
             return

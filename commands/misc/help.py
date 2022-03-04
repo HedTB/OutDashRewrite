@@ -103,9 +103,15 @@ class Help(commands.HelpCommand):
     
     async def send_bot_help(self, mapping):
         all_commands = list(chain.from_iterable(mapping.values()))
-        for i in all_commands:
-            if i.name in config.hidden_commands:
-                all_commands.remove(i)
+        
+        to_pop = []
+        for command in all_commands:
+            if command.hidden:
+                to_pop.append(all_commands.index(command))
+                
+        for command in to_pop:
+            all_commands.pop(command)
+                
             
         formatter = HelpPageSource(all_commands, self)
         menu = MyMenuPages(formatter, delete_message_after=True)

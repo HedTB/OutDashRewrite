@@ -52,7 +52,7 @@ class Ban(commands.Cog):
     @ban.error 
     async def ban_error(self, ctx, error):
         if isinstance(error, errors.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Ban Members` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to ban.", color=config.error_embed_color)
@@ -102,7 +102,7 @@ class Ban(commands.Cog):
     @slash_ban.error 
     async def slash_ban_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, errors.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Ban Members` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to ban.", color=config.error_embed_color)

@@ -105,7 +105,7 @@ class Warn(commands.Cog):
     @warn.error
     async def warn_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Moderate Members` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error, commands.MissingRequiredArgument):
             if error.param.name == "member":
@@ -257,7 +257,7 @@ class Warn(commands.Cog):
     @slash_warnremove.error
     async def slash_warnremove_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Moderate Members` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error, commands.MissingRequiredArgument):
             if error.param.name == "member":
@@ -270,7 +270,7 @@ class Warn(commands.Cog):
     @slash_warn.error 
     async def slash_warn_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Moderate Members` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error, commands.MissingRequiredArgument):
             if error.param.name == "member":

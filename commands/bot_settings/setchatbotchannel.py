@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 # FILES
 import extra.config as config
 import extra.functions as functions
+from extra.checks import *
 
 load_dotenv()
 
@@ -40,6 +41,7 @@ class SetChatBotChannel(commands.Cog):
     @commands.command()
     @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
     @commands.has_permissions(manage_guild=True)
+    @server_setting()
     async def setchatbotchannel(self, ctx, channel: disnake.TextChannel):
         """Set where the chat bot should respond to messages."""
         
@@ -54,16 +56,7 @@ class SetChatBotChannel(commands.Cog):
         if not result:
             server_data_col.insert_one(data)
             self.setchatbotchannel(ctx, channel)
-
-        if result["settings_locked"] == "true":
-            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-            await ctx.send(embed=embed)
             return
-        elif not result["settings_locked"]:
-            update = {"$set": {
-                "settings_locked": "false"
-            }}
-            server_data_col.update_one(query, update)
         
         server_data_col.update_one(query, update)
         embed = disnake.Embed(description=f"{config.yes} The chat bot will now respond to messages in {channel.mention}.", color=config.success_embed_color)
@@ -74,7 +67,7 @@ class SetChatBotChannel(commands.Cog):
     @setchatbotchannel.error 
     async def editlogchannel_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Manage Guild` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error, commands.MissingRequiredArgument):
             missing_argument = error.param.name
@@ -87,6 +80,9 @@ class SetChatBotChannel(commands.Cog):
                 embed = disnake.Embed(description=f"{config.no} Please provide a channel!",
                                       color=config.error_embed_color)
                 await ctx.send(embed=embed)
+        elif isinstance(error, SettingsLocked):
+            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
+            await ctx.send(embed=embed)
         
     
 def setup(bot):

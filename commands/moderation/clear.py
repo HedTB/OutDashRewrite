@@ -37,7 +37,7 @@ class Clear(commands.Cog):
     @clear.error 
     async def clear_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Manage Messages` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         if isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} Please specify how many messages you want to delete.", color=config.error_embed_color)
@@ -69,7 +69,7 @@ class Clear(commands.Cog):
     @slash_clear.error 
     async def slash_clear_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `Manage Messages` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
             await ctx.response.send_message(embed=embed, ephemeral=True)
         if isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} Please specify how many messages you want to delete.", color=config.error_embed_color)

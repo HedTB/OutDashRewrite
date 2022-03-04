@@ -194,13 +194,13 @@ bot = Bot(
     status=disnake.Status.idle, 
     activity=disnake.Game(name="booting up.."), 
     case_insensitive=True, 
-    #test_guilds=[int(config.bot_server)], 
+    # test_guilds=[int(config.bot_server)],
     sync_permissions=True
 )
 
 ## -- COGS -- ##
 
-@bot.slash_command(name="cogs", default_permission=False, guild_ids=[config.bot_server])
+@bot.slash_command(name="cogs", description="Manages the bot's cogs.", default_permission=False, guild_ids=[config.bot_server])
 @commands.guild_permissions(guild_id=int(config.bot_server), roles={871899070283800636: True})
 async def cogs(inter):
     pass
@@ -224,7 +224,7 @@ async def loadcog(inter, cog: str):
 async def reload(inter):
     pass
 
-@reload.sub_command(name="all", description="Reload all commands.")
+@reload.sub_command(name="all", description="Reload all cogs.")
 async def reloadcogs(inter):
     try:
         await inter.response.defer()
@@ -257,7 +257,7 @@ async def reloadcog(inter, cog: str):
         pass
     
 @bot.command()
-async def reloadcogs(ctx: commands.Context):
+async def reloadcogs(ctx: commands.Context, hidden=True):
     if ctx.author.id not in config.owners:
         return
     

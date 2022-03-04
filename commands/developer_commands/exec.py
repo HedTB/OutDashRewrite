@@ -46,7 +46,7 @@ class Exec(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def exec(self, ctx: commands.Context, *, code: str):
         if ctx.author.id not in config.owners:
             return

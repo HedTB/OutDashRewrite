@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 # FILES
 import extra.config as config
 import extra.functions as functions
+from extra.checks import *
 
 load_dotenv()
 
