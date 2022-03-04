@@ -247,7 +247,8 @@ async def reloadcog(inter, cog: str):
     except Exception:
         pass
     
-    await bot.reload_cogs(cog)
+    await bot.unload_cogs(cog)
+    await bot.load_cogs(cog)
     embed = disnake.Embed(description=f"{config.yes} Reloaded `{cog}` successfully.", color=config.success_embed_color)
     
     try:
