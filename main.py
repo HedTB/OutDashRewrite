@@ -100,11 +100,8 @@ class Bot(commands.Bot):
 
         print(f"Bot started on {'the server' if config.is_server else 'a local computer'}. Stats: {len(bot.guilds)} servers, {len(bot.users)} users.")
         
-        stats_data = {
-            "commands_run": 0
-        }
-        with open("stats.json", 'w') as jsonfile:
-            json.dump(stats_data, jsonfile, indent=4)
+        with open("stats.json", 'w') as f:
+            json.dump({"commands_run": 0}, f)
             
     async def load_cogs(self, specific_cog: str = None):
         if not specific_cog:
