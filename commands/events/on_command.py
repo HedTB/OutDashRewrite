@@ -21,11 +21,11 @@ class OnCommand(commands.Cog):
         with open(filename, "r") as file_object:
             data = json.load(file_object)
         
-        number = data["commands_run"] or 0
+        number = data.get("commands_run", 0)
         new_data = {"commands_run" : number + 1}
 
         with open(filename, 'w') as jsonfile:
-            json.dump(new_data, jsonfile, indent=4)
+            json.dump(new_data, jsonfile)
 
     @commands.Cog.listener()
     async def on_slash_command(self, inter):
@@ -33,11 +33,11 @@ class OnCommand(commands.Cog):
         with open(filename, "r") as file_object:
             data = json.load(file_object)
         
-        number = data["commands_run"] or 0
+        number = data.get("commands_run", 0)
         new_data = {"commands_run" : number + 1}
 
         with open(filename, 'w') as jsonfile:
-            json.dump(new_data, jsonfile, indent=4)
+            json.dump(new_data, jsonfile)
     
     
 def setup(bot):
