@@ -17,8 +17,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
 import app
 
 ## -- VARIABLES -- ##
@@ -40,7 +40,7 @@ class GetGuildData(commands.Cog):
         guild = self.bot.get_guild(guild_id)
         embed = disnake.Embed(title=guild.name, description="")
 
-        embed.set_thumbnail(guild.icon or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_thumbnail(guild.icon or config.default_avatar_url)
         embed.add_field("Member Count", len(guild.members))
 
         await ctx.send(embed=embed)

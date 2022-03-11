@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-import extra.config as config
+from extra import config
 
 ## -- VARAIBLES -- ##
 
@@ -33,7 +33,7 @@ class Info(commands.Cog):
                         f"Upvote OutDash **[here.](https://bit.ly/UpvoteOD1)**\nTo support us, go **[here.](https://bit.ly/SupportOutDash)**\nJoin the **[support server](https://discord.com/invite/4pfUqEufUm)** to report bugs and ask questions.\n\n**[Invite OutDash!](https://discord.com/api/oauth2/authorize?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands)**\n\n"
                         "Thanks for using our bot, it means a lot :heart:",
                         color=config.embed_color)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         await ctx.send(embed=embed)
@@ -46,7 +46,7 @@ class Info(commands.Cog):
                         f"Upvote OutDash **[here.](https://bit.ly/UpvoteOD1)**\nTo support us, go **[here.](https://bit.ly/SupportOutDash)**\nJoin the **[support server](https://discord.com/invite/4pfUqEufUm)** to report bugs and ask questions.\n\n**[Invite OutDash!](https://discord.com/api/oauth2/authorize?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands)**\n\n"
                         "Thanks for using our bot, it means a lot :heart:",
                         color=config.embed_color)
-        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         await inter.send(embed=embed)

@@ -3,23 +3,16 @@
 # MODULES
 import disnake
 import os
-import random
-import asyncio
 import datetime
 import certifi
-import requests
 
 from disnake.ext import commands
-from disnake.errors import Forbidden, HTTPException
-from disnake.ext.commands import errors
 from pymongo import MongoClient
-from discord_webhook import DiscordEmbed, DiscordWebhook
-from requests.exceptions import Timeout
 from extra.webhooks import Webhook
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
 
 ## -- VARIABLES -- ##
 
@@ -101,10 +94,10 @@ class OnMemberJoin(commands.Cog):
         if welcome_channel_id and welcome_channel_id != "None":
             welcome_channel = self.bot.get_channel(int(welcome_channel_id))
 
-        webhook = Webhook(url=webhook_url, username="OutDash Logging", avatar_url=str(self.bot.user.avatar or "https://cdn.discordapp.com/embed/avatars/1.png"))
+        webhook = Webhook(url=webhook_url, username="OutDash Logging", avatar_url=str(self.bot.user.avatar or config.default_avatar_url))
 
         embed = disnake.Embed(description="**Member joined**", color=config.logs_add_embed_color, timestamp=datetime.datetime.utcnow())
-        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or config.default_avatar_url)
         embed.add_field(name="Account Created", value=f"{functions.seconds_to_text(seconds_old, 3)} ago", inline=False)
 
         webhook.add_embed(embed)

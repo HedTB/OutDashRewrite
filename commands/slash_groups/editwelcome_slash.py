@@ -16,8 +16,9 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
+from extra.checks import *
 
 load_dotenv()
 
@@ -105,7 +106,7 @@ class EditWelcomeSlash(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(name="welcome")
-    @commands.has_permissions(manage_guild=True)
+    @is_moderator(manage_guild=True)
     async def slash_welcome(self, inter):
         query = {"guild_id": str(inter.guild.id)}
         result = server_data_col.find_one(query)
@@ -123,7 +124,7 @@ class EditWelcomeSlash(commands.Cog):
         pass
     
     @slash_welcome.sub_command_group(name="message")
-    @commands.has_permissions(manage_guild=True)
+    @is_moderator(manage_guild=True)
     async def slash_welcome_message(self, inter):
         pass
     
@@ -173,7 +174,7 @@ class EditWelcomeSlash(commands.Cog):
     @slash_setwelcomechannel.error 
     async def slash_setwelcomechannel_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} Please specify a channel!\n If you're looking to disable the welcome message, run `/welcome toggle off`.", color=config.error_embed_color)
@@ -213,7 +214,7 @@ class EditWelcomeSlash(commands.Cog):
     @slash_welcome.error 
     async def slash_welcome_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         
     

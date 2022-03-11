@@ -11,7 +11,7 @@ from disnake.ext import commands
 from pymongo import MongoClient
 
 # FILES
-import extra.config as config
+from extra import config
 
 ## -- VARIABLES -- ##
 
@@ -43,7 +43,7 @@ class Ping(commands.Cog):
         
         embed = disnake.Embed(description=f':hourglass: Bot Latency - **{round(self.bot.latency * 1000)}** ms\n\n:stopwatch: API Latency - **{round(time_result * 1000)}** ms\n\n:timer: Database Latency - **{round(time_result2 * 1000)}** ms', color=config.embed_color)
             
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         await message.edit(content="_ _", embed=embed)
@@ -64,7 +64,7 @@ class Ping(commands.Cog):
         
         embed = disnake.Embed(description=f':hourglass: Bot Latency - **{round(self.bot.latency * 1000)}** ms\n\n:stopwatch: API Latency - **{round(time_result * 1000)}** ms\n\n:timer: Database Latency - **{round(time_result2 * 1000)}** ms', color=config.embed_color)
             
-        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         await inter.edit_original_message(content="_ _", embed=embed)

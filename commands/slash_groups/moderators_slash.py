@@ -16,8 +16,9 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
+from extra.checks import *
 
 load_dotenv()
 
@@ -43,12 +44,12 @@ class ModeratorsSlash(commands.Cog):
         self.bot = bot
     
     @commands.slash_command(name="moderators")
-    @commands.has_permissions(manage_guild=True)
+    @is_moderator(manage_guild=True)
     async def slash_moderators(self, inter):
         pass
 
     @slash_moderators.sub_command(name="add", description="Add a moderator to your server.")
-    @commands.has_permissions(manage_guild=True)
+    @is_moderator(manage_guild=True)
     async def slash_moderatorsadd(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member):
         """Add a moderator to your server.
         Parameters
@@ -114,12 +115,12 @@ class ModeratorsSlash(commands.Cog):
 
 
     @slash_moderators.sub_command(name="remove", description="Remove a moderator from the server.")
-    @commands.has_permissions(manage_guild=True)
+    @is_moderator(manage_guild=True)
     async def slash_moderatorsremove(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member):
         pass
 
     @slash_moderators.sub_command(name="view", description="View all current moderators.")
-    @commands.has_permissions(manage_guild=True)
+    @is_moderator(manage_guild=True)
     async def slash_moderatorsview(self, inter: disnake.ApplicationCommandInteraction):
         """"View all current moderators."""
         
@@ -143,11 +144,11 @@ class ModeratorsSlash(commands.Cog):
 
                 moderator_user = self.bot.get_user(int(moderator["id"]))
                 added_user = self.bot.get_user(int(moderator["moderator"]))
-                description += f"**{moderator_user}** ({moderator_user.mention})" + "\n" + f"Added by {added_user} | {moderator['time'][:16]} UTC"
+                description += f"**{moderator_user}** ({moderator_user.mention})" + "\n" + f"Added by {added_user} | {moderator['time'][:16]} UTC\n\n"
 
         embed = disnake.Embed(title=f"Moderators for {inter.guild.name}", description=description, color=config.embed_color)
 
-        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or config.default_avatar_url)
         await inter.send(embed=embed)
 
 
@@ -155,7 +156,7 @@ class ModeratorsSlash(commands.Cog):
     @slash_moderators.error
     async def slash_moderators_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         
     

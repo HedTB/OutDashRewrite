@@ -1,9 +1,9 @@
-import discord
+import disnake
 import asyncio
-from discord.ext import commands
+from disnake.ext import commands
 
 class AutoEmbedPaginator(object):
-    def __init__(self, ctx, **kwargs):
+    def __init__(self, ctx: commands.Context,**kwargs):
         self.embeds = None
         self.ctx = ctx
         self.bot = ctx.bot
@@ -99,7 +99,7 @@ class AutoEmbedPaginator(object):
                 await msg.edit(embed=self.embeds[len(self.embeds)-1])
                 
 class CustomEmbedPaginator(object):
-    def __init__(self, ctx, **kwargs):
+    def __init__(self, ctx: commands.Context,**kwargs):
         self.embeds = None
         self.ctx = ctx
         self.bot = ctx.bot
@@ -222,7 +222,7 @@ class CustomEmbedPaginator(object):
                             try:
                                 await msg.clear_reactions()
                                 break
-                            except discord.Forbidden or discord.HTTPException:
+                            except disnake.Forbidden or disnake.HTTPException:
                                 if reaction.message.author.id == self.bot.user.id:
                                     try:
                                         await msg.remove_reaction(str(reaction.emoji), reaction.message.author)

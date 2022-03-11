@@ -3,9 +3,9 @@
 import json
 import os
 import requests
-import extra.config as config
+from extra import config
 import certifi
-import disnake
+import discord
 import time
 import flask_discord
 import flask
@@ -19,11 +19,11 @@ from threading import Thread
 from waitress import serve
 from pymongo import MongoClient
 from functools import wraps
-from disnake.ext import commands
+from discord.ext import commands
 #from fastapi import FastAPI, Header, Response, status, Query
 #from typing import Optional, List
 
-import extra.functions as functions
+from extra import functions
 
 ## -- FUNCTIONS -- ##
 
@@ -84,7 +84,7 @@ def requires_api_authorization(f):
 
 ## -- FUNCTIONS -- ##
 
-def guild_to_dict(guild: disnake.Guild):
+def guild_to_dict(guild: discord.Guild):
     guild_dict = dict()
 
     guild_dict["id"] = guild.id

@@ -1,5 +1,5 @@
-from discord.errors import Forbidden
-from discord import AuditLogAction
+from disnake.errors import Forbidden
+from disnake import AuditLogAction
 from datetime import datetime
 from asyncio import sleep
 

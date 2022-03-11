@@ -19,8 +19,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
 from extra.checks import is_moderator
 
 ## -- VARIABLES -- ##
@@ -74,7 +74,7 @@ class Unban(commands.Cog):
     @unban.error
     async def unban_error(self, ctx: commands.Context, error):
         if isinstance(error, errors.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to unban.", color=config.error_embed_color)
@@ -122,7 +122,7 @@ class Unban(commands.Cog):
     @slash_unban.error 
     async def slash_unban_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, errors.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to unban.", color=config.error_embed_color)

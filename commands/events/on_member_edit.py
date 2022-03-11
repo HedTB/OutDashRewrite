@@ -15,7 +15,7 @@ from pymongo import MongoClient
 from extra.webhooks import Webhook
 
 # FILES
-import extra.config as config
+from extra import config
 
 ## -- VARIABLES -- ##
 
@@ -61,7 +61,7 @@ class OnMemberEdit(commands.Cog):
         webhook = Webhook(url=webhook_url, username="OutDash Logging", avatar_url=str(self.bot.user.avatar))
         embed = disnake.Embed(description=f"", color=config.logs_embed_color)
         
-        embed.set_author(name=message.guild.name, icon_url=message.guild.icon or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_author(name=message.guild.name, icon_url=message.guild.icon or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         webhook.add_embed(embed)

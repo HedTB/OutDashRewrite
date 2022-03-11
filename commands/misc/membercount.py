@@ -8,7 +8,7 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-import extra.config as config
+from extra import config
 
 load_dotenv()
 
@@ -39,7 +39,7 @@ class MemberCount(commands.Cog):
         description=f":white_check_mark: Total - {guild.member_count}\n:bust_in_silhouette: Humans - {len(humans)}\n:robot: Bots - {len(bots)}"
         f"\n\n**User Statuses**\n{config.online} Online - {online}\n{config.offline} Offline - {offline}", color=config.embed_color)
         
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         await ctx.send(embed=embed)
@@ -66,7 +66,7 @@ class MemberCount(commands.Cog):
         description=f":white_check_mark: Total - {guild.member_count}\n:bust_in_silhouette: Humans - {len(humans)}\n:robot: Bots - {len(bots)}"
         f"\n\n**User Statuses**\n{config.online} Online - {online}\n{config.offline} Offline - {offline}", color=config.embed_color)
         
-        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         await inter.send(embed=embed)

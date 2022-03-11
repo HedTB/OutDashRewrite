@@ -6,6 +6,8 @@ is_server = False if system() == "Windows" else True
 database_collection = "db" if is_server else "db2"
 default_prefix = "?" if is_server else "."
 
+default_avatar_url = "https://cdn.discordapp.com/embed/avatars/0.png"
+
 embed_color = 0xd4d4d4
 success_embed_color = 0x2ecc71
 error_embed_color = 0xFF0000

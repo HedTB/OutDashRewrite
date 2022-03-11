@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
 
 ## -- VARIABLES -- ##
 
@@ -55,8 +55,7 @@ def server_setting():
         
         if not result:
             server_data_col.insert_one(functions.get_db_data(ctx.guild.id))
-            await predicate(ctx)
-            return
+            return True
         
         settings_locked = result.get("settings_locked")
         
@@ -65,4 +64,7 @@ def server_setting():
             return True
         elif settings_locked == "true":
             raise SettingsLocked
+        elif settings_locked == "false":
+            return True
+        
     return commands.check(predicate)

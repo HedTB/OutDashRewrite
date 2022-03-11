@@ -15,8 +15,8 @@ from pymongo import MongoClient
 from extra.webhooks import Webhook
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
 
 ## -- VARIABLES -- ##
 
@@ -30,13 +30,6 @@ user_data_col = db["user_data"]
 
 ## -- FUNCTIONS -- ##
 
-def list_to_string(list: list):
-    str1 = ""
-    for element in list:
-        str1 + element
-        
-    return str1
-
 def days_hours_minutes_seconds(td):
     return td.days, td.seconds//3600, (td.seconds//60)%60, td.seconds
 
@@ -49,22 +42,16 @@ class OnMemberRemove(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: disnake.Member):
-
-        naive = datetime.datetime.replace(member.joined_at, tzinfo=None)
-        joined_at = (datetime.datetime.now() - naive)
+        native = datetime.datetime.replace(member.joined_at, tzinfo=None)
+        joined_at = (datetime.datetime.now() - native)
         seconds_old = joined_at.total_seconds()
 
-        query = {
-            "guild_id": str(member.guild.id)
-        }
-        data = {
-            "guild_id": str(member.guild.id),
-            "member_leave_logs_webhook": "None"
-        }
+        query = {"guild_id": str(member.guild.id)}
+        data = functions.get_db_data(member.guild.id)
         update = { "$set": { "member_leave_logs_webhook": "None" } }
+        
         server_data = server_data_col.find_one(query)
         if not server_data:
-            print(1)
             server_data_col.insert_one(data)
             await self.on_member_remove(member)
             return
@@ -81,6 +68,7 @@ class OnMemberRemove(commands.Cog):
             if role.name == "@everyone":
                 continue
             roles.append(role.mention + " ")
+            
         role_str = "".join(roles)
         
         webhook = Webhook(url=webhook_url, username="OutDash Logging", avatar_url=str(self.bot.user.avatar))
@@ -88,7 +76,7 @@ class OnMemberRemove(commands.Cog):
 
         embed.add_field(name="Member Since", value=f"{functions.seconds_to_text(seconds_old, 3)} ago", inline=False)
         embed.add_field(name="Roles", value=str(role_str), inline=False)
-        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         webhook.add_embed(embed)

@@ -48,12 +48,14 @@ class Webhook:
             self.embeds.append(embed_dict)
 
     def post(self, remove_embeds: bool = False):
-        if not self.url.startswith("https://discord.com/api/webhooks/"):
-            raise InvalidWebhook
-            
         response = requests.post(url=self.url, json=self.json)
 
+        if response.status_code == 400:
+            return response
+        elif response.status_code == 404:
+            raise InvalidWebhook
+        
         try:
             response.raise_for_status()
         except Exception as error:
-            logger.warn(error)
+            logger.warning(error)

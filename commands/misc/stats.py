@@ -9,7 +9,7 @@ import json
 from disnake.ext import commands
 
 # FILES
-import extra.config as config
+from extra import config
 
 def get_commands_run():
     with open("stats.json") as file_object:
@@ -44,7 +44,7 @@ class Stats(commands.Cog):
         embed.add_field(name=":chart_with_upwards_trend: Bot Values", value=f"Server Count: `{len(self.bot.guilds)}`\nCommands Run: `{commands_run}`\nUser Count: `{len(self.bot.users)}`", inline=True)
         embed.add_field(name=":bar_chart: Server Values", value=f"Member Count: `{ctx.guild.member_count}`\nServer Prefix: `{self.bot.get_bot_prefix(ctx.guild.id)}`", inline=True)
             
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         await msg.edit(embed=embed)
@@ -74,7 +74,7 @@ class Stats(commands.Cog):
 
         embed.add_field(name=":bar_chart: Server Values", value=f"Member Count: `{inter.guild.member_count}`\nServer Prefix: `{self.bot.get_bot_prefix(inter.guild.id)}`", inline=True)
 
-        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png")
+        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
         
         await inter.edit_original_message(embed=embed)

@@ -12,8 +12,8 @@ from disnake.errors import Forbidden, HTTPException
 from disnake.ext.commands import errors
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
 from extra.checks import is_moderator
 
 class Ban(commands.Cog):
@@ -24,7 +24,7 @@ class Ban(commands.Cog):
     @commands.command()
     @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
     @is_moderator(ban_members=True)
-    async def ban(self, ctx, member:disnake.Member, *, reason="No reason provided."):
+    async def ban(self, ctx: commands.Context,member:disnake.Member, *, reason="No reason provided."):
         """Bans a member from the server."""
         
         if member == ctx.author:
@@ -50,9 +50,9 @@ class Ban(commands.Cog):
                 
     
     @ban.error 
-    async def ban_error(self, ctx, error):
+    async def ban_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, errors.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to ban.", color=config.error_embed_color)
@@ -69,7 +69,7 @@ class Ban(commands.Cog):
         
     
     @commands.slash_command(name="ban", description="Ban a member from the guild.")
-    @commands.has_permissions(ban_members=True)
+    @is_moderator(ban_members=True)
     @is_moderator(ban_members=True)
     async def slash_ban(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member, reason: str = "No reason provided."):
         """Ban a member from the guild.
@@ -102,7 +102,7 @@ class Ban(commands.Cog):
     @slash_ban.error 
     async def slash_ban_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, errors.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to ban.", color=config.error_embed_color)

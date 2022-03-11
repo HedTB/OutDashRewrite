@@ -15,8 +15,8 @@ from randomstuff import AsyncClient
 from dotenv import load_dotenv
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
 
 ## -- VARIABLES -- ##
 

@@ -12,8 +12,8 @@ from disnake.errors import Forbidden, HTTPException
 from disnake.ext.commands import errors
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
 from extra.checks import is_moderator
 
 class Kick(commands.Cog):
@@ -24,7 +24,7 @@ class Kick(commands.Cog):
     @commands.command()
     @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
     @is_moderator(kick_members=True)
-    async def kick(self, ctx, member:disnake.Member, *, reason="No reason provided."):
+    async def kick(self, ctx: commands.Context,member:disnake.Member, *, reason="No reason provided."):
         """Kicks a member from the server."""
         
         if member == ctx.author:
@@ -50,9 +50,9 @@ class Kick(commands.Cog):
                 
     
     @kick.error 
-    async def kick_error(self, ctx, error):
+    async def kick_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, errors.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error, errors.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to kick.", color=config.error_embed_color)
@@ -104,7 +104,7 @@ class Kick(commands.Cog):
     @slash_kick.error 
     async def slash_kick_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, errors.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         if isinstance(error, errors.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to kick.", color=config.error_embed_color)

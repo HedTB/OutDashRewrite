@@ -1,16 +1,30 @@
+## -- IMPORTS -- ##
+
 import disnake
-import datetime
+import os
 import string
 import random
-
-import extra.config as config
+import certifi
+import json
 
 from captcha.image import ImageCaptcha
+from dotenv import load_dotenv
+from pymongo import MongoClient
 
+from extra import config
 
-def list_to_string(list: list, separator: str) -> str:
-    return f"{separator}".join(e for e in list)
+## -- VARIABLES -- ##
 
+load_dotenv()
+
+mongo_login = os.environ.get("MONGO_LOGIN")
+
+client = MongoClient(mongo_login, tlsCAFile=certifi.where())
+db = client[config.database_collection]
+
+server_data_col = db["server_data"]
+
+## -- FUNCTIONS -- ##
 
 def generate_captcha(length: int = 8) -> str:
     image = ImageCaptcha(width=300, height=90)
@@ -20,8 +34,8 @@ def generate_captcha(length: int = 8) -> str:
 
     image.generate(captcha_text)
     image.write(captcha_text, f"{captcha_text}.png")
+    
     return captcha_text
-
 
 def get_db_data(guild_id: str) -> dict:
     return {
@@ -60,16 +74,11 @@ def get_db_data(guild_id: str) -> dict:
     }
     
 def get_user_data(user_id: int):
-    user_id = str(user_id)
-    
     return {
-        "user_id": user_id,
-        
+        "user_id": str(user_id),
         "timezone": "Europe/Belfast",
-        
         "message_content_privacy": "false",
     }
-
 
 def manipulate_time(time_str: str, return_type: str) -> int or str:
     if return_type == "seconds":
@@ -106,7 +115,6 @@ def manipulate_time(time_str: str, return_type: str) -> int or str:
 
     elif return_type == "time":
         return time_str[:-1]
-
 
 def seconds_to_text(secs, max_amount: int = 6) -> str:
     secs = int(secs)
@@ -159,7 +167,6 @@ def seconds_to_text(secs, max_amount: int = 6) -> str:
 
     return string2
 
-
 def is_role_above_role(role1: disnake.Role, role2: disnake.Role) -> bool:
     if role1.id == role2.id:
         return None
@@ -168,23 +175,56 @@ def is_role_above_role(role1: disnake.Role, role2: disnake.Role) -> bool:
     elif role2.position > role1.position:
         return False
 
+def log_moderation(guild_id: int, moderator: str, action: str, reason: str = "No reason provided."):
+    guild_id = str(guild_id)
+    
+    query = {"guild_id": guild_id}
+    result = server_data_col.find_one(query)
+    
+    if not result:
+        server_data_col.insert_one(get_db_data(guild_id))
+        log_moderation(guild_id, moderator, action, reason)
+        
+    elif not result.get("moderation_logs"):
+        server_data_col.update_one(query, {"$set": {"moderation_logs": "{}"}})
+        log_moderation(guild_id, moderator, action, reason)
+        
+    else:
+        try:
+            json.loads(result.get("moderation_logs"))
+        except:
+            return
+        
+        mod_logs = json.loads(result.get("moderation_logs"))
+        
+        mod_logs.append({
+            moderator: moderator,
+            action: action,
+            reason: reason
+        })
+        server_data_col.update_one(query, {"$set": {
+            "moderation_logs": json.dumps(mod_logs)
+        }})
+        
+def get_guild_data(guild_id: int):
+    query = {"guild_id": str(guild_id)}
+    result = server_data_col.find_one(query)
+    
+    if not result:
+        server_data_col.insert_one(get_db_data(guild_id))
+        return get_guild_data(guild_id)
+    
+    return result
 
-def construct_webhook_embed(title: str = None,
-                            description: str = None,
-                            color: str = None,
-                            timestamp: str = str(datetime.datetime.utcnow()),
-                            author_name: str = None,
-                            author_icon_url: str = None,
-                            fields: dict = []) -> list:
-
-    return [{
-        "title": title,
-        "description": description,
-        "color": color,
-        "timestamp": timestamp,
-        "author": {
-            "name": author_name,
-            "icon_url": author_icon_url
-        },
-        "fields": fields
-    }]
+def get_warn_data(guild_id: int, member_id: int):
+    query = {"guild_id": str(guild_id)}
+    result = server_data_col.find_one(query)
+    
+    if not result:
+        server_data_col.insert_one({
+            "guild_id": str(guild_id),
+            str(member_id): "[]"
+        })
+        return get_warn_data(guild_id, member_id)
+    
+    return result

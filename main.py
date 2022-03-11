@@ -1,13 +1,12 @@
 ## -- IMPORTING -- ##
 
 # MODULE
-import multiprocessing
+import atexit
 import os
 import datetime
 import certifi
 import disnake
 import json
-import time
 import logging
 
 from disnake.ext import commands
@@ -31,8 +30,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("disnake")
 logger.setLevel(logging.INFO)
 
-handler = logging.FileHandler(filename='disnake.log', encoding='utf-8', mode='w')
-handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+handler = logging.FileHandler(filename="disnake.log", encoding="utf-8", mode="w")
+handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
 
 logger.addHandler(handler)
 
@@ -44,7 +43,7 @@ api_key = os.environ.get("API_KEY")
 
 
 # DATABASE VARIABLES
-client = MongoClient(f"{mongo_token}", tlsCAFile=certifi.where())
+client = MongoClient(mongo_token, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
 prefixes_col = db["prefixes"]
@@ -55,29 +54,23 @@ server_data_col = db["server_data"]
 # IMPORTANT FUNCTIONS
 def get_prefix(bot, message: disnake.Message):
     query = {"guild_id": str(message.guild.id)}
-    data = functions.get_db_data(message.guild.id)
     
-    result = server_data_col.find_one(query)
+    result = functions.get_guild_data(message.guild.id)
     
-    if not result:
-        server_data_col.insert_one(data)
-        return commands.when_mentioned_or(config.default_prefix)(bot, message)
-    elif not result.get("prefix"):
-        server_data_col.update_one(query, {"$set": {"prefix": "?"}})
+    if not result.get("prefix"):
+        server_data_col.update_one(query, {"$set": {"prefix": config.default_prefix}})
         return commands.when_mentioned_or(config.default_prefix)(bot, message)
     
     return commands.when_mentioned_or(result["prefix"])(bot, message)
 
 async def load_cogs(bot: commands.Bot):
+    
     for folder in os.listdir("./commands"):
         for file in os.listdir(f"./commands/{folder}"):
             if not file.endswith(".py"): continue
 
-            file = file[:-3]
-            try:
-                bot.load_extension(f"commands.{folder}.{file}")
-            except Exception as e:
-                print(e)
+            bot.load_extension(f"commands.{folder}.{file[:-3]}")
+
 
     print("Loaded all commands.")
 
@@ -98,10 +91,18 @@ class Bot(commands.Bot):
         
         await status_channel.send(embed=embed)
 
-        print(f"Bot started on {'the server' if config.is_server else 'a local computer'}. Stats: {len(bot.guilds)} servers, {len(bot.users)} users.")
+        print(f"Bot started on {'the server' if config.is_server else 'a local computer'}.\nStats: {len(bot.guilds)} servers, {len(bot.users)} users.")
         
+<<<<<<< Updated upstream
         with open("data/stats.json", 'w') as f:
             json.dump({"commands_run": 0}, f)
+=======
+        stats_data = {
+            "commands_run": 0
+        }
+        with open("stats.json", "w") as jsonfile:
+            json.dump(stats_data, jsonfile, indent=4)
+>>>>>>> Stashed changes
             
     async def load_cogs(self, specific_cog: str = None):
         if not specific_cog:
@@ -190,14 +191,15 @@ bot = Bot(
     intents=disnake.Intents.all(),
     status=disnake.Status.idle, 
     activity=disnake.Game(name="booting up.."), 
-    case_insensitive=True, 
-    # test_guilds=[int(config.bot_server)],
+    case_insensitive=True,
     sync_permissions=True
 )
+if not config.is_server:
+    bot._test_guilds = [int(config.bot_server)]
 
 ## -- COGS -- ##
 
-@bot.slash_command(name="cogs", description="Manages the bot's cogs.", default_permission=False, guild_ids=[config.bot_server])
+@bot.slash_command(name="cogs", description="Manages the bot's cogs.", default_permission=False, auto_sync=False)
 @commands.guild_permissions(guild_id=int(config.bot_server), roles={871899070283800636: True})
 async def cogs(inter):
     pass

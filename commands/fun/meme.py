@@ -11,7 +11,7 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-import extra.config as config
+from extra import config
 
 ## -- REDDIT CLIENT -- ##
 
@@ -39,7 +39,7 @@ class Meme(commands.Cog):
         
         embed = disnake.Embed(description=f"**{submission.title}**", color=config.embed_color)
         
-        embed.set_footer(icon_url=ctx.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png", text=f"Requested by {ctx.author}")
+        embed.set_footer(icon_url=ctx.author.avatar or config.default_avatar_url, text=f"Requested by {ctx.author}")
         embed.timestamp = datetime.datetime.utcnow()
         embed.set_image(url=submission.url)
         
@@ -56,7 +56,7 @@ class Meme(commands.Cog):
 
         embed = disnake.Embed(description=f"**{submission.title}**", color=config.embed_color)
 
-        embed.set_footer(icon_url=inter.author.avatar or "https://cdn.discordapp.com/embed/avatars/1.png", text=f"Requested by {inter.author}")
+        embed.set_footer(icon_url=inter.author.avatar or config.default_avatar_url, text=f"Requested by {inter.author}")
         embed.timestamp = datetime.datetime.utcnow()
         embed.set_image(url=submission.url)
         

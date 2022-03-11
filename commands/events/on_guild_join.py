@@ -2,23 +2,16 @@
 
 # MODULES
 import disnake
-import requests
 import os
-import random
-import asyncio
-import datetime
 import certifi
 
 from disnake.ext import commands
-from disnake.errors import Forbidden, HTTPException
-from disnake.ext.commands import errors
 from pymongo import MongoClient
-from randomstuff import AsyncClient
 from dotenv import load_dotenv
 
 # FILES
-import extra.config as config
-import extra.functions as functions
+from extra import config
+from extra import functions
 
 ## -- VARIABLES -- ##
 

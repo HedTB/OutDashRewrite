@@ -6,7 +6,7 @@ import disnake
 from disnake.ext import commands
 
 # FILES
-import extra.config as config
+from extra import config
 from extra.checks import is_moderator
 
 class Clear(commands.Cog):
@@ -17,7 +17,7 @@ class Clear(commands.Cog):
     @commands.command(aliases=["purge"])
     @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
     @is_moderator(manage_messages=True)
-    async def clear(self, ctx, amount: int, channel: disnake.TextChannel = None):
+    async def clear(self, ctx: commands.Context,amount: int, channel: disnake.TextChannel = None):
         """Clear up some messages from this channel!"""
         embed = disnake.Embed(description=f"{config.yes} Deleted {amount} messsages." if not amount == 1 else f"{config.yes} Deleted {amount} messsage.", color=config.success_embed_color)
         if not channel:
@@ -35,9 +35,9 @@ class Clear(commands.Cog):
 
     
     @clear.error 
-    async def clear_error(self, ctx, error):
+    async def clear_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         if isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} Please specify how many messages you want to delete.", color=config.error_embed_color)
@@ -67,9 +67,9 @@ class Clear(commands.Cog):
             
     
     @slash_clear.error 
-    async def slash_clear_error(self, ctx, error):
+    async def slash_clear_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await ctx.response.send_message(embed=embed, ephemeral=True)
         if isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} Please specify how many messages you want to delete.", color=config.error_embed_color)
