@@ -64,15 +64,14 @@ def get_prefix(bot, message: disnake.Message):
     return commands.when_mentioned_or(result["prefix"])(bot, message)
 
 async def load_cogs(bot: commands.Bot):
-    
-    for folder in os.listdir("./commands"):
-        for file in os.listdir(f"./commands/{folder}"):
+    for folder in os.listdir("./extensions"):
+        for file in os.listdir(f"./extensions/{folder}"):
             if not file.endswith(".py"): continue
 
-            bot.load_extension(f"commands.{folder}.{file[:-3]}")
+            bot.load_extension(f"extensions.{folder}.{file[:-3]}")
 
 
-    print("Loaded all commands.")
+    print("Loaded all extensions.")
 
 
 # BOT
@@ -93,62 +92,54 @@ class Bot(commands.Bot):
 
         print(f"Bot started on {'the server' if config.is_server else 'a local computer'}.\nStats: {len(bot.guilds)} servers, {len(bot.users)} users.")
         
-<<<<<<< Updated upstream
         with open("data/stats.json", 'w') as f:
             json.dump({"commands_run": 0}, f)
-=======
-        stats_data = {
-            "commands_run": 0
-        }
-        with open("stats.json", "w") as jsonfile:
-            json.dump(stats_data, jsonfile, indent=4)
->>>>>>> Stashed changes
             
     async def load_cogs(self, specific_cog: str = None):
         if not specific_cog:
-            for folder in os.listdir("./commands"):
-                for file in os.listdir(f"./commands/{folder}"):
+            for folder in os.listdir("./extensions"):
+                for file in os.listdir(f"./extensions/{folder}"):
                     if not file.endswith(".py"): return
 
                     file = file[:-3]
                     try:
-                        self.load_extension(f"commands.{folder}.{file}")
+                        self.load_extension(f"extensions.{folder}.{file}")
                     except Exception as e:
                         print(e)
                         
-            print("Loaded all commands.")
+            print("Loaded all extensions.")
                     
         else:
-            for folder in os.listdir("./commands"):
-                for file in os.listdir(f"./commands/{folder}"):
+            for folder in os.listdir("./extensions"):
+                for file in os.listdir(f"./extensions/{folder}"):
                     if not file.endswith(".py") or file[:-3] != specific_cog: return
 
                     file = file[:-3]
                     try:
-                        self.load_extension(f"commands.{folder}.{file}")
+                        self.load_extension(f"extensions.{folder}.{file}")
                     except Exception as e:
                         print(e)
                     
     async def unload_cogs(self, specific_cog: str = None):
         if not specific_cog:
-            for folder in os.listdir("./commands"):
-                for file in os.listdir(f"./commands/{folder}"):
+            for folder in os.listdir("./extensions"):
+                for file in os.listdir(f"./extensions/{folder}"):
                     if not file.endswith(".py"): return
 
                     file = file[:-3]
                     try:
-                        self.unload_extension(f"commands.{folder}.{file}")
+                        self.unload_extension(f"extensions.{folder}.{file}")
                     except Exception as e:
                         print(e)
                     
         else:
-            for folder in os.listdir("./commands"):
-                for file in os.listdir(f"./commands/{folder}"):
+            for folder in os.listdir("./extensions"):
+                for file in os.listdir(f"./extensions/{folder}"):
                     if not file.endswith(".py") or file[:-3] != specific_cog: return
 
                     file = file[:-3]
                     try:
-                        self.unload_extension(f"commands.{folder}.{file}")
+                        self.unload_extension(f"extensions.{folder}.{file}")
                     except Exception as e:
                         print(e)
                     
