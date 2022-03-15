@@ -1,12 +1,6 @@
-<<<<<<< Updated upstream
-**/__pycache__/
-
-.env
-=======
 __pycache__
 **/__pycache__/
 
 .env
 
-disnake.log
->>>>>>> Stashed changes
+*.log
