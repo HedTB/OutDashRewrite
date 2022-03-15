@@ -1,8 +1,0 @@
-2022-03-15 21:05:55,238:INFO:disnake.client: logging in using static token
-2022-03-15 21:05:58,954:INFO:disnake.gateway: Shard ID None has sent the IDENTIFY payload.
-2022-03-15 21:05:59,181:INFO:disnake.gateway: Shard ID None has connected to Gateway: ["gateway-prd-main-4d0z",{"micros":75992,"calls":["discord-sessions-green-prd-2-137",{"micros":74475,"calls":["start_session",{"micros":44375,"calls":["discord-api-7bc6d4466c-48plm",{"micros":39969,"calls":["get_user",{"micros":6144},"add_authorized_ip",{"micros":4311},"get_guilds",{"micros":4685},"coros_wait",{"micros":1}]}]},"guilds_connect",{"micros":3,"calls":[]},"presence_connect",{"micros":3,"calls":[]}]}]}] (Session ID: 6c34bb9e27bdb74ee209fffcba37429c).
-2022-03-15 21:21:09,729:INFO:disnake.client: Received signal to terminate bot and event loop.
-2022-03-15 21:21:09,732:INFO:disnake.client: Cleaning up tasks.
-2022-03-15 21:21:09,734:INFO:disnake.client: Cleaning up after 5 tasks.
-2022-03-15 21:21:10,056:INFO:disnake.client: All tasks finished cancelling.
-2022-03-15 21:21:10,056:INFO:disnake.client: Closing the event loop.

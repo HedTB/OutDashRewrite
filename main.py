@@ -30,10 +30,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("disnake")
 logger.setLevel(logging.INFO)
 
-handler = logging.FileHandler(filename="disnake.log", encoding="utf-8", mode="w")
-handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
-
-logger.addHandler(handler)
+# handler = logging.FileHandler(filename="disnake.log", encoding="utf-8", mode="w")
+# handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
+# logger.addHandler(handler)
 
 # TOKENS
 bot_token = str(os.environ.get("BOT_TOKEN"))
