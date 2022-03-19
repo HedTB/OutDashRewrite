@@ -12,7 +12,7 @@ from disnake.ext import commands
 from extra import config
 
 def get_commands_run():
-    with open("stats.json") as file_object:
+    with open("data/stats.json") as file_object:
         data = json.load(file_object)
     return data.get("commands_run")
 
