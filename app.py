@@ -55,8 +55,8 @@ limiter = Limiter(
 BASE_DISCORD_URL = "https://discordapp.com/api/v9{}"
 DATA_REFRESH_DELAY = 180
 
-SERVER_URL = "http://127.0.0.1:8080" if not config.is_server else "https://outdash-beta-alt.herokuapp.com"
-REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.is_server else "https://outdash-beta-alt.herokuapp.com/callback"
+SERVER_URL = "http://127.0.0.1:8080" if not config.is_server else "https://outdash-beta2.herokuapp.com"
+REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.is_server else "https://outdash-beta2.herokuapp.com/callback"
 
 # DATABASE VARIABLES
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
