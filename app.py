@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+from uuid import uuid4
 import certifi
 import requests
 import time
@@ -11,7 +12,7 @@ import string
 
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from flask import Flask, make_response, redirect, request, jsonify
+from flask import Flask, make_response, redirect, render_template, request, jsonify, url_for
 from functools import wraps
 from flask_cors import CORS, cross_origin
 from threading import Thread
@@ -20,8 +21,8 @@ from flask_limiter.util import get_remote_address
 from pprint import pprint
 
 # FILES
-from extra import config
-from extra import functions
+from utils import config
+from utils import functions
 
 ## -- SETUP -- ##
 
@@ -32,17 +33,19 @@ load_dotenv()
 # SECRETS
 mongo_token = os.environ.get("MONGO_LOGIN")
 api_key = os.environ.get("API_KEY")
+developer_password = os.environ.get("DEVELOPER_PASSWORD")
 
 bot_token = os.environ.get("BOT_TOKEN" if config.is_server else "TEST_BOT_TOKEN")
 bot_id = os.environ.get("BOT_ID" if config.is_server else "TEST_BOT_ID")
 bot_secret = os.environ.get("BOT_SECRET" if config.is_server else "TEST_BOT_SECRET")
 
 # APP VARIABLES
-app = Flask(__name__)
+app = Flask(__name__, template_folder="web", static_folder="web/static")
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, send_wildcard=True, origins="*")
 
 # APP CONFIG
 app.config["CORS_HEADERS"] = "Content-Type"
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # OTHER VARIABLES
 limiter = Limiter(
@@ -55,8 +58,8 @@ limiter = Limiter(
 BASE_DISCORD_URL = "https://discordapp.com/api/v9{}"
 DATA_REFRESH_DELAY = 180
 
-SERVER_URL = "http://127.0.0.1:8080" if not config.is_server else "https://outdash-beta-alt.herokuapp.com"
-REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.is_server else "https://outdash-beta-alt.herokuapp.com/callback"
+SERVER_URL = "http://127.0.0.1:8080" if not config.is_server else "https://outdash-beta2.herokuapp.com"
+REDIRECT_URI = f"{SERVER_URL}/callback"
 
 # DATABASE VARIABLES
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
@@ -106,8 +109,6 @@ def user_endpoint(f):
         file = open("data/oauth_tokens.json", "r")
         data = json.load(file)
         
-        # data = compress_json.load("data/oauth_tokens.gz")
-        
         if method == "OPTIONS":
             return preflight_response()
         
@@ -155,10 +156,17 @@ def user_request(endpoint, bearer_token, params=None) -> requests.Response:
 # USER DATA
 def get_user_guilds(bearer_token=None, access_code=None) -> dict:
     file = open("data/oauth_tokens.json", "r+")
-    data = json.load(file)
     
-    # data = compress_json.load("data/oauth_tokens.gz")
-    # data = load_compressed("data/oauth_tokens.gz")
+    try:
+        data = json.load(file)
+    except:
+        file.seek(0)
+        file.truncate(0)
+        
+        json.dump({}, file)
+        file.close()
+        
+        return get_user_guilds(bearer_token, access_code)
     
     user_data = data.get(access_code)
     user_guilds_cache = user_data.get("guilds")
@@ -177,9 +185,6 @@ def get_user_guilds(bearer_token=None, access_code=None) -> dict:
         file.seek(0)
         json.dump(data, file)
         
-        # compress_json.dump(data, "data/oauth_tokens.gz")
-        # dump_compressed(data, "data/oauth_tokens.gz")
-        
         user_guilds_cache = user_guilds
         
     return user_guilds_cache
@@ -188,10 +193,17 @@ def get_user_guilds(bearer_token=None, access_code=None) -> dict:
 # BOT DATA
 def get_guilds(bearer_token=None, access_code=None) -> dict:
     file = open("data/api.json", "r+")
-    data = json.load(file)
     
-    # data = compress_json.load("data/api.gz")
-    # data = load_compressed("data/api.gz")
+    try:
+        data = json.load(file)
+    except:
+        file.seek(0)
+        file.truncate(0)
+        
+        json.dump({}, file)
+        file.close()
+        
+        return get_guilds(bearer_token, access_code)
     
     bot_guilds_refresh = data.get("bot_guilds_refresh")
     bot_guilds_cache = data.get("bot_guilds")
@@ -212,9 +224,6 @@ def get_guilds(bearer_token=None, access_code=None) -> dict:
             
             file.seek(0)
             json.dump(data, file)
-            
-            # compress_json.dump(data, "data/api.gz")
-            # dump_compressed(data, "data/api.gz")
                 
         if bearer_token and bot_guilds.status_code == 200:
             for index, guild in enumerate(bot_guilds_dict):
@@ -312,9 +321,6 @@ def get_bearer(access_code: str) -> str | None:
     file = open("data/oauth_tokens.json", "r")
     data = json.load(file)
     
-    # data = compress_json.load("data/oauth_tokens.gz")
-    # data = load_compressed("data/oauth_tokens.gz")
-    
     user_data = data.get(access_code)
     if not user_data:
         return None
@@ -333,6 +339,20 @@ def get_bearer_from_code(oauth_code: str) -> str | None:
             return authorization["token"]["access_token"]
         
     return None
+
+# DEV PANEL
+def is_logged_in(cookies: dict) -> bool:
+    file = open("data/panel_bearers.json")
+    bearer_tokens = json.load(file)
+    
+    bearer_token = cookies.get("bearer_token")
+    
+    if not bearer_token:
+        return False
+    elif not bearer_token in bearer_tokens:
+        return False
+    else:
+        return True
 
 ## -- ROUTES -- ##
 
@@ -445,9 +465,6 @@ def authorize():
     file = open("data/oauth_tokens.json", "r+")
     data = json.load(file)
     
-    # data = compress_json.load("data/oauth_tokens.gz")
-    # data = load_compressed("data/oauth_tokens.gz")
-    
     if not oauth_code:
         return {"message": "Missing OAuth code"}, 403
     elif oauth_code and get_bearer_from_code(oauth_code):
@@ -480,12 +497,10 @@ def authorize():
         file.seek(0)
         json.dump(data, file)
         file.close()
-        
-        # compress_json.dump(data, "data/oauth_tokens.gz")
 
         return {"message": "You have been authorized", "access_code": access_code}, 200
     
-@app.route("/login")
+@app.route("/demo-login")
 @limiter.exempt
 def login():
     return redirect(f"https://discord.com/api/oauth2/authorize?response_type=code&client_id={bot_id}&scope=identify&prompt=none&redirect_uri={REDIRECT_URI}")
@@ -503,6 +518,66 @@ def callback():
     )
     
     return response.json(), response.status_code
+
+
+@app.route("/login")
+@limiter.exempt
+def panel_login():
+    signed_in = is_logged_in(request.cookies)
+    
+    if signed_in:
+        return redirect(url_for("dev_dashboard"))
+    
+    return render_template("login.html")
+
+@app.route("/dev/login", methods=["POST", "OPTIONS"])
+@limiter.exempt
+def dev_login():
+    headers = request.headers
+    bearer_token = str(uuid4())
+    signed_in = is_logged_in(request.cookies)
+    
+    if signed_in:
+        return redirect(url_for("dev_dashboard"))
+    
+    if not headers.get("password"):
+        return {"message": "Missing password"}, 400
+    elif headers.get("password") != developer_password:
+        return {"message": "Invalid password"}, 403
+    
+    file = open("data/panel_bearers.json", "r+")
+    data = json.load(file)
+    
+    data.append(bearer_token)
+    
+    file.seek(0)
+    json.dump(data, file)
+    file.close()
+    
+    return {"bearer_token": bearer_token, "message": "You have been logged in."}, 200
+    
+
+@app.route("/dev/dashboard")
+@limiter.exempt
+def dev_dashboard():
+    logged_in = is_logged_in(request.cookies)
+    
+    if not logged_in:
+        return redirect(url_for("panel_login"))
+    
+    return render_template("dashboard.html")
+
+@app.route("/dev/get-bot-data")
+@limiter.exempt
+def dev_bot_data():
+    logged_in = is_logged_in(request.cookies)
+    bot_guilds = get_guilds()
+    
+    if not logged_in:
+        return {"message": "Please log in before accessing this endpoint."}, 403
+    
+    return {"guilds": bot_guilds, "guild_count": len(bot_guilds)}, 200
+    
         
 
 @app.route("/")

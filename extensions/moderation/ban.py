@@ -12,9 +12,9 @@ from disnake.errors import Forbidden, HTTPException
 from disnake.ext.commands import errors
 
 # FILES
-from extra import config
-from extra import functions
-from extra.checks import is_moderator
+from utils import config
+from utils import functions
+from utils.checks import is_moderator
 
 class Ban(commands.Cog):
     
@@ -51,10 +51,10 @@ class Ban(commands.Cog):
     
     @ban.error 
     async def ban_error(self, ctx: commands.Context, error: commands.CommandError):
-        if isinstance(error, errors.MissingPermissions):
+        if isinstance(error, commands.MissingPermissions):
             embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
-        elif isinstance(error, errors.MissingRequiredArgument):
+        elif isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to ban.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error.original, Forbidden):
@@ -101,10 +101,10 @@ class Ban(commands.Cog):
     
     @slash_ban.error 
     async def slash_ban_error(self, inter: disnake.ApplicationCommandInteraction, error):
-        if isinstance(error, errors.MissingPermissions):
+        if isinstance(error, commands.MissingPermissions):
             embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
-        elif isinstance(error, errors.MissingRequiredArgument):
+        elif isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify who you want to ban.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         elif isinstance(error.original, Forbidden):

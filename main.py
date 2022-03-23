@@ -16,23 +16,26 @@ from threading import Thread
 
 
 # FILES
-from extra import functions
-from extra import config
+from utils import functions
+from utils import config
+from utils.checks import *
+from utils.classes import *
+
 from app import run_api
 
 
-## -- VARIABLES / FUNCTIONS -- ##
+## -- VARIABLES -- ##
+
 load_dotenv()
 
 # LOGGERS
 logging.basicConfig(level=logging.INFO)
 
-logger = logging.getLogger("disnake")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger("OutDash")
+logger.setLevel(logging.DEBUG if not config.is_server else logging.INFO)
 
-# handler = logging.FileHandler(filename="disnake.log", encoding="utf-8", mode="w")
-# handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
-# logger.addHandler(handler)
+disnake_logger = logging.getLogger("disnake")
+disnake_logger.setLevel(logging.INFO)
 
 # TOKENS
 bot_token = str(os.environ.get("BOT_TOKEN"))
@@ -49,11 +52,20 @@ prefixes_col = db["prefixes"]
 confirmations_col = db["bot_farm_confirmations"]
 server_data_col = db["server_data"]
 
+# OTHER
+extensions = [
+    "events.events", "events.logging", "utils.loops",
+    "developer_commands", "bot_settings",
+    "information", "leveling",
+]
 
-# IMPORTANT FUNCTIONS
+## -- FUNCTIONS -- ##
+
 def get_prefix(bot, message: disnake.Message):
-    query = {"guild_id": str(message.guild.id)}
+    if not message.guild:
+        return commands.when_mentioned_or(config.default_prefix)(bot, message)
     
+    query = {"guild_id": str(message.guild.id)}
     result = functions.get_guild_data(message.guild.id)
     
     if not result.get("prefix"):
@@ -62,92 +74,87 @@ def get_prefix(bot, message: disnake.Message):
     
     return commands.when_mentioned_or(result["prefix"])(bot, message)
 
-async def load_cogs(bot: commands.Bot):
-    for folder in os.listdir("./extensions"):
-        for file in os.listdir(f"./extensions/{folder}"):
-            if not file.endswith(".py"): continue
+async def load_extensions(bot: commands.Bot):
+    for extension in extensions:
+        bot.load_extension(f"extensions.{extension}")
+        logger.debug(f"Loaded extension {extension}.")
 
-            bot.load_extension(f"extensions.{folder}.{file[:-3]}")
-
-
-    print("Loaded all extensions.")
+    logger.info("Loaded all extensions.")
 
 
 # BOT
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            command_prefix=get_prefix,
+            case_insensitive=True,
+            status=disnake.Status.idle,
+            
+            activity=disnake.Game(name="booting up.."),
+            owner_id=config.owners[0],
+            reconnect=True,
+            
+            reload=config.is_server,
+            max_messages=10000,
+            strip_after_prefix=True,
+            
+            test_guilds=[config.bot_server] if not config.is_server else None,
+            sync_permissions=True,
+            
+            intents=disnake.Intents(
+                guilds=True, members=True, bans=True, emojis=True,
+                integrations=False, webhooks=False, invites=False,
+                voice_states=True, presences=True, guild_messages=True,
+                guild_reactions=True, guild_typing=False, dm_typing=False
+            )
+        )
 
         self.launch_time = datetime.datetime.utcnow()
+        self.presence_index = 0
+        self.started = False
+        
+        self.snipes = {}
+        self.afk = {}
+        self.leveling_awards = {}
         
     async def on_ready(self):
-        self.avatar = await self.user.avatar.read()
-        status_channel = self.get_channel(config.messages_channel)
-        embed = disnake.Embed(title=f"Singed In As: {bot.user.name} ({bot.user.id})", 
-                            description=f"Bot started in `{str(len(bot.guilds))}` servers, with total of `{len(bot.users)}` users, on an average latency of `{round(bot.latency * 1000)} ms`.", 
-                            color=config.success_embed_color)
+        if self.started == True:
+            return
         
-        await status_channel.send(embed=embed)
+        self.avatar = await self.user.avatar.read()
+        self.started = True
+        
+        if config.is_server:
+            status_channel = self.get_channel(config.messages_channel)
+            embed = disnake.Embed(title=f"Singed In As: {self.user.name} ({self.user.id})", 
+                                description=f"Bot started in `{str(len(self.guilds))}` servers, with total of `{len(self.users)}` users, on an average latency of `{round(bot.latency * 1000)} ms`.", 
+                                color=config.success_embed_color)
+            
+            await status_channel.send(embed=embed)
 
-        print(f"Bot started on {'the server' if config.is_server else 'a local computer'}.\nStats: {len(bot.guilds)} servers, {len(bot.users)} users.")
+        print(f"Bot started on {'the server' if config.is_server else 'a local computer'}.\nStats: {len(self.guilds)} servers, {len(self.users)} users.")
         
         with open("data/stats.json", 'w') as f:
             json.dump({"commands_run": 0}, f)
             
-    async def load_cogs(self, specific_cog: str = None):
-        if not specific_cog:
-            for folder in os.listdir("./extensions"):
-                for file in os.listdir(f"./extensions/{folder}"):
-                    if not file.endswith(".py"): return
-
-                    file = file[:-3]
-                    try:
-                        self.load_extension(f"extensions.{folder}.{file}")
-                    except Exception as e:
-                        print(e)
-                        
-            print("Loaded all extensions.")
-                    
-        else:
-            for folder in os.listdir("./extensions"):
-                for file in os.listdir(f"./extensions/{folder}"):
-                    if not file.endswith(".py") or file[:-3] != specific_cog: return
-
-                    file = file[:-3]
-                    try:
-                        self.load_extension(f"extensions.{folder}.{file}")
-                    except Exception as e:
-                        print(e)
-                    
-    async def unload_cogs(self, specific_cog: str = None):
-        if not specific_cog:
-            for folder in os.listdir("./extensions"):
-                for file in os.listdir(f"./extensions/{folder}"):
-                    if not file.endswith(".py"): return
-
-                    file = file[:-3]
-                    try:
-                        self.unload_extension(f"extensions.{folder}.{file}")
-                    except Exception as e:
-                        print(e)
-                    
-        else:
-            for folder in os.listdir("./extensions"):
-                for file in os.listdir(f"./extensions/{folder}"):
-                    if not file.endswith(".py") or file[:-3] != specific_cog: return
-
-                    file = file[:-3]
-                    try:
-                        self.unload_extension(f"extensions.{folder}.{file}")
-                    except Exception as e:
-                        print(e)
+    async def is_booster(self, user: disnake.User):
+        if user.id in config.owners:
+            return True
+        
+        bot_guild = self.get_guild(config.bot_server)
+        member = bot_guild.get_member(user.id)
+        
+        if disnake.utils.get(member.roles, id=955179507055222834):
+            return True
+            
+        return False
                     
     def get_bot_prefix(self, guild_id: int) -> str:
         query = {"guild_id" : str(guild_id)}
         data = functions.get_db_data(guild_id)
         update = { "$set": { "guild_id" : str(guild_id), "prefix" : "?" } }
         
-        result = server_data_col.find_one(filter=query, limit=1)
+        result = server_data_col.find_one(filter=query)
 
         if not result or not result["prefix"]:
             if not result:
@@ -156,105 +163,49 @@ class Bot(commands.Bot):
                 server_data_col.update_one(query, update)
 
         return server_data_col.find_one(query)["prefix"]
-
-    def change_prefix(self, guild_id: int, new_prefix: str) -> str:
-        query = {"guild_id" : str(guild_id)}
-        data = functions.get_db_data(guild_id)
-        update = { "$set": { "guild_id" : str(guild_id), "prefix" : "?" } }
+    
         
-        result = server_data_col.find_one(filter=query, limit=1)
+bot = Bot()
 
-        if not result:
-            server_data_col.insert_one(data)
-        else:
-            server_data_col.update_one(filter=query, update=update)
+## -- EXTENSIONS -- ##
 
-        result = self.get_bot_prefix(guild_id)
-        if result == new_prefix:
-            return result
-        else:
-            return False
-        
-       
-bot = Bot(
-    command_prefix=get_prefix, 
-    intents=disnake.Intents.all(),
-    status=disnake.Status.idle, 
-    activity=disnake.Game(name="booting up.."), 
-    case_insensitive=True,
-    sync_permissions=True
-)
-if not config.is_server:
-    bot._test_guilds = [int(config.bot_server)]
-
-## -- COGS -- ##
-
-@bot.slash_command(name="cogs", description="Manages the bot's cogs.", default_permission=False, auto_sync=False)
+@bot.slash_command(name="extensions", description="Manages the bot's extensions.", default_permission=False, auto_sync=False)
 @commands.guild_permissions(guild_id=int(config.bot_server), roles={871899070283800636: True})
-async def cogs(inter):
+async def slash_extensions(inter):
     pass
 
-@cogs.sub_command(name="load", description="Load a specific cog.")
-async def loadcog(inter, cog: str):
-    try:
-        await inter.response.defer()
-    except Exception:
-        pass
+@slash_extensions.sub_command(name="load", description="Load a specific extension.")
+async def loadextension(inter, extension: str):
+    await inter.send("Loading extension...", ephemeral=True)
         
-    await bot.load_cogs(cog)
-    embed = disnake.Embed(description=f"{config.yes} Loaded `{cog}` successfully.", color=config.success_embed_color)
-    
     try:
-        await inter.send(embed=embed, ephemeral=True)
-    except Exception:
-        pass
+        bot.load_extension(f"extensions.{extension}")
+    except Exception as error:
+        logger.warning(f"Failed to load extension {extension} | {error}")
 
-@cogs.sub_command_group(name="reload")
+@slash_extensions.sub_command_group(name="reload")
 async def reload(inter):
     pass
 
-@reload.sub_command(name="all", description="Reload all cogs.")
-async def reloadcogs(inter):
-    try:
-        await inter.response.defer()
-    except Exception:
-        pass
+@reload.sub_command(name="all", description="Reload all extensions.")
+async def reloadextensions(inter):
+    await inter.send("Reloading all extensions...", ephemeral=True)
     
-    await bot.unload_cogs()
-    await bot.load_cogs()
-    embed = disnake.Embed(description=f"{config.yes} Reloaded all cogs successfully.", color=config.success_embed_color)
-    
-    try:
-        await inter.send(embed=embed, ephemeral=True)
-    except Exception:
-        pass
+    for extension in extensions:
+        try:
+            bot.reload_extension(f"extensions.{extension}")
+        except Exception as error:
+            logger.warning(f"Failed to reload extension {extension} | {error}")
 
-@reload.sub_command(name="cog", description="Reload one specific cog.")
-async def reloadcog(inter, cog: str):
-    try:
-        await inter.response.defer()
-    except Exception:
-        pass
-    
-    await bot.unload_cogs(cog)
-    await bot.load_cogs(cog)
-    embed = disnake.Embed(description=f"{config.yes} Reloaded `{cog}` successfully.", color=config.success_embed_color)
+@reload.sub_command(name="extension", description="Reload one specific extension.")
+async def reloadextension(inter, extension: str):
+    await inter.send("Reloading extension...", ephemeral=True)
     
     try:
-        await inter.send(embed=embed, ephemeral=True)
-    except Exception:
-        pass
-    
-@bot.command()
-async def reloadcogs(ctx: commands.Context, hidden=True):
-    if ctx.author.id not in config.owners:
-        return
-    
-    await bot.unload_cogs()
-    await bot.load_cogs()
-    
-    embed = disnake.Embed(description=f"{config.yes} Reloaded all cogs successfully.", color=config.success_embed_color)
-    await ctx.send(embed=embed)
+        bot.reload_extension(f"extensions.{extension}")
+    except Exception as error:
+        logger.warning(f"Failed to reload extension {extension} | {error}")
+        
 
 ## -- RUNNING BOT -- ##
 
@@ -262,5 +213,5 @@ if __name__ == "__main__":
     if not config.is_server:
         Thread(target=run_api).start()
     
-    bot.loop.create_task(load_cogs(bot))
+    bot.loop.create_task(load_extensions(bot))
     bot.run(bot_token if config.is_server else test_bot_token)

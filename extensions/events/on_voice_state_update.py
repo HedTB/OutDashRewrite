@@ -15,8 +15,8 @@ from randomstuff import AsyncClient
 from dotenv import load_dotenv
 
 # FILES
-from extra import config
-from extra import functions
+from utils import config
+from utils import functions
 
 ## -- VARIABLES -- ##
 
@@ -24,7 +24,7 @@ load_dotenv()
 mongo_token = os.environ.get("MONGO_LOGIN")
 
 ai_client = AsyncClient(api_key="b61wK9syZ9gZ")
-client = MongoClient(f"{mongo_token}", tlsCAFile=certifi.where())
+client = MongoClient(mongo_token, tlsCAFile=certifi.where())
 
 db = client[config.database_collection]
 server_data_col = db["server_data"]

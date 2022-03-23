@@ -3,7 +3,7 @@
 import json
 import os
 import requests
-from extra import config
+from utils import config
 import certifi
 import discord
 import time
@@ -23,7 +23,7 @@ from discord.ext import commands
 #from fastapi import FastAPI, Header, Response, status, Query
 #from typing import Optional, List
 
-from extra import functions
+from utils import functions
 
 ## -- FUNCTIONS -- ##
 
@@ -53,7 +53,7 @@ app.config["DISCORD_BOT_TOKEN"] = str(os.environ.get("TEST_BOT_TOKEN"))
 
 discord = DiscordOAuth2Session(app)
 
-client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
+client = MongoClient(mongo_login, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
 server_data_col = db["server_data"]

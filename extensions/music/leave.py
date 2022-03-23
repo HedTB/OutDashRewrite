@@ -16,8 +16,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from extra import config
-from extra import functions
+from utils import config
+from utils import functions
 
 ## -- VARIABLES -- ##
 

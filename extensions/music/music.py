@@ -14,11 +14,11 @@ from disnake.ext.commands import errors
 from disnake import utils
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from extra.DiscordUtils import Music
+from utils.DiscordUtils import Music
 
 # FILES
-from extra import config
-from extra import functions
+from utils import config
+from utils import functions
 
 ## -- VARIABLES -- ##
 

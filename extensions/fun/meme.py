@@ -11,7 +11,7 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-from extra import config
+from utils import config
 
 ## -- REDDIT CLIENT -- ##
 

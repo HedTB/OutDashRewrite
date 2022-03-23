@@ -16,16 +16,16 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from extra import config
-from extra import functions
-from extra.checks import *
+from utils import config
+from utils import functions
+from utils.checks import *
 
 load_dotenv()
 
 ## -- VARIABLES -- ##
 
 mongo_login = os.environ.get("MONGO_LOGIN")
-client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
+client = MongoClient(mongo_login, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
 server_data_col = db["server_data"]
@@ -58,7 +58,7 @@ class AutomodSlash(commands.Cog):
 
     @slash_automod.error
     async def slash_automod_error(self, inter: disnake.ApplicationCommandInteraction, error):
-        if isinstance(error, errors.MissingPermissions):
+        if isinstance(error, commands.MissingPermissions):
             embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await inter.response.send_message(embed=embed)
         

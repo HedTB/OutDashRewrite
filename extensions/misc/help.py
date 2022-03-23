@@ -8,9 +8,9 @@ import datetime
 from disnake.ext import commands
 
 # FILES
-from extra import config
-from extra import functions
-from extra.checks import *
+from utils import config
+from utils import functions
+from utils.checks import *
 
 ## -- COG -- ##
 

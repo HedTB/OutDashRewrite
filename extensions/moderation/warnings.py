@@ -20,14 +20,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-from extra import config
-from extra import functions
-from extra.checks import *
+from utils import config
+from utils import functions
+from utils.checks import *
 
 ## -- VARIABLES -- ##
 
 mongo_login = os.environ.get("MONGO_LOGIN")
-client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
+client = MongoClient(mongo_login, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
 server_data_col = db["server_data"]

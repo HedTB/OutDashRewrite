@@ -5,14 +5,9 @@ python-dotenv
 disnake
 dnspython
 aiohttp<=3.8.0
-cachetools==4.2.4
-oauthlib==3.1.1
 flask==2.0.1
-randomstuff.py==2.0.0
 youtube-dl==2021.12.17
 pynacl==1.4.0
-google-api-python-client==2.34.0
 captcha==0.3
 Flask-Cors==3.0.10
-betterstatcord.py
 flask-limiter

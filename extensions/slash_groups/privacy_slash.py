@@ -16,16 +16,16 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from extra import config
-from extra import functions
-from extra.checks import is_moderator
+from utils import config
+from utils import functions
+from utils.checks import is_moderator
 
 load_dotenv()
 
 ## -- VARIABLES -- ##
 
 mongo_login = os.environ.get("MONGO_LOGIN")
-client = MongoClient(f"{mongo_login}",tlsCAFile=certifi.where())
+client = MongoClient(mongo_login, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
 server_data_col = db["server_data"]
@@ -61,7 +61,7 @@ class PrivacySlash(commands.Cog):
         """
         
         result = user_data_col.find_one({"user_id": str(inter.user.id)})
-        data = functions.get_user_data(inter.user.id)
+        data = functions.get_user_data(inter.user.id, inter.guild.id)
         
         if not result:
             user_data_col.insert_one(data)
