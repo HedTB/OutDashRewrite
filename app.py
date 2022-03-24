@@ -580,7 +580,7 @@ def dev_bot_data():
     
         
 
-@app.route("/webhooks/bot-upvotes", methods=["POST", "OPTIONS"]
+@app.route("/webhooks/bot-upvotes", methods=["POST", "OPTIONS"])
 def bot_upvotes_webhook():
     data = request.json
     headers = request.headers
