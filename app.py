@@ -580,6 +580,24 @@ def dev_bot_data():
     
         
 
+@app.route("/webhooks/bot-upvotes", methods=["POST", "OPTIONS"]
+def bot_upvotes_webhook():
+    data = request.json
+    headers = request.headers
+           
+    if not headers.get("authorization") == "OutDashIsCool":
+        return
+    elif json["type"] == "test":
+        print(data)
+        return
+           
+    user_voted = data["user"]
+    voted_bot = data["bot"]
+           
+    print(user_voted, voted_bot)
+    
+           
+
 @app.route("/")
 @cross_origin()
 def index():
