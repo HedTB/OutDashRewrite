@@ -24,14 +24,9 @@ from utils.classes import *
 
 load_dotenv()
 
-mongo_login = os.environ.get("MONGO_LOGIN")
-
 logger = logging.getLogger("OutDash")
 
-client = MongoClient(mongo_login, tlsCAFile=certifi.where())
-db = client[config.database_collection]
-
-user_data_col = db["user_data"]
+card_background_path = os.path.join(os.path.dirname(__file__), "images", "card_background.png")
 
 ## -- FUNCTIONS -- ##
 
@@ -106,7 +101,7 @@ class Leveling(commands.Cog):
         xp = member_data.get("xp")
             
         func = functools.partial(generate_card, {
-            "bg_image": "https://dummyimage.com/900x200/121212/121212.jpg",
+            "bg_image": card_background_path,
             "profile_image": member.avatar.url,
             "level": level,
             
@@ -124,7 +119,7 @@ class Leveling(commands.Cog):
         await ctx.send(file=file)
         
     """
-    ! SLASH commands
+    ! SLASH COMMANDS
     
     The slash commands.
     """
@@ -142,7 +137,7 @@ class Leveling(commands.Cog):
         xp = member_data.get("xp")
             
         func = functools.partial(generate_card, {
-            "bg_image": "https://dummyimage.com/900x200/121212/121212.jpg",
+            "bg_image": card_background_path,
             "profile_image": member.avatar.url,
             "level": level,
             

@@ -95,7 +95,7 @@ class Events(commands.Cog):
             try:
                 await inter.response.send_message(embed=error_embed, ephemeral=True)
             except AttributeError:
-                await inter.send(embed=error_embed)
+                await inter.channel.send(embed=error_embed)
 
     
     @commands.Cog.listener()

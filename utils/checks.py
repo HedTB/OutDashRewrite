@@ -1,3 +1,4 @@
+import time
 import disnake
 import os
 import certifi
@@ -25,9 +26,15 @@ warns_col = db["warns"]
 ## -- EXCEPTIONS -- ##
 
 class BoosterOnly(commands.CheckFailure):
+    """Raised if the user isn't a booster of the bot server"""
+    pass
+
+class UserNotVoted(commands.CheckFailure):
+    """Raised when the user haven't voted within the last 24 hours"""
     pass
 
 class SettingsLocked(commands.CheckFailure):
+    """Raised if the guild settings are locked"""
     pass
 
 ## -- FUNCTIONS -- ##
@@ -57,6 +64,18 @@ def is_booster():
             return True
         
         raise BoosterOnly()
+    return commands.check(predicate)
+
+def is_voter():
+    async def predicate(ctx: commands.Context):
+        with open("data/votes.json", "r") as file:
+            data = json.load(file)
+            user_vote = data.get(ctx.author.id)
+            
+            if user_vote and user_vote["expires_at"] - time.time() > 0:
+                return True
+            
+        raise UserNotVoted()
     return commands.check(predicate)
 
 def server_setting():

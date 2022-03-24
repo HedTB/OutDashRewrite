@@ -596,9 +596,9 @@ def bot_upvotes_webhook():
         with open("data/votes.json", "r+") as file:
             file_data = json.load(file)
             
-            file_data.update({ str(user_voted): {
+            file_data.update({ int(user_voted): {
                 "is_weekend": is_weekend,
-                "expires_at": time.time() + 12 * 3600,
+                "expires_at": time.time() + 24 * 3600,
             } })
             json.dump(file_data, file)
             

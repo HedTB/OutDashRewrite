@@ -376,37 +376,28 @@ class BotSettings(commands.Cog):
         
         embed = disnake.Embed()
         
-        guild_data_obj.update_data({
-            "welcome_embed_{}".format(embed_part): value
-        })
+        guild_data_obj.update_data({ "welcome_embed_{}".format(embed_part): value })
         await ctx.send(embed=embed)
 
     @editwelcome.command(name="channel")
     @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
     @is_moderator(manage_guild=True)
     @server_setting()
-    async def editwelcomechannel(self, ctx: commands.Context,channel: disnake.TextChannel = None):
+    async def editwelcomechannel(self, ctx: commands.Context, channel: disnake.TextChannel):
         """Set the channel where welcome messages should be sent."""
         
-        query = {"guild_id": str(ctx.guild.id)}
-        result = server_data_col.find_one(query)
-        update = { "$set": {
-            "welcome_channel": str(channel.id)
-        }}
+        guild_data_obj = GuildData(ctx.guild)
+        embed_part = embed_part.lower()
 
         embed = disnake.Embed(description=f"{config.yes} Welcome messages will now be sent in <#{channel.id}>.", color=config.success_embed_color)
         
-        if not result:
-            server_data_col.insert_one(functions.get_db_data(str(ctx.guild_id)))
-            self.setwelcomechannel(ctx, channel)
-            return
-        
-        server_data_col.update_one(query, update)
+        guild_data_obj.update_data({ "welcome_channel": str(channel.id) })
         await ctx.send(embed=embed)
         
         
     ## -- TEXT COMMAND ERRORS -- ##
     
+    # SETTING LOCKING
     @lock.error 
     async def lock_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, commands.MissingPermissions):
@@ -419,13 +410,41 @@ class BotSettings(commands.Cog):
             embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
     
-    @setprefix.error 
+    # SERVER SETTINGS
+    @setprefix.error
     async def prefix_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, commands.MissingPermissions):
             embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
             await ctx.send(embed=embed)
         elif isinstance(error, commands.MissingRequiredArgument):
             embed = disnake.Embed(description=f"{config.no} You need to specify the new prefix.", color=config.error_embed_color)
+            await ctx.send(embed=embed)
+        elif isinstance(error, SettingsLocked):
+            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
+            await ctx.send(embed=embed)
+            
+    # WELCOME/GOODBYE SETTINGS
+    @editwelcometoggle.error
+    async def editwelcometoggle_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.MissingPermissions):
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
+            await ctx.send(embed=embed)
+        elif isinstance(error, SettingsLocked):
+            embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
+            await ctx.send(embed=embed)
+            
+    @editwelcomecontent.error
+    async def editwelcomecontent_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.MissingPermissions):
+            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.MissingRequiredArgument):
+            missing_argument = error.param.name
+            embed = disnake.Embed(description=f"{config.no} ", color=config.error_embed_color)
+    
+            if missing_argument == "content":
+                embed.description = "Please specify what the welcome message content should be set to!"
+    
             await ctx.send(embed=embed)
         elif isinstance(error, SettingsLocked):
             embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
