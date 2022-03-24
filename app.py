@@ -577,6 +577,32 @@ def dev_bot_data():
         return {"message": "Please log in before accessing this endpoint."}, 403
     
     return {"guilds": bot_guilds, "guild_count": len(bot_guilds)}, 200
+
+
+@app.route("/webhooks/bot-upvotes", methods=["POST", "OPTIONS"])
+def bot_upvotes_webhook():
+    data = request.json
+    headers = request.headers
+           
+    if not headers.get("authorization") == "OutDashIsCool":
+        return {"message": "Invalid authorization header"}, 403
+    
+    elif data["type"] == "test":
+        print(data)
+    else:  
+        user_voted = data["user"]
+        is_weekend = data["isWeekend"]
+            
+        with open("data/votes.json", "r+") as file:
+            file_data = json.load(file)
+            
+            file_data.update({ str(user_voted): {
+                "is_weekend": is_weekend,
+                "expires_at": time.time() + 12 * 3600,
+            } })
+            json.dump(file_data, file)
+            
+    return {"message": "The vote has been logged"}, 200
     
         
 

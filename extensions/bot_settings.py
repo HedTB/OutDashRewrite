@@ -65,6 +65,11 @@ categories = {
         "voice_channel_leave": "Voice channel leave",
     },
 }
+embed_values = [
+    "title", "description", "author_name",
+    "author_icon", "footer_text", "footer_icon",
+    "timestamp", "thumbnail", "color"
+]
 
 ## -- FUNCTIONS -- ##
 
@@ -276,28 +281,14 @@ class BotSettings(commands.Cog):
     @server_setting()
     async def editlogs_channel(self, ctx: commands.Context, log_type: str, channel: disnake.TextChannel = None):
         """Edit the log channels, AKA where the logs will be sent."""
-        
-        data = functions.get_db_data(str(ctx.guild.id))
-        query = {"guild_id": str(ctx.guild.id)}
-        result = server_data_col.find_one(query)
+
+        guild_data_obj = GuildData(ctx.guild)
         log_type, log_description = find_log_type(f"{type.lower()}_logs_webhook")
-        
-        if not result:
-            server_data_col.insert_one(data)
-            return await self.editlogchannel(ctx, type, channel)
-            
-        if not channel:
-            update = {"$set": {log_type: "None"}}
-            server_data_col.update_one(query, update)
-            embed = disnake.Embed(description=f"{config.yes} {log_description} logs have now been disabled.", color=config.success_embed_color)
-            
-            return await ctx.send(embed=embed)
             
         webhook = await get_webhook(self.bot, channel)
-        update = {"$set": {str(log_type): str(webhook.url)}}
         embed = disnake.Embed(description=f"{config.yes} {log_description} logs will now be sent in {channel.mention}.", color=config.success_embed_color)
 
-        server_data_col.update_one(query, update)
+        guild_data_obj.update_data({ str(log_type): str(webhook.url) })
         await ctx.send(embed=embed)
         
     @editlogs.command(name="category")
@@ -305,29 +296,20 @@ class BotSettings(commands.Cog):
     @server_setting()
     async def editlogs_category(self, ctx: commands.Context, category: str, channel: disnake.TextChannel = None):
         """Edit log categories, changing channel for each log type in the category."""
-        
-        data = functions.get_db_data(ctx.guild.id)
-        query = {"guild_id": str(ctx.guild.id)}
-        result = server_data_col.find_one(query)
-        
-        if not result:
-            server_data_col.insert_one(data)
-            await self.editlogcategory(ctx, category, channel)
-            return
+
+        guild_data_obj = GuildData(ctx.guild)
 
         if not categories[category.lower()]:
             embed = disnake.Embed(description=f"{config.no} Please provide a valid category!\nCategories:\n```messages, members, channels```", color=config.error_embed_color)
             await ctx.send(embed=embed)
         if not channel:
             update_dict = await get_update_dictionary(category, "None")
-            update = {"$set": update_dict}
             embed = disnake.Embed(description=f"{config.yes} All {category.lower()[:-1]} logs have been disabled", color=config.success_embed_color)
         
         update_dict = await get_update_dictionary(category, str(channel.id))
-        update = {"$set": update_dict}
         embed = disnake.Embed(description=f"{config.yes} All {category.lower()[:-1]} logs will now be sent in {channel.mention}.", color=config.success_embed_color)
 
-        server_data_col.update_one(query, update)
+        guild_data_obj.update_data(update_dict)
         await ctx.send(embed=embed)
         
     
@@ -348,30 +330,22 @@ class BotSettings(commands.Cog):
     @server_setting()
     async def editwelcometoggle(self, ctx: commands.Context, toggle: str = "on"):
         """Toggles if welcome messages should be sent."""
-        
-        query = {"guild_id": str(ctx.guild.id)}
-        result = server_data_col.find_one(query)
-        
-        if not result:
-            server_data_col.insert_one(functions.get_db_data(ctx.guild.id))
-            self.editwelcometoggle(ctx, toggle)
-            return
+
+        guild_data_obj = GuildData(ctx.guild)
 
         if toggle.lower() == "on" or toggle.lower() == "true" or toggle.lower() == "yes" or toggle.lower() == "enabled":
-            update = {"$set": {"welcome_toggle": "true"}}
-            server_data_col.update_one(query, update)
+            update = { "welcome_toggle": "true" }
             
             embed = disnake.Embed(description=f"{config.yes} Welcome messages have been enabled.", color=config.success_embed_color)
-            await ctx.send(embed=embed)
         elif toggle.lower() == "off" or toggle.lower() == "false" or toggle.lower() == "no" or toggle.lower() == "disabled":
-            update = { "$set": { "welcome_toggle": "false" } }
-            server_data_col.update_one(query, update)
+            update = { "welcome_toggle": "false" }
             
             embed = disnake.Embed(description=f"{config.yes} Welcome messages have been disabled.", color=config.success_embed_color)
-            await ctx.send(embed=embed)
         else:
             embed = disnake.Embed(description=f"{config.no} Please give a valid toggle value!\nToggles:\n```on, yes, true, enabled - welcome messages enabled\noff, no, false, disabled - welcome messages disabled```", color=config.error_embed_color)
-            await ctx.send(embed=embed)
+            
+        guild_data_obj.update_data(update)
+        await ctx.send(embed=embed)
     
     @editwelcome.command(name="content")
     @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
@@ -379,18 +353,11 @@ class BotSettings(commands.Cog):
     @server_setting()
     async def editwelcomecontent(self, ctx: commands.Context, *, content: str):
         """Edit the welcome message content."""
-        
-        query = {"guild_id": str(ctx.guild.id)}
-        result = server_data_col.find_one(query)
 
-        if not result:
-            server_data_col.insert_one(functions.get_db_data(ctx.guild.id))
-            await self.content(ctx, content)
-            return
-        
+        guild_data_obj = GuildData(ctx.guild)
         embed = disnake.Embed(description=f"{config.yes} The welcome message content has been set to:\n`{content}`", color=config.success_embed_color)
         
-        server_data_col.update_one(query, {"$set": {"welcome_message_content": content}})
+        guild_data_obj.update_data({ "welcome_message_content": content })
         await ctx.send(embed=embed)
     
     @editwelcome.command(name="embed")
@@ -401,24 +368,17 @@ class BotSettings(commands.Cog):
         """Edit the welcome message embed."""
         
         embed_part = embed_part.lower()
+        guild_data_obj = GuildData(ctx.guild)
         
-        query = {"guild_id": str(ctx.guild.id)}
-        result = server_data_col.find_one(query)
-
-        if not result:
-            server_data_col.insert_one(functions.get_db_data(ctx.guild.id))
-            await self.embed(ctx, embed_part, value)
-            return
         if not embed_part in embed_values:
             embed = disnake.Embed(description=f"{config.no} Please specify a valid part of the embed!\nEmbed parts:\n```{', '.join(e for e in embed_values)}```", color=config.error_embed_color)
-            await ctx.send(embed=embed)
-            return
+            return await ctx.send(embed=embed)
         
         embed = disnake.Embed()
         
-        server_data_col.update_one(query, {"$set": {
+        guild_data_obj.update_data({
             "welcome_embed_{}".format(embed_part): value
-        }})
+        })
         await ctx.send(embed=embed)
 
     @editwelcome.command(name="channel")

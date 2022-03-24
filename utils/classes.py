@@ -166,6 +166,7 @@ class GuildData():
         return result
                 
     def update_data(self, data: dict):
+        self.get_data()
         _server_data_col.update_one(self._query, { "$set": data })
 
 class UserData():
@@ -200,6 +201,7 @@ class UserData():
         return result
                 
     def update_data(self, data: dict):
+        self.get_data()
         _user_data_col.update_one(self._query, { "$set": data })
         
 class MemberData(UserData):
