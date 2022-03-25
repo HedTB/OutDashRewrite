@@ -3,7 +3,6 @@
 import json
 import logging
 import os
-from uuid import uuid4
 import certifi
 import requests
 import time
@@ -12,7 +11,7 @@ import string
 
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from flask import Flask, make_response, redirect, render_template, request, jsonify, url_for
+from flask import Flask, make_response, redirect, request, jsonify
 from functools import wraps
 from flask_cors import CORS, cross_origin
 from threading import Thread
@@ -21,8 +20,8 @@ from flask_limiter.util import get_remote_address
 from pprint import pprint
 
 # FILES
-from utils import config
-from utils import functions
+from extra import config
+from extra import functions
 
 ## -- SETUP -- ##
 
@@ -33,19 +32,17 @@ load_dotenv()
 # SECRETS
 mongo_token = os.environ.get("MONGO_LOGIN")
 api_key = os.environ.get("API_KEY")
-developer_password = os.environ.get("DEVELOPER_PASSWORD")
 
 bot_token = os.environ.get("BOT_TOKEN" if config.is_server else "TEST_BOT_TOKEN")
 bot_id = os.environ.get("BOT_ID" if config.is_server else "TEST_BOT_ID")
 bot_secret = os.environ.get("BOT_SECRET" if config.is_server else "TEST_BOT_SECRET")
 
 # APP VARIABLES
-app = Flask(__name__, template_folder="web", static_folder="web/static")
+app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}}, send_wildcard=True, origins="*")
 
 # APP CONFIG
 app.config["CORS_HEADERS"] = "Content-Type"
-app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # OTHER VARIABLES
 limiter = Limiter(
@@ -59,7 +56,7 @@ BASE_DISCORD_URL = "https://discordapp.com/api/v9{}"
 DATA_REFRESH_DELAY = 180
 
 SERVER_URL = "http://127.0.0.1:8080" if not config.is_server else "https://outdash-beta2.herokuapp.com"
-REDIRECT_URI = f"{SERVER_URL}/callback"
+REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.is_server else "https://outdash-beta2.herokuapp.com/callback"
 
 # DATABASE VARIABLES
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
@@ -76,6 +73,10 @@ request_headers = {
     "User-Agent": "OutDash (https://outdash.ga, v0.1)",
     "Content-Type": "application/json",
 }
+
+# DATA
+oauth_tokens = {}
+api_data = {}
 
 ## -- CHECKS -- ##
 
@@ -106,17 +107,12 @@ def user_endpoint(f):
         
         oauth_code = headers.get("oauth-code")
         
-        file = open("data/oauth_tokens.json", "r")
-        data = json.load(file)
-        
         if method == "OPTIONS":
             return preflight_response()
         
         if not oauth_code:
-            file.close()
             return {"message": "Missing access code"}, 403
-        elif oauth_code and not data.get(oauth_code):
-            file.close()
+        elif oauth_code and not oauth_tokens.get(oauth_code):
             return {"message": "Invalid access code"}, 403
             
         return f()
@@ -155,20 +151,7 @@ def user_request(endpoint, bearer_token, params=None) -> requests.Response:
     
 # USER DATA
 def get_user_guilds(bearer_token=None, access_code=None) -> dict:
-    file = open("data/oauth_tokens.json", "r+")
-    
-    try:
-        data = json.load(file)
-    except:
-        file.seek(0)
-        file.truncate(0)
-        
-        json.dump({}, file)
-        file.close()
-        
-        return get_user_guilds(bearer_token, access_code)
-    
-    user_data = data.get(access_code)
+    user_data = oauth_tokens.get(access_code)
     user_guilds_cache = user_data.get("guilds")
     user_guilds_refresh = user_data.get("guilds_refresh")
     
@@ -182,31 +165,16 @@ def get_user_guilds(bearer_token=None, access_code=None) -> dict:
         user_data["guilds_refresh"] = time.time()
         user_data["guilds"] = user_guilds
         
-        file.seek(0)
-        json.dump(data, file)
-        
         user_guilds_cache = user_guilds
+        oauth_tokens[access_code] = user_data
         
     return user_guilds_cache
 
 
 # BOT DATA
 def get_guilds(bearer_token=None, access_code=None) -> dict:
-    file = open("data/api.json", "r+")
-    
-    try:
-        data = json.load(file)
-    except:
-        file.seek(0)
-        file.truncate(0)
-        
-        json.dump({}, file)
-        file.close()
-        
-        return get_guilds(bearer_token, access_code)
-    
-    bot_guilds_refresh = data.get("bot_guilds_refresh")
-    bot_guilds_cache = data.get("bot_guilds")
+    bot_guilds_refresh = api_data.get("bot_guilds_refresh")
+    bot_guilds_cache = api_data.get("bot_guilds")
     
     if bearer_token and access_code:
         user_guilds = get_user_guilds(bearer_token, access_code)
@@ -216,21 +184,17 @@ def get_guilds(bearer_token=None, access_code=None) -> dict:
         bot_guilds_dict = bot_guilds.json()
         
         if bot_guilds.status_code == 200:
-            data["bot_guilds_refresh"] = time.time()
-            data["bot_guilds"] = bot_guilds_dict
+            api_data["bot_guilds_refresh"] = time.time()
+            api_data["bot_guilds"] = bot_guilds_dict
             
             for guild in bot_guilds_dict:
                 guild.pop("features")
-            
-            file.seek(0)
-            json.dump(data, file)
                 
         if bearer_token and bot_guilds.status_code == 200:
             for index, guild in enumerate(bot_guilds_dict):
                 if not guild in user_guilds:
                     bot_guilds_dict.pop(index)
                 
-        file.close()
         return bot_guilds_dict 
     else:
         if bearer_token:
@@ -238,7 +202,6 @@ def get_guilds(bearer_token=None, access_code=None) -> dict:
                 if not guild in user_guilds:
                     bot_guilds_cache.pop(index)
                     
-        file.close()
         return bot_guilds_cache
 
 def get_guild(guild_id, bearer_token=None, access_code=None) -> dict | None:
@@ -318,41 +281,21 @@ def identify_user(bearer_token: str) -> dict:
     return response.json()
 
 def get_bearer(access_code: str) -> str | None:
-    file = open("data/oauth_tokens.json", "r")
-    data = json.load(file)
-    
-    user_data = data.get(access_code)
+    user_data = oauth_tokens.get(access_code)
     if not user_data:
         return None
     else:
         return user_data["token"]["access_token"]
 
 def get_bearer_from_code(oauth_code: str) -> str | None:
-    file = open("data/oauth_tokens.json", "r")
-    data = json.load(file)
-    
-    for access_code in data:
-        authorization = data[access_code]
+    for access_code in oauth_tokens:
+        authorization = oauth_tokens[access_code]
         auth_oauth_code = authorization["token"]["oauth_code"]
         
         if auth_oauth_code == oauth_code:
             return authorization["token"]["access_token"]
         
     return None
-
-# DEV PANEL
-def is_logged_in(cookies: dict) -> bool:
-    file = open("data/panel_bearers.json")
-    bearer_tokens = json.load(file)
-    
-    bearer_token = cookies.get("bearer_token")
-    
-    if not bearer_token:
-        return False
-    elif not bearer_token in bearer_tokens:
-        return False
-    else:
-        return True
 
 ## -- ROUTES -- ##
 
@@ -462,9 +405,6 @@ def authorize():
     headers = request.headers
     oauth_code = headers.get("oauth-code")
     
-    file = open("data/oauth_tokens.json", "r+")
-    data = json.load(file)
-    
     if not oauth_code:
         return {"message": "Missing OAuth code"}, 403
     elif oauth_code and get_bearer_from_code(oauth_code):
@@ -478,8 +418,8 @@ def authorize():
         access_code = generate_random_string(random.randint(7, 10), random.randint(6, 9))
         
         to_pop = []
-        for oauth_token in data:
-            if data[oauth_token]["token"]["access_token"] == bearer_token:
+        for oauth_token in oauth_tokens:
+            if oauth_tokens[oauth_token]["token"]["access_token"] == bearer_token:
                 to_pop.append(oauth_token)
         
         for oauth_token in to_pop:
@@ -487,20 +427,16 @@ def authorize():
         
         auth_info = identify_user(bearer_token)
         
-        data[access_code] = {
+        oauth_tokens[access_code] = {
             "token": result,
             "expires": auth_info["expires"],
             "user": auth_info["user"],
         }
-        data[access_code]["token"]["oauth_code"] = oauth_code
-        
-        file.seek(0)
-        json.dump(data, file)
-        file.close()
+        oauth_tokens[access_code]["token"]["oauth_code"] = oauth_code
 
         return {"message": "You have been authorized", "access_code": access_code}, 200
     
-@app.route("/demo-login")
+@app.route("/login")
 @limiter.exempt
 def login():
     return redirect(f"https://discord.com/api/oauth2/authorize?response_type=code&client_id={bot_id}&scope=identify&prompt=none&redirect_uri={REDIRECT_URI}")
@@ -520,83 +456,33 @@ def callback():
     return response.json(), response.status_code
 
 
-@app.route("/login")
-@limiter.exempt
-def panel_login():
-    signed_in = is_logged_in(request.cookies)
-    
-    if signed_in:
-        return redirect(url_for("dev_dashboard"))
-    
-    return render_template("login.html")
-
-@app.route("/dev/login", methods=["POST", "OPTIONS"])
-@limiter.exempt
-def dev_login():
-    headers = request.headers
-    bearer_token = str(uuid4())
-    signed_in = is_logged_in(request.cookies)
-    
-    if signed_in:
-        return redirect(url_for("dev_dashboard"))
-    
-    if not headers.get("password"):
-        return {"message": "Missing password"}, 400
-    elif headers.get("password") != developer_password:
-        return {"message": "Invalid password"}, 403
-    
-    file = open("data/panel_bearers.json", "r+")
-    data = json.load(file)
-    
-    data.append(bearer_token)
-    
-    file.seek(0)
-    json.dump(data, file)
-    file.close()
-    
-    return {"bearer_token": bearer_token, "message": "You have been logged in."}, 200
-    
-
-@app.route("/dev/dashboard")
-@limiter.exempt
-def dev_dashboard():
-    logged_in = is_logged_in(request.cookies)
-    
-    if not logged_in:
-        return redirect(url_for("panel_login"))
-    
-    return render_template("dashboard.html")
-
-@app.route("/dev/get-bot-data")
-@limiter.exempt
-def dev_bot_data():
-    logged_in = is_logged_in(request.cookies)
-    bot_guilds = get_guilds()
-    
-    if not logged_in:
-        return {"message": "Please log in before accessing this endpoint."}, 403
-    
-    return {"guilds": bot_guilds, "guild_count": len(bot_guilds)}, 200
-    
-        
-
 @app.route("/webhooks/bot-upvotes", methods=["POST", "OPTIONS"])
 def bot_upvotes_webhook():
     data = request.json
     headers = request.headers
            
     if not headers.get("authorization") == "OutDashIsCool":
-        return
-    elif json["type"] == "test":
-        print(data)
-        return
-           
-    user_voted = data["user"]
-    voted_bot = data["bot"]
-           
-    print(user_voted, voted_bot)
+        return {"message": "Invalid authorization header"}, 403
     
-           
+    elif data["type"] == "test":
+        print(data)
+    else:  
+        user_voted = data["user"]
+        is_weekend = data["isWeekend"]
+        
+        print(f"User with ID {user_voted} has voted.")
+            
+        with open("data/votes.json", "r+") as file:
+            file_data = json.load(file)
+            
+            file_data.update({ str(user_voted): {
+                "is_weekend": is_weekend,
+                "expires_at": time.time() + (24 * 3600),
+            } })
+            json.dump(file_data, file)
+            
+    return {"message": "The vote has been logged"}, 200
+        
 
 @app.route("/")
 @cross_origin()
