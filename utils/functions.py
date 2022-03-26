@@ -181,7 +181,7 @@ def is_role_above_role(role1: disnake.Role, role2: disnake.Role) -> bool:
     elif role2.position > role1.position:
         return False
 
-def log_moderation(guild_id: int, moderator: str, action: str, reason: str = "No reason provided."):
+def log_moderation(guild_id: int, moderator: int, action: str, reason: str = "No reason provided."):
     guild_id = str(guild_id)
     
     query = {"guild_id": guild_id}

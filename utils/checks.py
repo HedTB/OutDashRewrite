@@ -13,6 +13,7 @@ load_dotenv()
 # FILES
 from utils import config
 from utils import functions
+from utils.classes import *
 
 ## -- VARIABLES -- ##
 
@@ -41,10 +42,14 @@ class SettingsLocked(commands.CheckFailure):
 
 def is_moderator(**perms):
     async def predicate(ctx: commands.Context):
-        result = server_data_col.find_one({"guild_id": str(ctx.guild.id)})
+        guild_data_obj = GuildData(ctx.guild)
+        data = guild_data_obj.get_data()
+        
+        moderators = data.get("moderators")
 
-        if result and result.get("moderators"):
-            moderators = json.loads(result.get("moderators"))
+        if data and moderators:
+            moderators = moderators
+            
             for moderator in moderators:
                 if int(moderators[moderator]["id"]) == ctx.author.id:
                     return True
@@ -52,6 +57,7 @@ def is_moderator(**perms):
         if perms:
             original = commands.has_permissions(**perms).predicate
             result = await original(ctx)
+            
             if result:
                 return True
                 

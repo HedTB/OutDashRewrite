@@ -1,9 +1,8 @@
 ## -- IMPORTING -- ##
 
 # MODULES
-import asyncio
 import datetime
-import functools
+import time
 import logging
 import random
 import disnake
@@ -15,7 +14,6 @@ import json
 from disnake.ext import commands
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from time import time
 
 # FILES
 from utils import config
@@ -73,6 +71,7 @@ class Events(commands.Cog):
         with open("data/stats.json", 'w') as jsonfile:
             json.dump(new_data, jsonfile, indent=4)
             
+    ## -- ERRORS -- ##
             
     @commands.Cog.listener()
     async def on_slash_command_error(self, inter: disnake.ApplicationCommandInteraction, error):
@@ -94,7 +93,7 @@ class Events(commands.Cog):
             
             try:
                 await inter.response.send_message(embed=error_embed, ephemeral=True)
-            except AttributeError:
+            except:
                 await inter.channel.send(embed=error_embed)
 
     
@@ -188,7 +187,7 @@ class Events(commands.Cog):
         
         last_xp_award = self.bot.leveling_awards.get(message.author.id)
         
-        if not last_xp_award or last_xp_award and time() - last_xp_award["awarded_at"] > last_xp_award["cooldown_time"]:
+        if not last_xp_award or last_xp_award and time.time() - last_xp_award["awarded_at"] > last_xp_award["cooldown_time"]:
             xp_amount = random.randint(17, 27)
             
             result, potential_level = leveling.add_xp(message.author, xp_amount)
@@ -196,7 +195,7 @@ class Events(commands.Cog):
                 await message.channel.send(f"{message.author.mention} is now **level {potential_level}!** :tada:")
 
             self.bot.leveling_awards[message.author.id] = {
-                "awarded_at": time(),
+                "awarded_at": time.time(),
                 "cooldown_time": random.randint(55, 65)
             }
             

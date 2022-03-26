@@ -1,6 +1,8 @@
 ## -- IMPORTS -- ##
 
+import datetime
 import json
+import re
 import disnake
 import os
 import certifi
@@ -8,8 +10,10 @@ import requests
 
 from dotenv import load_dotenv
 from pymongo import MongoClient
+from uuid import uuid4
 
 from utils.webhooks import *
+from utils.database_types import *
 from utils import functions
 from utils import config
 
@@ -22,6 +26,9 @@ _db = _client["db2"]
 
 _server_data_col = _db["server_data"]
 _user_data_col = _db["user_data"]
+_access_codes_col = _db["access_codes"]
+_api_data_col = _db["api_data"]
+_warns_col = _db["warns_col"]
 
 _log_types = [
     # messages
@@ -38,63 +45,15 @@ _log_types = [
     "guild_update", "guild_emojis_update", "guild_stickers_update",
 ]
 
-## -- FUNCTIONS -- ##
+# API VARIABLES
+BASE_DISCORD_URL = "https://discordapp.com/api/v9{}"
+DATA_REFRESH_DELAY = 180
 
-def _get_server_data(guild_id: int):
-    return {
-        "guild_id": str(guild_id),
-        "prefix": "?",
-        "settings_locked": "false",
-
-        "chat_bot_channel": "None",
-        "chat_bot_toggle": "false",
-
-        "message_delete_logs_webhook": "None",
-        "message_bulk_delete_logs_webhook": "None",
-        "message_edit_logs_webhook": "None",
-        "member_join_logs_webhook": "None",
-        "member_remove_logs_webhook": "None",
-        "user_update_logs_webhook": "None",
-        "guild_channel_create_logs_webhook": "None",
-        "guild_channel_delete_logs_webhook": "None",
-        "guild_channel_update_logs_webhook": "None",
-
-        "captcha_verification": "false",
-        "captcha_verification_length": 8,
-
-        "welcome_channel": "None",
-        "welcome_toggle": "False",
-        "welcome_embed_title": "None",
-        "welcome_embed_description": "**Welcome to __{guild_name}__!**",
-        "welcome_embed_author_name": "{member_username}",
-        "welcome_embed_author_icon": "{member_icon}",
-        "welcome_embed_footer_text": "None",
-        "welcome_embed_footer_icon": "None",
-        "welcome_embed_timestamp": "true",
-        "welcome_embed_thumbnail": "{guild_icon}",
-        "welcome_embed_color": config.logs_embed_color,
-        "welcome_message_content": "{member_mention},",
-    }
-
-def _get_user_data(user_id: int):
-    return {
-        "user_id": str(user_id),
-        "timezone": "Europe/Belfast",
-        "message_content_privacy": "false",
-    }
-
-def _get_member_data(member_id: int, guild_id: int):
-    return {
-        "user_id": str(member_id),
-        "timezone": "Europe/Belfast",
-        "message_content_privacy": "false",
-        
-        str(guild_id): json.dumps({
-            "level": 0,
-            "xp": 0,
-            "total_xp": 0
-        })
-    }
+request_headers = {
+    "Authorization": "Bot {}".format(os.environ.get("BOT_TOKEN" if config.is_server else "TEST_BOT_TOKEN")),
+    "User-Agent": "OutDash (https://outdash.ga, v0.1)",
+    "Content-Type": "application/json",
+}
 
 ## -- CLASSES -- ##
 
@@ -134,96 +93,285 @@ class LoggingWebhook():
             _server_data_col.update_one(query, update)
             
 # DATABASE CLASSES
-class GuildData():
+class DatabaseObjectBase:
+    def get_data(self, can_insert=True, reconcicle=True):
+        data = self._database_collection.find_one(self._query)
+        
+        if not data and can_insert:
+            self.insert_data()
+            return self.get_data(can_insert, reconcicle)
+        
+        if reconcicle:
+            unavailable_keys = []
+            update_data = {}
+            
+            for key in self._insert_data.keys():
+                if not data[key]:
+                    unavailable_keys.append(key)
+                    
+            for key in unavailable_keys:
+                update_data[key] = self._insert_data[key]
+                
+            if len(update_data) > 0:
+                self.update_data(update_data)
+                return self.get_data(can_insert, reconcicle)
+        
+        for key in data:
+            value = data[key]
+
+            if not type(value) == str:
+                continue
+            if value.startswith("{") and value.endswith("}") or value.startswith("[") and value.endswith("]"):
+                try:
+                    data[key] = json.loads(value)
+                except:
+                    continue
+                
+        return data
+    
+    def insert_data(self):
+        self._database_collection.insert_one(self._insert_data)
+        
+    def update_data(self, data: dict):
+        for key in data:
+            value = data[key]
+
+            if isinstance(value, (dict, list)):
+                data[key] = json.dumps(value)
+                
+        self._database_collection.update_one(self._query, { "$set": data })
+        
+class GuildData(DatabaseObjectBase):
     def __init__(self, guild: disnake.Guild):
         self.guild = guild
         
         self._query = { "guild_id": str(guild.id) }
+        self._insert_data = server_data(guild.id)
+        self._database_collection = _server_data_col
         
-    def get_data(self, can_insert: bool = True, reconcicle: bool = True) -> dict:
-        result = _server_data_col.find_one(self._query)
-        
-        if not result and can_insert:
-            _server_data_col.insert_one(_get_server_data(self.guild.id))
-            return self.get_data(can_insert, reconcicle)
-        
-        if reconcicle:
-            unavailable_keys = []
-            insert_data = _get_server_data(self.guild.id)
-            update_data = {}
-            
-            for key in insert_data.keys():
-                if not result.get(key):
-                    unavailable_keys.append(key)
-                    
-            for key in unavailable_keys:
-                update_data[key] = insert_data[key]
-                
-            if len(update_data) > 0:
-                self.update_data(update_data)
-                return self.get_data(can_insert, reconcicle)
-            
-        return result
-                
-    def update_data(self, data: dict):
         self.get_data()
-        _server_data_col.update_one(self._query, { "$set": data })
+        
 
-class UserData():
+class WarnsData(DatabaseObjectBase):
+    def __init__(self, guild: disnake.Guild):
+        self.guild = guild
+        
+        self._insert_data = warns_data(guild.id)
+        self._query = { "guild_id": str(guild.id) }
+        self._database_collection = _warns_col
+        
+    def update_warnings(self, member: disnake.Member, data: dict):
+        self.update_data({ str(member.id): data })
+        
+    def get_member_warnings(self, member: disnake.Member):
+        data = self.get_data()
+        member_warnings = data.get(str(member.id))
+        
+        if not member_warnings:
+            self.update_warnings(member, {})
+            return self.get_member_warnings(member)
+            
+        return member_warnings
+        
+    def add_warning(self, member: disnake.Member, moderator: disnake.Member, reason: str):
+        warning_id = str(uuid4())
+        member_warnings = self.get_member_warnings(member)
+        
+        member_warnings.update({ warning_id: {
+            "reason": reason,
+            "moderator": moderator.id,
+            "time": str(datetime.datetime.utcnow()),
+            "id": warning_id
+        }})
+        self.update_warnings(member, member_warnings)
+        
+    def remove_warning(self, member: disnake.Member, warning_id: str):
+        member_warnings = self.get_member_warnings(member)
+        
+        if not member_warnings.get(warning_id):
+            return False
+        else:
+            member_warnings.pop(warning_id)
+            
+        self.update_warnings(member, member_warnings)
+        
+
+class UserData(DatabaseObjectBase):
     def __init__(self, user: disnake.User):
         self.user = user
         
         self._query = { "user_id": str(user.id) }
+        self._insert_data = user_data(user.id)
+        self._database_collection = _user_data_col
         
-    def get_data(self, can_insert: bool = True, reconcicle: bool = True) -> dict:
-        result = _user_data_col.find_one(self._query)
-        
-        if not result and can_insert:
-            _user_data_col.insert_one(_get_user_data(self.user.id))
-            return self.get_data(can_insert, reconcicle)
-        
-        if reconcicle:
-            unavailable_keys = []
-            insert_data = _get_user_data(self.user.id)
-            update_data = {}
-            
-            for key in insert_data.keys():
-                if not result[key]:
-                    unavailable_keys.append(key)
-                    
-            for key in unavailable_keys:
-                update_data[key] = insert_data[key]
-                
-            if len(update_data) > 0:
-                self.update_data(update_data)
-                return self.get_data(can_insert, reconcicle)
-            
-        return result
-                
-    def update_data(self, data: dict):
         self.get_data()
-        _user_data_col.update_one(self._query, { "$set": data })
         
-class MemberData(UserData):
+class MemberData(DatabaseObjectBase):
     def __init__(self, member: disnake.Member):
         self.user = member
         self.guild = member.guild
         
         self._query = { "user_id": str(member.id) }
+        self._insert_data = user_data(member.id)
+        self._database_collection = _user_data_col
         
     def get_guild_data(self, can_update: bool = True, reconcicle: bool = True) -> dict:
-        result = self.get_data(can_update, reconcicle)
+        data = self.get_data(can_update, reconcicle)
         
-        if not result.get(str(self.guild.id)) and can_update:
-            insert_data = _get_member_data(self.user.id, self.guild.id)
+        if not data.get(str(self.guild.id)) and can_update:
+            insert_data = member_data(self.user.id, self.guild.id)
             
             self.update_data({ str(self.guild.id): insert_data.get(str(self.guild.id)) })
             return self.get_guild_data(can_update, reconcicle)
-        
-        return json.loads(result.get(str(self.guild.id)))
+
+        return data.get(str(self.guild.id))
     
     def update_guild_data(self, data: dict):
         guild_data = self.get_guild_data()
         
         guild_data.update(data)
         self.update_data({ str(self.guild.id): json.dumps(guild_data) })
+     
+
+
+# API   
+class BotObject(DatabaseObjectBase):
+    def __init__(self) -> None:
+        self._query = { "bot_document": "true" }
+        self._database_collection = _api_data_col
+        self._insert_data = bot_api_data()
+        
+    def get_guilds(self) -> dict:
+        data = self.get_data()
+        
+        for key in data:
+            value = data[key]
+
+            if not type(value) == str:
+                continue
+            if re.search(r"\{\}", value) == "{}" or re.search(r"\[\]", value) == "[]":
+                data[key] = json.loads(value)
+        
+        last_refresh = data.get("last_refresh")
+        guilds_cache = data.get("guilds")
+        
+        if not (guilds_cache or last_refresh) or len(guilds_cache) == 0 or time.time() - last_refresh > DATA_REFRESH_DELAY:
+            guilds = self.request("/users/@me/guilds")
+            guilds_dict = guilds.json()
+            
+            if guilds.status_code == 200:
+                data["last_refresh"] = time.time()
+                data["guilds"] = guilds_dict
+                
+                for guild in guilds_dict:
+                    guild.pop("features")
+                    
+            return guilds_dict
+        else:
+            return guilds_cache
+        
+    def request(self, endpoint, params=None) -> requests.Response:
+        return requests.get(
+            url = BASE_DISCORD_URL.format(endpoint),
+            headers = request_headers,
+            params = params
+        )
+        
+    def get_token_from_code(self, access_code: str):
+        access_codes = list(_access_codes_col.find({}))
+        
+        for authorization in access_codes:
+            for key in authorization:
+                value = authorization[key]
+
+                if not type(value) == str:
+                    continue
+                if re.search(r"\{\}", value) == "{}" or re.search(r"\[\]", value) == "[]":
+                    authorization[key] = json.loads(value)
+                    
+            auth_access_code = authorization["access_code"]
+            if auth_access_code == access_code:
+                return authorization["access_token"]
+            
+        return None
+        
+    def get_guild(self, guild_id) -> dict | None:
+        guilds = self.get_guilds()
+        
+        for guild in guilds:
+            if guild.get("id") == str(guild_id):
+                return guild
+
+        return None
+        
+        
+class UserObject(DatabaseObjectBase):
+    def __init__(self, access_code: str) -> None:
+        self._access_code = access_code
+        
+        self._query = { "access_code": self._access_code }
+        self._database_collection = _access_codes_col
+        
+        result = _access_codes_col.find_one(self._query)
+        if not result:
+            raise InvalidAccessCode
+        
+        access_token, refresh_token = result["access_token"], result["refresh_token"]
+        user = json.loads(result["user"])
+        
+        self._insert_data = user_api_data(access_token, refresh_token, self._access_code, user)
+        
+    def request(self, endpoint, params=None) -> requests.Response:
+        access_token = BotObject().get_token_from_code(self._access_code)
+        
+        return requests.get(
+            url = BASE_DISCORD_URL.format(endpoint),
+            headers = {
+                "Authorization": "Bearer " + access_token,
+                "Content-Type": "application/json"
+            },
+            params = params
+        )
+        
+    def get_guilds(self) -> dict:
+        data = self.get_data()
+        
+        guilds_cache = data.get("guilds")
+        last_refresh = data.get("last_refresh")
+        
+        if not guilds_cache or not last_refresh or len(guilds_cache) == 0 or time.time() - last_refresh > DATA_REFRESH_DELAY:
+            user_result = self.request("/users/@me/guilds")
+            user_guilds = user_result.json()
+            
+            if user_result.status_code == 401:
+                raise RequestFailed
+            
+            for guild in user_guilds:
+                guild.pop("features")
+            
+            data["last_refresh"] = time.time()
+            data["guilds"] = user_guilds
+            guilds_cache = user_guilds
+            
+            self.update_data(data)
+            
+        return guilds_cache
+    
+    def get_guild(self, guild_id) -> dict | None:
+        guilds = self.get_guilds()
+        
+        for guild in guilds:
+            if guild.get("id") == str(guild_id):
+                return guild
+
+        return None
+    
+    
+# EXCEPTIONS
+class InvalidAccessCode(Exception):
+    """Raised if the passed access code is invalid"""
+    pass
+
+class RequestFailed(Exception):
+    """Raised if a HTTP request failed"""
+    pass

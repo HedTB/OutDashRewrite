@@ -26,7 +26,8 @@ load_dotenv()
 
 logger = logging.getLogger("OutDash")
 
-card_background_path = os.path.join(os.path.dirname(__file__), "images", "card_background.png")
+# card_background_path = os.path.join(os.path.dirname(__file__), "images", "card_background.png")
+card_background_path = "images/card_background.png"
 
 ## -- FUNCTIONS -- ##
 
@@ -88,7 +89,7 @@ class Leveling(commands.Cog):
     The text/prefix commands.
     """
     
-    @commands.command()
+    @commands.command(name="rank")
     @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
     async def rank(self, ctx: commands.Context, member: disnake.Member = None):
         if not member:

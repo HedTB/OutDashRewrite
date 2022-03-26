@@ -57,7 +57,12 @@ server_data_col = db["server_data"]
 extensions = [
     "events.events", "events.logging", "utils.loops",
     "developer_commands", "bot_settings",
-    "information", "leveling",
+    "leveling", "fun", "miscellaneous", "help",
+    
+    "moderation2",
+    "moderation.clear", "moderation.kick",
+    "moderation.mute", "moderation.slowmode", "moderation.unban",
+    "moderation.unmute",
 ]
 
 ## -- FUNCTIONS -- ##

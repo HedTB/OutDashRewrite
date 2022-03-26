@@ -20,16 +20,6 @@ from utils.classes import *
 
 load_dotenv()
 
-# SECRETS
-mongo_login = os.environ.get("MONGO_LOGIN")
-
-# DATABASE
-client = MongoClient(mongo_login, tlsCAFile=certifi.where())
-db = client[config.database_collection]
-
-server_data_col = db["server_data"]
-warns_col = db["warns"]
-
 # OTHER
 categories = {
     "messages": {
@@ -187,6 +177,88 @@ class BotSettings(commands.Cog):
         guild_data_obj.update_data({ "prefix": new_prefix })
         await ctx.send(embed=embed)
         
+    
+    """
+    ! WELCOME/GOODBYE SETTING COMMANDS
+    
+    These commands manages the welcome/goodbye features
+    """
+    
+    @commands.group(name="editwelcome")
+    async def editwelcome(self, ctx: commands.Context):
+        if ctx.invoked_subcommand == self.editwelcome or None:
+            return
+    
+    @editwelcome.command(name="toggle")
+    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @is_moderator(manage_guild=True)
+    @server_setting()
+    async def editwelcometoggle(self, ctx: commands.Context, toggle: str = "on"):
+        """Toggles if welcome messages should be sent."""
+
+        guild_data_obj = GuildData(ctx.guild)
+
+        if toggle.lower() == "on" or toggle.lower() == "true" or toggle.lower() == "yes" or toggle.lower() == "enabled":
+            update = { "welcome_toggle": "true" }
+            
+            embed = disnake.Embed(description=f"{config.yes} Welcome messages have been enabled.", color=config.success_embed_color)
+        elif toggle.lower() == "off" or toggle.lower() == "false" or toggle.lower() == "no" or toggle.lower() == "disabled":
+            update = { "welcome_toggle": "false" }
+            
+            embed = disnake.Embed(description=f"{config.yes} Welcome messages have been disabled.", color=config.success_embed_color)
+        else:
+            embed = disnake.Embed(description=f"{config.no} Please give a valid toggle value!\nToggles:\n```on, yes, true, enabled - welcome messages enabled\noff, no, false, disabled - welcome messages disabled```", color=config.error_embed_color)
+            
+        guild_data_obj.update_data(update)
+        await ctx.send(embed=embed)
+    
+    @editwelcome.command(name="content")
+    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @is_moderator(manage_guild=True)
+    @server_setting()
+    async def editwelcomecontent(self, ctx: commands.Context, *, content: str):
+        """Edit the welcome message content."""
+
+        guild_data_obj = GuildData(ctx.guild)
+        embed = disnake.Embed(description=f"{config.yes} The welcome message content has been set to:\n`{content}`", color=config.success_embed_color)
+        
+        guild_data_obj.update_data({ "welcome_message_content": content })
+        await ctx.send(embed=embed)
+    
+    @editwelcome.command(name="embed")
+    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @is_moderator(manage_guild=True)
+    @server_setting()
+    async def editwelcomeembed(self, ctx: commands.Context, embed_part: str, *, value: str):
+        """Edit the welcome message embed."""
+        
+        embed_part = embed_part.lower()
+        guild_data_obj = GuildData(ctx.guild)
+        
+        if not embed_part in embed_values:
+            embed = disnake.Embed(description=f"{config.no} Please specify a valid part of the embed!\nEmbed parts:\n```{', '.join(e for e in embed_values)}```", color=config.error_embed_color)
+            return await ctx.send(embed=embed)
+        
+        embed = disnake.Embed()
+        
+        guild_data_obj.update_data({ "welcome_embed_{}".format(embed_part): value })
+        await ctx.send(embed=embed)
+
+    @editwelcome.command(name="channel")
+    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @is_moderator(manage_guild=True)
+    @server_setting()
+    async def editwelcomechannel(self, ctx: commands.Context, channel: disnake.TextChannel):
+        """Set the channel where welcome messages should be sent."""
+        
+        guild_data_obj = GuildData(ctx.guild)
+        embed_part = embed_part.lower()
+
+        embed = disnake.Embed(description=f"{config.yes} Welcome messages will now be sent in <#{channel.id}>.", color=config.success_embed_color)
+        
+        guild_data_obj.update_data({ "welcome_channel": str(channel.id) })
+        await ctx.send(embed=embed)
+        
     ## -- SLASH COMMANDS -- ##
     
     """
@@ -310,88 +382,6 @@ class BotSettings(commands.Cog):
         embed = disnake.Embed(description=f"{config.yes} All {category.lower()[:-1]} logs will now be sent in {channel.mention}.", color=config.success_embed_color)
 
         guild_data_obj.update_data(update_dict)
-        await ctx.send(embed=embed)
-        
-    
-    """
-    ! WELCOME/GOODBYE SETTING COMMANDS
-    
-    These commands manages the welcome/goodbye features
-    """
-    
-    @commands.group(name="editwelcome")
-    async def editwelcome(self, ctx: commands.Context):
-        if ctx.invoked_subcommand == self.editwelcome or None:
-            return
-    
-    @editwelcome.command(name="toggle")
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editwelcometoggle(self, ctx: commands.Context, toggle: str = "on"):
-        """Toggles if welcome messages should be sent."""
-
-        guild_data_obj = GuildData(ctx.guild)
-
-        if toggle.lower() == "on" or toggle.lower() == "true" or toggle.lower() == "yes" or toggle.lower() == "enabled":
-            update = { "welcome_toggle": "true" }
-            
-            embed = disnake.Embed(description=f"{config.yes} Welcome messages have been enabled.", color=config.success_embed_color)
-        elif toggle.lower() == "off" or toggle.lower() == "false" or toggle.lower() == "no" or toggle.lower() == "disabled":
-            update = { "welcome_toggle": "false" }
-            
-            embed = disnake.Embed(description=f"{config.yes} Welcome messages have been disabled.", color=config.success_embed_color)
-        else:
-            embed = disnake.Embed(description=f"{config.no} Please give a valid toggle value!\nToggles:\n```on, yes, true, enabled - welcome messages enabled\noff, no, false, disabled - welcome messages disabled```", color=config.error_embed_color)
-            
-        guild_data_obj.update_data(update)
-        await ctx.send(embed=embed)
-    
-    @editwelcome.command(name="content")
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editwelcomecontent(self, ctx: commands.Context, *, content: str):
-        """Edit the welcome message content."""
-
-        guild_data_obj = GuildData(ctx.guild)
-        embed = disnake.Embed(description=f"{config.yes} The welcome message content has been set to:\n`{content}`", color=config.success_embed_color)
-        
-        guild_data_obj.update_data({ "welcome_message_content": content })
-        await ctx.send(embed=embed)
-    
-    @editwelcome.command(name="embed")
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editwelcomeembed(self, ctx: commands.Context, embed_part: str, *, value: str):
-        """Edit the welcome message embed."""
-        
-        embed_part = embed_part.lower()
-        guild_data_obj = GuildData(ctx.guild)
-        
-        if not embed_part in embed_values:
-            embed = disnake.Embed(description=f"{config.no} Please specify a valid part of the embed!\nEmbed parts:\n```{', '.join(e for e in embed_values)}```", color=config.error_embed_color)
-            return await ctx.send(embed=embed)
-        
-        embed = disnake.Embed()
-        
-        guild_data_obj.update_data({ "welcome_embed_{}".format(embed_part): value })
-        await ctx.send(embed=embed)
-
-    @editwelcome.command(name="channel")
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editwelcomechannel(self, ctx: commands.Context, channel: disnake.TextChannel):
-        """Set the channel where welcome messages should be sent."""
-        
-        guild_data_obj = GuildData(ctx.guild)
-        embed_part = embed_part.lower()
-
-        embed = disnake.Embed(description=f"{config.yes} Welcome messages will now be sent in <#{channel.id}>.", color=config.success_embed_color)
-        
-        guild_data_obj.update_data({ "welcome_channel": str(channel.id) })
         await ctx.send(embed=embed)
         
         
