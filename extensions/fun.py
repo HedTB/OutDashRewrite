@@ -36,7 +36,7 @@ class Fun(commands.Cog):
     ## -- TEXT COMMANDS -- ##
 
     @commands.command()
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
     async def meme(self, ctx):
         """Generates a random meme from the r/memes subreddit!"""
         async with ctx.typing():

@@ -41,28 +41,15 @@ disnake_logger.setLevel(logging.INFO)
 # TOKENS
 bot_token = str(os.environ.get("BOT_TOKEN"))
 test_bot_token = str(os.environ.get("TEST_BOT_TOKEN"))
-mongo_token = os.environ.get("MONGO_LOGIN")
 api_key = os.environ.get("API_KEY")
-
-
-# DATABASE VARIABLES
-client = MongoClient(mongo_token, tlsCAFile=certifi.where())
-db = client[config.database_collection]
-
-prefixes_col = db["prefixes"]
-confirmations_col = db["bot_farm_confirmations"]
-server_data_col = db["server_data"]
 
 # OTHER
 extensions = [
-    "events.events", "events.logging", "utils.loops",
+    "events.events", "events.logging", "events.errors", "utils.loops",
     "developer_commands", "bot_settings",
     "leveling", "fun", "miscellaneous", "help",
     
-    "moderation2",
-    "moderation.clear", "moderation.kick",
-    "moderation.mute", "moderation.slowmode", "moderation.unban",
-    "moderation.unmute",
+    "moderation", "music",
 ]
 
 ## -- FUNCTIONS -- ##
@@ -71,14 +58,10 @@ def get_prefix(bot, message: disnake.Message):
     if not message.guild:
         return commands.when_mentioned_or(config.default_prefix)(bot, message)
     
-    query = {"guild_id": str(message.guild.id)}
-    result = functions.get_guild_data(message.guild.id)
+    data_obj = GuildData(message.guild)
+    data = data_obj.get_data()
     
-    if not result.get("prefix"):
-        server_data_col.update_one(query, {"$set": {"prefix": config.default_prefix}})
-        return commands.when_mentioned_or(config.default_prefix)(bot, message)
-    
-    return commands.when_mentioned_or(result["prefix"])(bot, message)
+    return commands.when_mentioned_or(data["prefix"])(bot, message)
 
 async def load_extensions(bot: commands.Bot):
     for extension in extensions:
@@ -104,7 +87,7 @@ class Bot(commands.Bot):
             max_messages=10000,
             strip_after_prefix=True,
             
-            test_guilds=[config.bot_server] if not config.is_server else None,
+            test_guilds=[config.bot_server, 746363347829784646] if not config.is_server else None,
             sync_permissions=True,
             
             intents=disnake.Intents(
@@ -119,9 +102,16 @@ class Bot(commands.Bot):
         self.presence_index = 0
         self.started = False
         
+        # automod data
+        self.automod_warnings = {}
+        
+        # user data
         self.snipes = {}
         self.afk = {}
         self.leveling_awards = {}
+        
+        # guild data
+        self.mode247 = {}
         
     def start_bot(self):
         self.run(bot_token if config.is_server else test_bot_token)
@@ -143,8 +133,8 @@ class Bot(commands.Bot):
 
         print(f"Bot started on {'the server' if config.is_server else 'a local computer'}.\nStats: {len(self.guilds)} servers, {len(self.users)} users.")
         
-        with open("data/stats.json", 'w') as f:
-            json.dump({"commands_run": 0}, f)
+        with open("data/stats.json", "w") as file:
+            json.dump({ "commands_run": 0}, file)
             
     async def is_booster(self, user: disnake.User):
         if user.id in config.owners:
@@ -158,26 +148,23 @@ class Bot(commands.Bot):
             
         return False
                     
-    def get_bot_prefix(self, guild_id: int) -> str:
-        query = {"guild_id" : str(guild_id)}
-        data = functions.get_db_data(guild_id)
-        update = { "$set": { "guild_id" : str(guild_id), "prefix" : "?" } }
-        
-        result = server_data_col.find_one(filter=query)
+    def get_bot_prefix(self, guild: disnake.Guild) -> str:
+        data_obj = GuildData(guild)
+        data = data_obj.get_data()
 
-        if not result or not result["prefix"]:
-            if not result:
-                server_data_col.insert_one(data)
-            elif result and not result["prefix"]:
-                server_data_col.update_one(query, update)
-
-        return server_data_col.find_one(query)["prefix"]
+        return data["prefix"]
     
         
 bot = Bot()
 
 ## -- EXTENSIONS -- ##
 
+extension_options = {}
+for extension in extensions:
+    extension_options[extension]= extension
+    
+extension_options = commands.option_enum(extension_options)
+ 
 @bot.slash_command(name="extensions",
                    description="Manages the bot's extensions.",
                    default_permission=False,
@@ -187,7 +174,7 @@ async def slash_extensions(inter):
     pass
 
 @slash_extensions.sub_command(name="load", description="Load a specific extension.")
-async def loadextension(inter: disnake.ApplicationCommandInteraction, extension: str):
+async def load_extension(inter: disnake.ApplicationCommandInteraction, extension: extension_options):
     await inter.send("Loading extension...", ephemeral=True)
         
     try:
@@ -202,7 +189,7 @@ async def reload(inter):
     pass
 
 @reload.sub_command(name="all", description="Reload all extensions.")
-async def reloadextensions(inter: disnake.ApplicationCommandInteraction):
+async def reload_extensions(inter: disnake.ApplicationCommandInteraction):
     await inter.send("Reloading all extensions...", ephemeral=True)
     
     for extension in extensions:
@@ -214,7 +201,7 @@ async def reloadextensions(inter: disnake.ApplicationCommandInteraction):
     await inter.edit_original_message(content=f"All extensions have been reloaded (?)")
 
 @reload.sub_command(name="extension", description="Reload one specific extension.")
-async def reloadextension(inter: disnake.ApplicationCommandInteraction, extension: str):
+async def reload_extension(inter: disnake.ApplicationCommandInteraction, extension: extension_options):
     await inter.send("Reloading extension...", ephemeral=True)
     
     try:

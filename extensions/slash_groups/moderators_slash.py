@@ -28,7 +28,7 @@ mongo_login = os.environ.get("MONGO_LOGIN")
 client = MongoClient(mongo_login, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
-server_data_col = db["server_data"]
+guild_data_col = db["guild_data"]
 muted_users_col = db["muted_users"]
 user_data_col = db["user_data"]
 
@@ -72,10 +72,10 @@ class ModeratorsSlash(commands.Cog):
         
         data = functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
-        result = server_data_col.find_one(query)
+        result = guild_data_col.find_one(query)
         
         if not result:
-            server_data_col.insert_one(data)
+            guild_data_col.insert_one(data)
             self.slash_moderatorsadd(inter, member)
             
         moderators = result.get("moderators")
@@ -108,7 +108,7 @@ class ModeratorsSlash(commands.Cog):
             update = {
                 "moderators": json.dumps(moderators)
             }
-        server_data_col.update_one(query, {"$set": update})
+        guild_data_col.update_one(query, {"$set": update})
 
         embed = disnake.Embed(description=f"{config.yes} **{member}** has been added as a moderator.", color=config.success_embed_color)
         await inter.send(embed=embed)
@@ -126,10 +126,10 @@ class ModeratorsSlash(commands.Cog):
         
         data = functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
-        result = server_data_col.find_one(query)
+        result = guild_data_col.find_one(query)
         
         if not result:
-            server_data_col.insert_one(data)
+            guild_data_col.insert_one(data)
             self.slash_moderatorsview(inter)
             
         moderators = result.get("moderators")
@@ -156,7 +156,7 @@ class ModeratorsSlash(commands.Cog):
     @slash_moderators.error
     async def slash_moderators_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description=f"{config.no} You're missing the `{error.missing_permissions[0].capitalize()}` permission.", color=config.error_embed_color)
+            embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         
     

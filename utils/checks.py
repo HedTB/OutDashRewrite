@@ -21,7 +21,7 @@ mongo_login = os.environ.get("MONGO_LOGIN")
 client = MongoClient(mongo_login, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
-server_data_col = db["server_data"]
+guild_data_col = db["guild_data"]
 warns_col = db["warns"]
 
 ## -- EXCEPTIONS -- ##
@@ -42,8 +42,8 @@ class SettingsLocked(commands.CheckFailure):
 
 def is_moderator(**perms):
     async def predicate(ctx: commands.Context):
-        guild_data_obj = GuildData(ctx.guild)
-        data = guild_data_obj.get_data()
+        data_obj = GuildData(ctx.guild)
+        data = data_obj.get_data()
         
         moderators = data.get("moderators")
 
@@ -86,21 +86,12 @@ def is_voter():
 
 def server_setting():
     async def predicate(ctx: commands.Context):
-        query = {"guild_id": str(ctx.guild.id)}
-        result = server_data_col.find_one(query)
+        data_obj = GuildData(ctx.guild)
+        data = data_obj.get_data()
         
-        if not result:
-            server_data_col.insert_one(functions.get_db_data(ctx.guild.id))
-            return True
-        
-        settings_locked = result.get("settings_locked")
-        
-        if not settings_locked:
-            server_data_col.update_one(query, {"settings_locked": "false"})
-            return True
-        elif settings_locked == "true":
+        if data.get("settings_locked") == True:
             raise SettingsLocked
-        elif settings_locked == "false":
+        else:
             return True
         
     return commands.check(predicate)

@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 
 from utils import config
+from utils.classes import *
 
 ## -- VARIABLES -- ##
 
@@ -22,7 +23,7 @@ mongo_login = os.environ.get("MONGO_LOGIN")
 client = MongoClient(mongo_login, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
-server_data_col = db["server_data"]
+guild_data_col = db["guild_data"]
 
 ## -- FUNCTIONS -- ##
 
@@ -36,55 +37,6 @@ def generate_captcha(length: int = 8) -> str:
     image.write(captcha_text, f"{captcha_text}.png")
     
     return captcha_text
-
-def get_db_data(guild_id: str) -> dict:
-    return {
-        "guild_id": str(guild_id),
-        "prefix": "?",
-        "settings_locked": "false",
-
-        "chat_bot_channel": "None",
-        "chat_bot_toggle": "false",
-
-        "message_delete_logs_webhook": "None",
-        "message_bulk_delete_logs_webhook": "None",
-        "message_edit_logs_webhook": "None",
-        "member_join_logs_webhook": "None",
-        "member_remove_logs_webhook": "None",
-        "user_update_logs_webhook": "None",
-        "guild_channel_create_logs_webhook": "None",
-        "guild_channel_delete_logs_webhook": "None",
-        "guild_channel_update_logs_webhook": "None",
-
-        "captcha_verification": "false",
-        "captcha_verification_length": 8,
-        
-        "welcome_channel": "None",
-        "welcome_toggle": "False",
-        "welcome_embed_title": "None",
-        "welcome_embed_description": "**Welcome to __{guild_name}__!**",
-        "welcome_embed_author_name": "{member_username}",
-        "welcome_embed_author_icon": "{member_icon}",
-        "welcome_embed_footer_text": "None",
-        "welcome_embed_footer_icon": "None",
-        "welcome_embed_timestamp": "true",
-        "welcome_embed_thumbnail": "{guild_icon}",
-        "welcome_embed_color": config.logs_embed_color,
-        "welcome_message_content": "{member_mention},",
-    }
-    
-def get_user_data(user_id: int, guild_id: int):
-    return {
-        "user_id": str(user_id),
-        "timezone": "Europe/Belfast",
-        "message_content_privacy": "false",
-        
-        str(guild_id): json.dumps({
-            "level": 0,
-            "rank": 0,
-            "total_xp": 0,
-        })
-    }
     
 def manipulate_time(time_str: str, return_type: str) -> int or str:
     if return_type == "seconds":
@@ -101,9 +53,9 @@ def manipulate_time(time_str: str, return_type: str) -> int or str:
             elif duration == "d":
                 return time * 60 * 60 * 24
             else:
-                return "InvalidInput"
+                return None
         except Exception:
-            return "InvalidInput"
+            return None
 
     elif return_type == "duration_type":
         duration = time_str[-1].lower()
@@ -181,59 +133,19 @@ def is_role_above_role(role1: disnake.Role, role2: disnake.Role) -> bool:
     elif role2.position > role1.position:
         return False
 
-def log_moderation(guild_id: int, moderator: int, action: str, reason: str = "No reason provided."):
-    guild_id = str(guild_id)
-    
-    query = {"guild_id": guild_id}
-    result = server_data_col.find_one(query)
-    
-    if not result:
-        server_data_col.insert_one(get_db_data(guild_id))
-        log_moderation(guild_id, moderator, action, reason)
+def log_moderation(guild: disnake.Guild, moderator: disnake.Member, action: str, reason: str = "No reason provided."):
+    data_obj = GuildData(guild)
+    data = data_obj.get_data()
         
-    elif not result.get("moderation_logs"):
-        server_data_col.update_one(query, {"$set": {"moderation_logs": "{}"}})
-        log_moderation(guild_id, moderator, action, reason)
-        
-    else:
-        try:
-            json.loads(result.get("moderation_logs"))
-        except:
-            return
-        
-        mod_logs = json.loads(result.get("moderation_logs"))
-        
-        mod_logs.append({
-            moderator: moderator,
-            action: action,
-            reason: reason
-        })
-        server_data_col.update_one(query, {"$set": {
-            "moderation_logs": json.dumps(mod_logs)
-        }})
-        
-def get_guild_data(guild_id: int):
-    query = {"guild_id": str(guild_id)}
-    result = server_data_col.find_one(query)
+    try:
+        json.loads(data.get("moderation_logs"))
+    except:
+        return
     
-    if not result:
-        server_data_col.insert_one(get_db_data(guild_id))
-        return get_guild_data(guild_id)
+    mod_logs = json.loads(data.get("moderation_logs"))
     
-    return result
-
-def get_warn_data(guild_id: int, member_id: int):
-    query = {"guild_id": str(guild_id)}
-    result = server_data_col.find_one(query)
-    
-    if not result:
-        server_data_col.insert_one({
-            "guild_id": str(guild_id),
-            str(member_id): "[]"
-        })
-        return get_warn_data(guild_id, member_id)
-    
-    return result
+    mod_logs.append({ moderator: moderator, action: action, reason: reason })
+    data_obj.update_data({ "moderation_logs": mod_logs })
 
 def abbriviate_number(number: int):
     number = float("{:.3g}".format(number))

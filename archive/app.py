@@ -56,7 +56,7 @@ discord = DiscordOAuth2Session(app)
 client = MongoClient(mongo_login, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
-server_data_col = db["server_data"]
+guild_data_col = db["guild_data"]
 
 argument_names = {
     "prefix": "prefix",
@@ -89,7 +89,7 @@ def guild_to_dict(guild: discord.Guild):
 
     guild_dict["id"] = guild.id
     guild_dict["name"] = guild.name
-    guild_dict["icon"] = str(guild.icon)
+    guild_dict["icon"] = guild.icon)
 
     return json.dumps(guild_dict)
 
@@ -162,7 +162,7 @@ def save_guild_settings():
     guild_id = arguments.get("guild_id")
     guild = get_guild(guild_id).json()
     update_values = {}
-    query = {"guild_id": str(guild_id)}
+    query = {"guild_id": guild_id)}
 
     if not guild_id:
         return {"message": "Missing guild ID"}, 400
@@ -177,7 +177,7 @@ def save_guild_settings():
         argument_name = argument_names[argument]
         update_values[argument_name] = value
 
-    server_data_col.update_one(query, {"$set": update_values})
+    guild_data_col.update_one(query, {"$set": update_values})
     return {"changed_settings": argument_name for argument_name in list(update_values.keys())}
 
 @app.route("/api/get-bot-guilds", methods=["GET", "OPTIONS"])
@@ -242,7 +242,7 @@ def server_dashboard(guild_id: int):
     guild = get_guild(guild_id).json()
     can_enter_dashboard = check_permissions(guild_id)
 
-    result = server_data_col.find_one({"guild_id": str(guild_id)})
+    result = guild_data_col.find_one({"guild_id": guild_id)})
 
     if not can_enter_dashboard:
         return "You don't have permission to access this dashboard."

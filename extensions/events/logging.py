@@ -3,8 +3,6 @@
 # MODULES
 import disnake
 import os
-import random
-import asyncio
 import datetime
 import certifi
 
@@ -45,7 +43,7 @@ perspective_client = discovery.build(
 )
 """
 
-server_data_col = db["server_data"]
+guild_data_col = db["guild_data"]
 user_data_col = db["user_data"]
 privacy_settings_col = db["privacy_settings"]
 
@@ -59,30 +57,6 @@ def get_response_score(response, attribute: str):
         return round(attribute_scores[attribute]["summaryScore"]["value"], 3)
     else:
         return None
-    
-def send_log_message(log_type: str, avatar: disnake.Asset, ctx: commands.Context, embed: disnake.Embed):
-    query = {"guild_id": str(ctx.guild.id)}
-    update = {"$set": {f"{log_type}_logs_webhook": "None"}}
-    server_data = server_data_col.find_one(query)
-    
-    if not server_data:
-        server_data_col.insert_one(functions.get_db_data(ctx.guild.id))
-        send_log_message(log_type, ctx, embed)
-        return
-            
-    webhook_url = server_data.get(f"{log_type}_logs_webhook")
-    if webhook_url == "None" or not webhook_url:
-        if not webhook_url:
-            server_data_col.update_one(query, update)
-        return
-    
-    webhook = Webhook(url=webhook_url, username="OutDash Logging", avatar_url=str(avatar))
-    
-    webhook.add_embed(embed)
-    try:
-        webhook.post()
-    except InvalidWebhook:
-        server_data_col.update_one(query, {"$set": {f"{log_type}_logs_webhook": "None"}})
 
 
 ## -- COG -- ##
@@ -91,10 +65,16 @@ class LoggingEvents(commands.Cog):
     
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        
+    ## -- MESSAGES -- ##
     
     @commands.Cog.listener()
     async def on_bulk_message_delete(self, messages: list[disnake.Message]):
-        webhook = LoggingWebhook(self.bot.user.avatar, messages[0].guild, "message_bulk_delete")
+        try:
+            webhook = LoggingWebhook(self.bot.user.avatar, messages[0].guild, "message_bulk_delete")
+        except InvalidWebhook:
+            return
+        
         embed = disnake.Embed(description=f"**Bulk delete in <#{messages[0].channel.id}>, {len(messages)} messages deleted**", color=config.logs_embed_color)
         
         embed.set_author(name=messages[0].guild.name, icon_url=messages[0].guild.icon or config.default_avatar_url)
@@ -110,14 +90,14 @@ class LoggingEvents(commands.Cog):
         if before.author.bot or after.author.bot:
             return
         
-        webhook = LoggingWebhook(self.bot.user.avatar, before.guild, "message_bulk_delete")
-        user_data = user_data_col.find_one({"user_id": str(before.author.id)})
-        
-        if not user_data:
-            user_data_col.insert_one(functions.get_user_data(before.author.id, before.guild.id))
-            await self.on_message_edit(before, after)
+        try:
+            webhook = LoggingWebhook(self.bot.user.avatar, before.guild, "message_bulk_delete")
+        except InvalidWebhook:
             return
-            
+        
+        user_data_obj = UserData(before.author)
+        
+        user_data = user_data_obj.get_data() 
         message_content_privacy = user_data.get("message_content_privacy")
         
         before_text = before.content if len(before.content) < 1021 else f"{before.content[:1021]}..."
@@ -154,16 +134,15 @@ class LoggingEvents(commands.Cog):
         if message.author.bot:
             return
         
-        webhook = LoggingWebhook(self.bot.user.avatar, message.guild, "message_delete")
-        user_data = user_data_col.find_one({"user_id": str(message.author.id)})
+        user_data_obj = UserData(message.author)
+        user_data = user_data_obj.get_data()
         
-        if not user_data:
-            user_data_col.insert_one(functions.get_user_data(message.author.id, message.guild.id))
-            await self.on_message_delete(message)
+        try:
+            webhook = LoggingWebhook(self.bot.user.avatar, message.guild, "message_delete")
+        except InvalidWebhook:
             return
             
-        message_content_privacy = user_data.get("message_content_privacy")
-        
+        message_content_privacy = user_data["message_content_privacy"]
         message_text = message.content if len(message.content) < 2000 else f"{message.content[:2000]}..."
         
         if len(message.embeds) >= 1:
@@ -180,6 +159,77 @@ class LoggingEvents(commands.Cog):
 
         webhook.add_embed(embed)
         webhook.post()
+    
+    ## -- MEMBERS -- ##
+    
+    @commands.Cog.listener()
+    async def on_member_join(self, member: disnake.Member):
+        try:
+            webhook = LoggingWebhook(self.bot.user.avatar, member.guild, "member_join")
+        except InvalidWebhook:
+            return
+        
+        await self.bot.dispatch("welcome_member", member)
+        embed = disnake.Embed(description="**Member joined**", color=config.logs_add_embed_color, timestamp=datetime.datetime.utcnow())
+        
+        created_ago_native = datetime.datetime.replace(member.created_at, tzinfo=None)
+        created_ago = (datetime.datetime.now() - created_ago_native)
+        created_seconds_ago = created_ago.total_seconds()
+        
+        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or config.default_avatar_url)
+        embed.add_field(name="Account Created", value=f"{functions.seconds_to_text(created_seconds_ago, 3)} ago", inline=False)
+        
+        webhook.add_embed(embed)
+        webhook.post()
+        
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: disnake.Member):
+        try:
+            webhook = LoggingWebhook(self.bot.user.avatar, member.guild, "member_remove")
+        except InvalidWebhook:
+            return
+        
+        member_roles = []
+        for role in member.roles:
+            if role.name != "@everyone":
+                member_roles.append(role.mention + " ")
+                
+        member_roles = "".join(member_roles)
+        
+        joined_at_native = datetime.datetime.replace(member.joined_at, tzinfo=None)
+        joined_at = (datetime.datetime.now() - joined_at_native)
+        joined_seconds_ago = joined_at.total_seconds()
+        
+        embed = disnake.Embed(description=f"**Member left**", color=config.logs_delete_embed_color, timestamp=datetime.datetime.utcnow())
+
+        embed.add_field(name="Member Since", value=f"{functions.seconds_to_text(joined_seconds_ago, 3)} ago", inline=False)
+        embed.add_field(name="Roles", value=str(member_roles), inline=False)
+        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or config.default_avatar_url)
+        
+        webhook.add_embed(embed)
+        webhook.post()
+        
+    @commands.Cog.listener()
+    async def on_member_update(self, before: disnake.Member, after: disnake.Member):
+        try:
+            webhook = LoggingWebhook(self.bot.user.avatar, before.guild, "member_update")
+        except InvalidWebhook:
+            return
+        
+        if before.nick != after.nick:
+            embed = disnake.Embed(description="Nickname changed", color=config.logs_embed_color)
+            
+            embed.add_field("Before", disnake.utils.escape_markdown(before.nick if before.nick else before.name))
+            embed.add_field("After", disnake.utils.escape_markdown(after.nick if after.nick else after.name))
+            
+        embed.timestamp = datetime.datetime.utcnow()
+        embed.set_author(name=str(before), icon_url=before.avatar.url)
+        
+        webhook.add_embed(embed)
+        webhook.post()
+        
+        
+        
     
     
 def setup(bot):

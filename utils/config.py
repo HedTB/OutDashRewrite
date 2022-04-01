@@ -45,17 +45,18 @@ emojis = {
 }
 
 jokes = ["Heard about the new restaurant called Karma?\nThere's no menu: you get what you deserve.",
-         "Why do melons have weddings?\nBecause they cantaloupe.",
-         'Why do we tell actors to "break a leg"?\nBecause every play has a cast.',
-          'What did the buffalo say to his son?\nBison.',
-          'Theres a new game called Silent Tennis.\nIts like regular tennis, but without the racquet.',
-          'After I went to the dentist, I went and recorded a gospel album. My mouth was still numb, so I was drooling the whole time.\nThe album is called Songs of Salivation',
-           'The world tongue-twister champion just got arrested.\nI hear theyre gonna give him a really tough sentence.',
-            'Look! A blind dinosaur!\nYou think hesaurus?',
-             'My doctor told me Im going deaf.\nThe news was hard for me to hear.',
-              'I just memorized six pages of the dictionary.\nI learned next to nothing.',
-               'My wife asked me today if I had seen the dog bowl.\nI said no because I didnt know he could.',
-                'A weasel walks into the bar, the bartender says, hello weasel! What music would you like today?\nPop! Goes the weasel',]
+        "Why do melons have weddings?\nBecause they cantaloupe.",
+        "Why do we tell actors to \"break a leg\"?\nBecause every play has a cast.",
+        "What did the buffalo say to his son?\nBison.",
+        "Theres a new game called Silent Tennis.\nIts like regular tennis, but without the racquet.",
+        "After I went to the dentist, I went and recorded a gospel album. My mouth was still numb, so I was drooling the whole time.\nThe album is called Songs of Salivation",
+        "The world tongue-twister champion just got arrested.\nI hear theyre gonna give him a really tough sentence.",
+        "Look! A blind dinosaur!\nYou think hesaurus?",
+        "My doctor told me I'm going deaf.\nThe news was hard for me to hear.",
+        "I just memorized six pages of the dictionary.\nI learned next to nothing.",
+        "My wife asked me today if I had seen the dog bowl.\nI said no because I didnt know he could.",
+        "A weasel walks into the bar, the bartender says, hello weasel! What music would you like today?\nPop! Goes the weasel",
+]
 
 responses_8ball = ["of course mate",
             "yes, why not?",

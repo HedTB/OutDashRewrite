@@ -1,6 +1,7 @@
 ## -- IMPORTING -- ##
 
 # MODULES
+import asyncio
 import datetime
 import time
 import logging
@@ -34,12 +35,87 @@ logger = logging.getLogger("OutDash")
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
-server_data_col = db["server_data"]
+guild_data_col = db["guild_data"]
 user_data_col = db["user_data"]
 
 ignored = (commands.CommandNotFound, commands.MissingPermissions, disnake.errors.Forbidden, disnake.errors.HTTPException, commands.MissingRequiredArgument, )
 
 ## -- FUNCTIONS -- ##
+
+def get_variables(member: disnake.Member, guild: disnake.Guild):
+    return {
+        # member variables
+        "{member_username}": str(member), "{member_name}": member.name, "{member_discriminator}": member.discriminator, "{member_mention}": member.mention, "{member_avatar}": member.avatar.url,
+        
+        # guild variables
+        "{guild_name}": guild.name, "{guild_icon}": guild.icon.url, "{guild_member_count}": guild.member_count,
+    }
+    
+def format_variables(string: str, original_variables: dict):
+    variables = {}
+    result = re.findall(r"{(\w+)}", string)
+    
+    for value in result:
+        variables.update({ value: original_variables["{" + value + "}"] })
+        
+    return str.format(string, **variables)
+
+def insert_variables(message: dict, **kwargs):
+    embed = message["embed"]
+    
+    ctx: commands.Context = kwargs.get("ctx")
+    member: disnake.Member = kwargs.get("member")
+        
+    if not member and not ctx:
+        return None
+    
+    try:
+        guild = ctx.guild
+        member = ctx.author
+    except AttributeError:
+        guild = member.guild
+        
+    variables = get_variables(member, guild)
+    message["content"] = format_variables(message["content"], variables)
+    
+    to_pop = {}
+    for key in embed:
+        value = embed[key]
+        
+        if isinstance(value, dict):
+            for key2 in value:
+                value2 = value[key2]
+                
+                if value2 == None:
+                    to_pop[key] = []
+                    to_pop[key].append(key2)
+                    continue
+                elif type(value2) != str:
+                    continue
+                
+                embed[key][key2] = format_variables(value2, variables)
+            continue
+        
+        elif value == None:
+            to_pop["all"] = []
+            to_pop["all"].append(key)
+            continue
+        elif type(value) != str:
+            continue
+        
+        embed[key] = format_variables(value, variables)
+        
+    for key in to_pop:
+        value = to_pop[key]
+        
+        for key2 in value:
+            if key == "all":
+                embed.pop(key2)
+            else:
+                embed[key].pop(key2)
+        
+    return message
+        
 
 ## -- COG -- ##
 
@@ -51,25 +127,25 @@ class Events(commands.Cog):
     
     @commands.Cog.listener()
     async def on_command(self, ctx):
-        with open("data/stats.json", "r") as file_object:
-            data = json.load(file_object)
+        with open("data/stats.json", "r") as file:
+            data = json.load(file)
         
-        number = data.get("commands_run") or 0
-        new_data = {"commands_run" : number + 1}
+        commands_run = data.get("commands_run")
+        data["commands_run"] = commands_run + 1 if commands_run != None else 1
 
-        with open("data/stats.json", 'w') as jsonfile:
-            json.dump(new_data, jsonfile, indent=4)
+        with open("data/stats.json", "w") as file:
+            json.dump(data, file)
 
     @commands.Cog.listener()
     async def on_slash_command(self, inter):
-        with open("data/stats.json", "r") as file_object:
-            data = json.load(file_object)
+        with open("data/stats.json", "r") as file:
+            data = json.load(file)
         
-        number = data.get("commands_run") or 0
-        new_data = {"commands_run" : number + 1}
+        commands_run = data.get("commands_run")
+        data["commands_run"] = commands_run + 1 if commands_run != None else 1
 
-        with open("data/stats.json", 'w') as jsonfile:
-            json.dump(new_data, jsonfile, indent=4)
+        with open("data/stats.json", "w") as file:
+            json.dump(data, file)
             
     ## -- ERRORS -- ##
             
@@ -96,7 +172,6 @@ class Events(commands.Cog):
             except:
                 await inter.channel.send(embed=error_embed)
 
-    
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         channel = self.bot.get_channel(config.error_channel)
@@ -128,10 +203,8 @@ class Events(commands.Cog):
         if message.author == self.bot.user or message.author.bot or not message.guild:
             return
         
-        guild_data_obj = GuildData(message.guild)
-        guild_data = guild_data_obj.get_data()
-        
-        await self.bot.process_commands(message)
+        data_obj = GuildData(message.guild)
+        guild_data = data_obj.get_data()
 
         if message.content == f"<@{self.bot.user.id}>" or message.content == f"<@!{self.bot.user.id}>":
             prefix = guild_data.get("prefix")
@@ -139,14 +212,13 @@ class Events(commands.Cog):
             
             await message.channel.send(embed=embed)
 
-            
     @commands.Cog.listener("on_message")
     async def chatbot_responder(self, message: disnake.Message):
         if message.author == self.bot.user or message.author.bot or not message.guild:
             return
         
-        guild_data_obj = GuildData(message.guild)
-        guild_data = guild_data_obj.get_data()
+        data_obj = GuildData(message.guild)
+        guild_data = data_obj.get_data()
         
         chat_bot_channel = guild_data.get("chat_bot_channel")
         
@@ -170,22 +242,29 @@ class Events(commands.Cog):
                     "bot_master": "HedTB", "bot_age": "1", "bot_location": "Sweden", 
                     "bot_birth_year": "2021", "bot_birth_place": "Sweden", "bot_favorite_color": "Blue", "id": str(message.author.id)
                 }
-            )
+            ).json()
 
             try:
-                await message.reply(response.json().get("AIResponse"))
+                await message.reply(response.get("AIResponse"))
             except Exception as error:
                 logging.warn("Error occurred while getting/sending chatbot response | " + str(error))
                 pass
-            
-        await self.bot.process_commands(message)
         
     @commands.Cog.listener("on_message")
     async def award_xp(self, message: disnake.Message):
         if message.author.bot:
             return
         
-        last_xp_award = self.bot.leveling_awards.get(message.author.id)
+        data_obj = GuildData(message.guild)
+        data = data_obj.get_data()
+        
+        if message.content.startswith(data["prefix"]):
+            return
+        
+        try:
+            last_xp_award = self.bot.leveling_awards[message.guild.id][message.author.id]
+        except:
+            last_xp_award = None
         
         if not last_xp_award or last_xp_award and time.time() - last_xp_award["awarded_at"] > last_xp_award["cooldown_time"]:
             xp_amount = random.randint(17, 27)
@@ -194,12 +273,14 @@ class Events(commands.Cog):
             if result == "level_up":
                 await message.channel.send(f"{message.author.mention} is now **level {potential_level}!** :tada:")
 
-            self.bot.leveling_awards[message.author.id] = {
+            if not self.bot.leveling_awards.get(message.guild.id):
+                self.bot.leveling_awards[message.guild.id] = {}
+            
+            self.bot.leveling_awards[message.guild.id][message.author.id] = {
                 "awarded_at": time.time(),
                 "cooldown_time": random.randint(55, 65)
+                # "cooldown_time": 10
             }
-            
-        await self.bot.process_commands(message)
             
     @commands.Cog.listener("on_message_delete")
     async def snipe_logging(self, message: disnake.Message):
@@ -214,14 +295,13 @@ class Events(commands.Cog):
             "author": message.author.id,
             "nsfw": message.channel.is_nsfw()
         }
-            
 
     ## -- GUILDS -- ##
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: disnake.Guild):
-        guild_data_obj = GuildData(guild)
-        guild_data_obj.get_data()
+        data_obj = GuildData(guild)
+        data_obj.get_data()
 
         embed = disnake.Embed(title="New Server", description=f"OutDash was added to a new server!\n\nWe're now in `{len(self.bot.guilds)}` guilds.", color=config.logs_add_embed_color)
         
@@ -246,7 +326,6 @@ class Events(commands.Cog):
 
         await self.bot.get_channel(config.messages_channel).send(embed=embed)
         
-        
     ## -- MEMBERS -- ##
     
     @commands.Cog.listener("on_member_join")
@@ -255,6 +334,57 @@ class Events(commands.Cog):
         
         member_data_obj.get_data()
         member_data_obj.get_guild_data()
+        
+    @commands.Cog.listener("on_welcome_member")
+    async def welcome_member(self, member: disnake.Member, **kwargs):
+        guild = member.guild
+        
+        data_obj = GuildData(guild)
+        data = data_obj.get_data()
+        
+        toggle = data["welcome_toggle"]
+        channel = data["welcome_channel"]
+        
+        data["welcome_message"] = insert_variables(data["welcome_message"], member=member)
+        
+        message = data["welcome_message"]
+        content = message["content"]
+        
+        embed = message["embed"]
+        if embed["timestamp"]:
+            embed["timestamp"] = str(datetime.datetime.utcnow())
+        
+        if toggle == True and not channel:
+            return data_obj.update_data({ "welcome_toggle": False })
+        elif not toggle:
+            return
+        
+        channel = kwargs.get("channel") or self.bot.get_channel(channel)
+        if not channel:
+            return data_obj.update_data({ "welcome_toggle": False, "welcome_channel": None })
+        
+        message_embed = disnake.Embed().from_dict(embed)
+        await channel.send(content=content, embed=message_embed)
+        
+    ## -- VOICE CHANNELS -- ##
+    
+    @commands.Cog.listener("on_voice_state_update")
+    async def leave_voice_channel(self, member: disnake.Member, before: disnake.VoiceState, after: disnake.VoiceState):
+        voice_client = member.guild.voice_client
+        humans = []
+                    
+        if not voice_client or after.channel != None or before.channel != voice_client.channel:
+            return
+        
+        if voice_client and voice_client.is_connected():
+            await asyncio.sleep(10)
+            
+            for member in voice_client.channel.members:
+                if not member.bot:
+                    humans.append(member)
+            
+            if len(humans) < 1:
+                await voice_client.disconnect()
 
 
 def setup(bot):

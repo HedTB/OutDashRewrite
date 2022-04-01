@@ -31,7 +31,7 @@ class Leave(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
     async def leave(self, ctx: commands.Context):
         """Makes me leave your voice channel."""
         voice_client = utils.get(ctx.bot.voice_clients, guild=ctx.guild)

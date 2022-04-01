@@ -43,7 +43,7 @@ class Miscellanous(commands.Cog):
     """
     
     @commands.command()
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
     async def info(self, ctx: commands.Context):
         """Get to know about OutDash!"""
         
@@ -59,7 +59,7 @@ class Miscellanous(commands.Cog):
         await ctx.send(embed=embed)
         
     @commands.command()
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
     async def stats(self, ctx):
         """Get to know how OutDash is doing!"""
         start = time.time()
@@ -79,7 +79,7 @@ class Miscellanous(commands.Cog):
         
         embed.add_field(name=":signal_strength: Connection", value=f"Bot Latency: `{round(self.bot.latency * 1000)} ms`\nAPI Latency: `{round(time_result * 1000)} ms`\nUptime: `{hours} hrs {minutes} mins`", inline=True)
         embed.add_field(name=":chart_with_upwards_trend: Bot Values", value=f"Server Count: `{len(self.bot.guilds)}`\nCommands Run: `{commands_run}`\nUser Count: `{len(self.bot.users)}`", inline=True)
-        embed.add_field(name=":bar_chart: Server Values", value=f"Member Count: `{ctx.guild.member_count}`\nServer Prefix: `{self.bot.get_bot_prefix(ctx.guild.id)}`", inline=True)
+        embed.add_field(name=":bar_chart: Server Values", value=f"Member Count: `{ctx.guild.member_count}`\nServer Prefix: `{self.bot.get_bot_prefix(ctx.guild)}`", inline=True)
             
         embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()
@@ -87,7 +87,7 @@ class Miscellanous(commands.Cog):
         await msg.edit(embed=embed)
         
     @commands.command()
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
     async def ping(self, ctx: commands.Context):
         """Gets the latency of the bot."""
         start = time.time()
@@ -110,7 +110,7 @@ class Miscellanous(commands.Cog):
     """
     
     @commands.command(name="membercount", aliases=["members"])
-    @commands.cooldown(rate=1, per=config.cooldown_time, type=commands.BucketType.member)
+    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
     async def membercount(self, ctx: commands.Context):
         """Returns your current member count!"""
             
@@ -181,7 +181,7 @@ class Miscellanous(commands.Cog):
 
         embed.add_field(name=":chart_with_upwards_trend: Bot Values", value=f"Server Count: `{len(self.bot.guilds)}`\nCommands Run: `{commands_run}`\nUser Count: `{len(self.bot.users)}`", inline=True)
 
-        embed.add_field(name=":bar_chart: Server Values", value=f"Member Count: `{inter.guild.member_count}`\nServer Prefix: `{self.bot.get_bot_prefix(inter.guild.id)}`", inline=True)
+        embed.add_field(name=":bar_chart: Server Values", value=f"Member Count: `{inter.guild.member_count}`\nServer Prefix: `{self.bot.get_bot_prefix(inter.guild)}`", inline=True)
 
         embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or config.default_avatar_url)
         embed.timestamp = datetime.datetime.utcnow()

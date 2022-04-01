@@ -10,7 +10,6 @@ import random
 import logging
 
 from disnake.ext import commands
-from pymongo import MongoClient
 from dotenv import load_dotenv
 from disrank.generator import Generator
 
@@ -26,12 +25,12 @@ load_dotenv()
 
 logger = logging.getLogger("OutDash")
 
-# card_background_path = os.path.join(os.path.dirname(__file__), "images", "card_background.png")
 card_background_path = "images/card_background.png"
 
 ## -- FUNCTIONS -- ##
 
 def xp_to_levelup(lvl, xp=0):
+    lvl -= 1
     return 5 * (lvl ** 2) + (50 * lvl) + 100 - xp
 
 def total_xp_for_level(lvl, current_total_xp):
@@ -52,6 +51,7 @@ def add_xp(member: disnake.Member, amount: int):
     
     update = {}
     xp_for_levelup = xp_to_levelup(level, xp)
+    # print(xp_for_levelup, xp, total_xp)
     
     update["total_xp"] = total_xp + amount
     

@@ -1,9 +1,9 @@
 import asyncio
 import aiohttp
 import re
+import disnake
 try:
     import youtube_dl
-    import disnake
     has_voice = True
 except ImportError:
     has_voice = False
@@ -104,13 +104,13 @@ def check_queue(ctx, opts, music, after, on_play, loop):
             return
         if len(music.queue[ctx.guild.id]) > 0:
             source = disnake.PCMVolumeTransformer(disnake.FFmpegPCMAudio(music.queue[ctx.guild.id][0].source, **opts))
-            ctx.voice_client.play(source, after=lambda error: after(ctx, opts, music, after, on_play, loop))
+            ctx.guild.voice_client.play(source, after=lambda error: after(ctx, opts, music, after, on_play, loop))
             song = music.queue[ctx.guild.id][0]
             if on_play:
                 loop.create_task(on_play(ctx, song))
     else:
         source = disnake.PCMVolumeTransformer(disnake.FFmpegPCMAudio(music.queue[ctx.guild.id][0].source, **opts))
-        ctx.voice_client.play(source, after=lambda error: after(ctx, opts, music, after, on_play, loop))
+        ctx.guild.voice_client.play(source, after=lambda error: after(ctx, opts, music, after, on_play, loop))
         song = music.queue[ctx.guild.id][0]
         if on_play:
             loop.create_task(on_play(ctx, song))
@@ -123,8 +123,8 @@ class Music(object):
         self.queue = {}
         self.players = []
 
-    def create_player(self, ctx, **kwargs):
-        if not ctx.voice_client:
+    def create_player(self, ctx: disnake.ext.commands.Context, **kwargs):
+        if not ctx.guild.voice_client:
             raise NotConnectedToVoice("Cannot create the player because bot is not connected to voice")
         player = MusicPlayer(ctx, self, **kwargs)
         self.players.append(player)
@@ -149,7 +149,7 @@ class MusicPlayer(object):
             raise RuntimeError("DiscordUtils[voice] install needed in order to use voice")
 
         self.ctx = ctx
-        self.voice = ctx.voice_client
+        self.voice = ctx.guild.voice_client
         self.loop = ctx.bot.loop
         self.music = music
         if self.ctx.guild.id not in self.music.queue.keys():

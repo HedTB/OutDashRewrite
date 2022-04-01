@@ -1,8 +1,5 @@
-import json
-from pprint import pprint
-
-
-def xp_to_levelup(lvl, xp):
+def xp_to_levelup(lvl, xp=0):
+    lvl -= 1
     return 5 * (lvl ** 2) + (50 * lvl) + 100 - xp
 
 def total_xp_for_level(lvl, current_total_xp):
@@ -35,4 +32,4 @@ def generate_level_table(max_level):
         
     return level_table
 
-print(total_xp_for_level(1000, 0))
+print(total_xp_for_level(4, 0))

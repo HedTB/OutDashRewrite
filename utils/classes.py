@@ -24,11 +24,11 @@ load_dotenv()
 _client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
 _db = _client["db2"]
 
-_server_data_col = _db["server_data"]
+_guild_data_col = _db["guild_data"]
 _user_data_col = _db["user_data"]
 _access_codes_col = _db["access_codes"]
 _api_data_col = _db["api_data"]
-_warns_col = _db["warns_col"]
+_warns_col = _db["warns"]
 
 _log_types = [
     # messages
@@ -55,6 +55,8 @@ request_headers = {
     "Content-Type": "application/json",
 }
 
+## -- FUNCTIONS -- ##
+
 ## -- CLASSES -- ##
 
 # EXCEPTIONS
@@ -65,15 +67,20 @@ class InvalidLogType(Exception):
 # UTIL CLASSES
 class LoggingWebhook():
     def __init__(self, avatar: disnake.Asset, guild: disnake.Guild, log_type: str):
-        guild_data_obj = GuildData(guild)
-        guild_data = guild_data_obj.get_data()
+        data_obj = GuildData(guild)
+        guild_data = data_obj.get_data()
         
         if not log_type in _log_types:
             raise InvalidLogType
             
-        url = guild_data.get(f"{log_type}_logs_webhook")
+        webhook = guild_data["webhooks"][log_type]
+        url = webhook["url"]
+        toggle = webhook["toggle"]
         
-        if url == "None":
+        if not toggle or not url:
+            if toggle and not url:
+                data_obj.update_log_webhook(log_type, { "toggle": False, "url": None })
+                
             raise InvalidWebhook
         
         self._guild_id = guild.id
@@ -90,7 +97,7 @@ class LoggingWebhook():
         try:
             return self._webhook.post()
         except InvalidWebhook:
-            _server_data_col.update_one(query, update)
+            _guild_data_col.update_one(query, update)
             
 # DATABASE CLASSES
 class DatabaseObjectBase:
@@ -103,17 +110,40 @@ class DatabaseObjectBase:
         
         if reconcicle:
             unavailable_keys = []
-            update_data = {}
+            invalid_keys = []
+            
+            reconcicle_data = {}
+            invalid_data = {}
+            
+            for key in data.keys():
+                try:
+                    int(key)
+                    continue
+                except ValueError:
+                    pass
+                
+                if not key in self._insert_data.keys() and not key.startswith("_"):
+                    invalid_keys.append(key)
             
             for key in self._insert_data.keys():
-                if not data[key]:
+                try:
+                    data[key]
+                except:
                     unavailable_keys.append(key)
                     
             for key in unavailable_keys:
-                update_data[key] = self._insert_data[key]
+                reconcicle_data[key] = self._insert_data[key]
+            for key in invalid_keys:
+                invalid_data[key] = ""
+            
+            if len(reconcicle_data) > 0:
+                print(1, reconcicle_data)
+                self.update_data(reconcicle_data)
+            if len(invalid_data) > 0:
+                print(2, invalid_data)
+                self.unset_data(invalid_data)
                 
-            if len(update_data) > 0:
-                self.update_data(update_data)
+            if len(reconcicle_data) > 0 or len(invalid_data) > 0:
                 return self.get_data(can_insert, reconcicle)
         
         for key in data:
@@ -121,7 +151,8 @@ class DatabaseObjectBase:
 
             if not type(value) == str:
                 continue
-            if value.startswith("{") and value.endswith("}") or value.startswith("[") and value.endswith("]"):
+                
+            elif value.startswith("{") and value.endswith("}") or value.startswith("[") and value.endswith("]"):
                 try:
                     data[key] = json.loads(value)
                 except:
@@ -130,26 +161,72 @@ class DatabaseObjectBase:
         return data
     
     def insert_data(self):
-        self._database_collection.insert_one(self._insert_data)
+        insert_data = self._insert_data
+        
+        for key in insert_data:
+            value = insert_data[key]
+                
+            if isinstance(value, (dict, list)):
+                try:
+                    insert_data[key] = json.dumps(value)
+                except:
+                    continue
+        
+        self._database_collection.insert_one(insert_data)
         
     def update_data(self, data: dict):
         for key in data:
             value = data[key]
-
+                
             if isinstance(value, (dict, list)):
-                data[key] = json.dumps(value)
+                try:
+                    data[key] = json.dumps(value)
+                except:
+                    continue
                 
         self._database_collection.update_one(self._query, { "$set": data })
+        
+    def unset_data(self, data: dict):
+        self._database_collection.update_one(self._query, { "$unset": data })
         
 class GuildData(DatabaseObjectBase):
     def __init__(self, guild: disnake.Guild):
         self.guild = guild
         
-        self._query = { "guild_id": str(guild.id) }
-        self._insert_data = server_data(guild.id)
-        self._database_collection = _server_data_col
+        self._query = { "guild_id": guild.id }
+        self._insert_data = guild_data(guild.id)
+        self._database_collection = _guild_data_col
         
         self.get_data()
+        
+    def get_log_webhooks(self):
+        data = self.get_data()
+        return data["webhooks"]
+        
+    def get_log_webhook(self, log_type: str):
+        if not log_type in log_types:
+            raise InvalidLogType
+        
+        webhooks = self.get_log_webhooks()
+        return webhooks[log_type]
+    
+    def update_log_webhooks(self, data: dict):
+        webhooks = self.get_log_webhooks()
+        
+        for log_type in data:
+            if not log_type in log_types:
+                continue
+            
+            value = data[log_type]
+            webhooks[log_type] = value
+            
+        self.update_data({ "webhooks": webhooks})
+    
+    def update_log_webhook(self, log_type: str, data: dict):
+        if not log_type in log_types:
+            raise InvalidLogType
+        
+        self.update_log_webhooks({ log_type: data })
         
 
 class WarnsData(DatabaseObjectBase):
@@ -157,7 +234,7 @@ class WarnsData(DatabaseObjectBase):
         self.guild = guild
         
         self._insert_data = warns_data(guild.id)
-        self._query = { "guild_id": str(guild.id) }
+        self._query = { "guild_id": guild.id }
         self._database_collection = _warns_col
         
     def update_warnings(self, member: disnake.Member, data: dict):
@@ -167,7 +244,7 @@ class WarnsData(DatabaseObjectBase):
         data = self.get_data()
         member_warnings = data.get(str(member.id))
         
-        if not member_warnings:
+        if member_warnings == None:
             self.update_warnings(member, {})
             return self.get_member_warnings(member)
             
@@ -200,7 +277,7 @@ class UserData(DatabaseObjectBase):
     def __init__(self, user: disnake.User):
         self.user = user
         
-        self._query = { "user_id": str(user.id) }
+        self._query = { "user_id": user.id }
         self._insert_data = user_data(user.id)
         self._database_collection = _user_data_col
         
@@ -211,7 +288,7 @@ class MemberData(DatabaseObjectBase):
         self.user = member
         self.guild = member.guild
         
-        self._query = { "user_id": str(member.id) }
+        self._query = { "user_id": member.id }
         self._insert_data = user_data(member.id)
         self._database_collection = _user_data_col
         
@@ -237,20 +314,12 @@ class MemberData(DatabaseObjectBase):
 # API   
 class BotObject(DatabaseObjectBase):
     def __init__(self) -> None:
-        self._query = { "bot_document": "true" }
+        self._query = { "bot_document": True }
         self._database_collection = _api_data_col
         self._insert_data = bot_api_data()
         
     def get_guilds(self) -> dict:
         data = self.get_data()
-        
-        for key in data:
-            value = data[key]
-
-            if not type(value) == str:
-                continue
-            if re.search(r"\{\}", value) == "{}" or re.search(r"\[\]", value) == "[]":
-                data[key] = json.loads(value)
         
         last_refresh = data.get("last_refresh")
         guilds_cache = data.get("guilds")
@@ -284,10 +353,11 @@ class BotObject(DatabaseObjectBase):
             for key in authorization:
                 value = authorization[key]
 
-                if not type(value) == str:
-                    continue
-                if re.search(r"\{\}", value) == "{}" or re.search(r"\[\]", value) == "[]":
-                    authorization[key] = json.loads(value)
+                if value.startswith("{") and value.endswith("}") or value.startswith("[") and value.endswith("]"):
+                    try:
+                        authorization[key] = json.loads(value)
+                    except:
+                        continue
                     
             auth_access_code = authorization["access_code"]
             if auth_access_code == access_code:
@@ -299,7 +369,7 @@ class BotObject(DatabaseObjectBase):
         guilds = self.get_guilds()
         
         for guild in guilds:
-            if guild.get("id") == str(guild_id):
+            if guild.get("id") == guild_id:
                 return guild
 
         return None
@@ -361,7 +431,7 @@ class UserObject(DatabaseObjectBase):
         guilds = self.get_guilds()
         
         for guild in guilds:
-            if guild.get("id") == str(guild_id):
+            if guild.get("id") == guild_id:
                 return guild
 
         return None

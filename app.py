@@ -65,7 +65,7 @@ REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.is_server else "ht
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
 db = client[config.database_collection]
 
-server_data_col = db["server_data"]
+guild_data_col = db["guild_data"]
 api_data_col = db["api_data"]
 access_codes_col = db["access_codes"]
 
@@ -220,12 +220,12 @@ def save_guild_settings():
         return {"message": "Missing guild ID"}, 400
     
     guild = user.get_guild(guild_id)
-    guild_data = server_data_col.find_one({ "guild_id": guild_id })
+    guild_data = guild_data_col.find_one({ "guild_id": guild_id })
     
     if not guild:
         return { "message": "Invalid guild ID" }, 400
     elif guild and not guild_data:
-        server_data_col.insert_one(functions.get_db_data(guild_id))
+        guild_data_col.insert_one(functions.get_db_data(guild_id))
         return { "message": "An error occured, please try again." }, 500
     
     updated_settings = {}
@@ -239,7 +239,7 @@ def save_guild_settings():
         
         updated_settings[argument] = value
         
-    server_data_col.update_one({ "guild_id": str(guild_id) }, { "$set": updated_settings })
+    guild_data_col.update_one({ "guild_id": guild_id }, { "$set": updated_settings })
     
     if len(updated_settings) == 0:
         return {"message": "No settings were updated."}, 200
