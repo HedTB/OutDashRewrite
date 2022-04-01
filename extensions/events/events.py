@@ -282,7 +282,6 @@ class Events(commands.Cog):
             self.bot.leveling_awards[message.guild.id][message.author.id] = {
                 "awarded_at": time.time(),
                 "cooldown_time": random.randint(55, 65)
-                # "cooldown_time": 10
             }
             
     @commands.Cog.listener("on_message_delete")
