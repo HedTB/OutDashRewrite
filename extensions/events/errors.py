@@ -107,8 +107,6 @@ class Errors(commands.Cog):
         bot_permissions = ctx.channel.permissions_for(ctx.me)
         partial_command_name, command_type = self.get_partial_command(ctx)
         
-        print(partial_command_name, command_type)
-        
         if command_type == "member":
             embed = self.error_embed(f"I don't have permission to {partial_command_name} this member.")
         else:

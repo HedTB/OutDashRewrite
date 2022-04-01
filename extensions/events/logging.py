@@ -7,10 +7,8 @@ import datetime
 import certifi
 
 from disnake.ext import commands
-from disnake.errors import Forbidden, HTTPException
-from disnake.ext.commands import errors
 from pymongo import MongoClient
-from googleapiclient import discovery
+# from googleapiclient import discovery
 from dotenv import load_dotenv
 
 # FILES
