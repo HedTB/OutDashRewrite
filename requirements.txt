@@ -11,3 +11,4 @@ pynacl
 captcha
 Flask-Cors
 flask-limiter
+disrank
