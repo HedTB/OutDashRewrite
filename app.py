@@ -1,6 +1,5 @@
 ## -- IMPORTS -- ##
 
-from http import cookies
 import json
 import logging
 import os
@@ -78,10 +77,6 @@ guild_setting_names = [
 oauth_tokens = {}
 api_data = {}
 
-## -- CLASSES -- ##
-
-# EXCEPTIONS
-    
 ## -- CHECKS -- ##
 
 def api_endpoint(f):
