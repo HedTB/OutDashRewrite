@@ -271,7 +271,10 @@ class Events(commands.Cog):
             
             result, potential_level = leveling.add_xp(message.author, xp_amount)
             if result == "level_up":
-                await message.channel.send(f"{message.author.mention} is now **level {potential_level}!** :tada:")
+                try:
+                    await message.channel.send(f"{message.author.mention} is now **level {potential_level}!** :tada:")
+                except:
+                    pass
 
             if not self.bot.leveling_awards.get(message.guild.id):
                 self.bot.leveling_awards[message.guild.id] = {}
