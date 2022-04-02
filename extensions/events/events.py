@@ -60,11 +60,10 @@ def format_variables(string: str, original_variables: dict):
         
     return str.format(string, **variables)
 
-def insert_variables(message: dict, **kwargs):
-    embed = message["embed"]
-    
+def insert_variables(message: dict | str, **kwargs):
     ctx: commands.Context = kwargs.get("ctx")
     member: disnake.Member = kwargs.get("member")
+    variables: dict = kwargs.get("variables", None)
         
     if not member and not ctx:
         return None
@@ -75,44 +74,60 @@ def insert_variables(message: dict, **kwargs):
     except AttributeError:
         guild = member.guild
         
-    variables = get_variables(member, guild)
-    message["content"] = format_variables(message["content"], variables)
+    variables = variables or get_variables(member, guild)
     
-    to_pop = {}
-    for key in embed:
-        value = embed[key]
+    if isinstance(message, dict):
+        to_pop = {}
         
-        if isinstance(value, dict):
-            for key2 in value:
-                value2 = value[key2]
+        for key in message:
+            value = message[key]
+            
+            if isinstance(value, dict):
+                message[key] = insert_variables(value, **kwargs)
+                continue
+            
+            elif isinstance(value, str):
+                message[key] = format_variables(value, variables)
+                continue
+            
+    elif isinstance(message, str):
+        message = format_variables(message, variables)
+        
+    # to_pop = {}
+    # for key in embed:
+    #     value = embed[key]
+        
+    #     if isinstance(value, dict):
+    #         for key2 in value:
+    #             value2 = value[key2]
                 
-                if value2 == None:
-                    to_pop[key] = []
-                    to_pop[key].append(key2)
-                    continue
-                elif type(value2) != str:
-                    continue
+    #             if value2 == None:
+    #                 to_pop[key] = []
+    #                 to_pop[key].append(key2)
+    #                 continue
+    #             elif type(value2) != str:
+    #                 continue
                 
-                embed[key][key2] = format_variables(value2, variables)
-            continue
+    #             embed[key][key2] = format_variables(value2, variables)
+    #         continue
         
-        elif value == None:
-            to_pop["all"] = []
-            to_pop["all"].append(key)
-            continue
-        elif type(value) != str:
-            continue
+    #     elif value == None:
+    #         to_pop["all"] = []
+    #         to_pop["all"].append(key)
+    #         continue
+    #     elif type(value) != str:
+    #         continue
         
-        embed[key] = format_variables(value, variables)
+    #     embed[key] = format_variables(value, variables)
         
-    for key in to_pop:
-        value = to_pop[key]
+    # for key in to_pop:
+    #     value = to_pop[key]
         
-        for key2 in value:
-            if key == "all":
-                embed.pop(key2)
-            else:
-                embed[key].pop(key2)
+    #     for key2 in value:
+    #         if key == "all":
+    #             embed.pop(key2)
+    #         else:
+    #             embed[key].pop(key2)
         
     return message
         
@@ -258,7 +273,9 @@ class Events(commands.Cog):
         data_obj = GuildData(message.guild)
         data = data_obj.get_data()
         
-        if message.content.startswith(data["prefix"]):
+        if not data["leveling_toggle"]:
+            return
+        elif message.content.startswith(data["prefix"]):
             return
         
         try:
@@ -269,19 +286,39 @@ class Events(commands.Cog):
         if not last_xp_award or last_xp_award and time.time() - last_xp_award["awarded_at"] > last_xp_award["cooldown_time"]:
             xp_amount = random.randint(17, 27)
             
-            result, potential_level = leveling.add_xp(message.author, xp_amount)
+            result, potential_level = leveling.add_xp(message.author, xp_amount if config.is_server else xp_amount * 5)
             if result == "level_up":
                 try:
-                    await message.channel.send(f"{message.author.mention} is now **level {potential_level}!** :tada:")
-                except:
-                    pass
+                    member_data_obj = MemberData(message.author)
+                    member_data = member_data_obj.get_guild_data()
+        
+                    variables = get_variables(message.author, message.guild)
+                    variables.update({
+                        "{new_level}": potential_level,
+                        "{previous_level}": potential_level - 1,
+                        
+                        "{new_xp}": member_data["xp"],
+                        "{previous_xp}": member_data["xp"] - xp_amount,
+                        
+                        "{total_xp}": member_data["total_xp"],
+                    })
+                    
+                    levelup_message = insert_variables(data["leveling_message"]["content"], variables=variables, member=message.author)
+                    
+                    await message.channel.send(levelup_message, delete_after=data["leveling_message"]["delete_after"])
+                
+                except Exception as error:
+                    if isinstance(error, commands.MissingPermissions):
+                        return
+                    
+                    logger.warn("Failed sending levelup message | " + str(error))
 
             if not self.bot.leveling_awards.get(message.guild.id):
                 self.bot.leveling_awards[message.guild.id] = {}
             
             self.bot.leveling_awards[message.guild.id][message.author.id] = {
                 "awarded_at": time.time(),
-                "cooldown_time": random.randint(55, 65)
+                "cooldown_time": 1 if not config.is_server else random.randint(55, 65),
             }
             
     @commands.Cog.listener("on_message_delete")

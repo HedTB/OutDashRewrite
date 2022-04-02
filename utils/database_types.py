@@ -65,6 +65,12 @@ def guild_data(guild_id: int):
             
             "content": "{member_mention}"
         },
+        
+        "leveling_toggle": True,
+        "leveling_message": {
+            "delete_after": None,
+            "content": "{member_mention} is now level **{new_level}!** :tada:"
+        }
     }
     
     for log_type in log_types:
