@@ -22,7 +22,7 @@ from utils import config
 load_dotenv()
 
 _client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
-_db = _client["db2"]
+_db = _client[config.database_collection]
 
 _guild_data_col = _db["guild_data"]
 _user_data_col = _db["user_data"]

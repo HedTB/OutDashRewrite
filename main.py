@@ -52,6 +52,10 @@ extensions = [
     "moderation", "music",
 ]
 
+test_extensions = [
+    "buttons"
+]
+
 ## -- FUNCTIONS -- ##
 
 def get_prefix(bot, message: disnake.Message):
@@ -67,6 +71,11 @@ async def load_extensions(bot: commands.Bot):
     for extension in extensions:
         bot.load_extension(f"extensions.{extension}")
         logger.debug(f"Loaded extension {extension}.")
+        
+    if not config.is_server:
+        for extension in test_extensions:
+            bot.load_extension(f"extensions.tests.{extension}")
+            logger.debug(f"Loaded test extension {extension}.")
 
     logger.info("Loaded all extensions.")
 
