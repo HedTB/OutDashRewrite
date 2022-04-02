@@ -24,8 +24,7 @@ load_dotenv()
 logger = logging.getLogger("OutDash")
 
 IGNORED_ERRORS = (commands.NotOwner, commands.CommandNotFound)
-ERROR_TITLE_REGEX = re.compile(
-    r"((?<=[a-z])[A-Z]|(?<=[a-zA-Z])[A-Z](?=[a-z]))")
+ERROR_TITLE_REGEX = re.compile(r"((?<=[a-z])[A-Z]|(?<=[a-zA-Z])[A-Z](?=[a-z]))")
 
 command_types = {
     "member": [
