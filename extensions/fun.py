@@ -12,10 +12,10 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors, functions, colors
 from utils.checks import *
 from utils.classes import *
+from utils.emojis import *
 
 ## -- VARIABLES -- ##
 
@@ -29,6 +29,9 @@ reddit = praw.Reddit(client_id=os.environ.get("REDDIT_CLIENT_ID"),
 ## -- COG -- ##
 
 class Fun(commands.Cog):
+    name = ":balloon: Fun"
+    description = "Fun commands to play around with, such as meme."
+    emoji = "🎈"
     
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -36,7 +39,7 @@ class Fun(commands.Cog):
     ## -- TEXT COMMANDS -- ##
 
     @commands.command()
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     async def meme(self, ctx):
         """Generates a random meme from the r/memes subreddit!"""
         async with ctx.typing():
@@ -46,9 +49,9 @@ class Fun(commands.Cog):
             for i in range(0, post_to_pick):
                 submission = next(x for x in memes_submissions if not x.stickied)
 
-            embed = disnake.Embed(description=f"**{submission.title}**", color=config.embed_color)
+            embed = disnake.Embed(description=f"**{submission.title}**", color=colors.embed_color)
 
-            embed.set_footer(icon_url=ctx.author.avatar or config.default_avatar_url, text=f"Requested by {ctx.author}")
+            embed.set_footer(icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL, text=f"Requested by {ctx.author}")
             embed.timestamp = datetime.datetime.utcnow()
             embed.set_image(url=submission.url)
         
@@ -56,7 +59,7 @@ class Fun(commands.Cog):
       
     ## -- SLASH COMMANDS -- ##
     
-    @commands.slash_command(name="meme", description="Generates a random meme from the r/memes subreddit!", guild_ids=[config.bot_server])
+    @commands.slash_command(name="meme", description="Generates a random meme from the r/memes subreddit!", guild_ids=[config.BOT_SERVER])
     async def slash_meme(self, inter):
         await inter.response.defer()
 
@@ -65,9 +68,9 @@ class Fun(commands.Cog):
         for i in range(0, post_to_pick):
             submission = next(x for x in memes_submissions if not x.stickied)
 
-        embed = disnake.Embed(description=f"**{submission.title}**", color=config.embed_color)
+        embed = disnake.Embed(description=f"**{submission.title}**", color=colors.embed_color)
 
-        embed.set_footer(icon_url=inter.author.avatar or config.default_avatar_url, text=f"Requested by {inter.author}")
+        embed.set_footer(icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL, text=f"Requested by {inter.author}")
         embed.timestamp = datetime.datetime.utcnow()
         embed.set_image(url=submission.url)
         

@@ -17,8 +17,8 @@ from threading import Thread
 
 
 # FILES
-from utils import functions
-from utils import config
+
+from utils import config, functions, colors
 from utils.checks import *
 from utils.classes import *
 
@@ -33,7 +33,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger("OutDash")
-logger.setLevel(logging.DEBUG if not config.is_server else logging.INFO)
+logger.setLevel(logging.DEBUG if not config.IS_SERVER else logging.INFO)
 
 disnake_logger = logging.getLogger("disnake")
 disnake_logger.setLevel(logging.INFO)
@@ -46,7 +46,7 @@ api_key = os.environ.get("API_KEY")
 # OTHER
 extensions = [
     "events.events", "events.logging", "events.errors", "utils.loops",
-    "developer_commands", "bot_settings",
+    "developer_commands", "settings",
     "leveling", "fun", "miscellaneous", "help",
     
     "moderation", "music",
@@ -60,7 +60,7 @@ test_extensions = [
 
 def get_prefix(bot, message: disnake.Message):
     if not message.guild:
-        return commands.when_mentioned_or(config.default_prefix)(bot, message)
+        return commands.when_mentioned_or(config.DEFAULT_PREFIX)(bot, message)
     
     data_obj = GuildData(message.guild)
     data = data_obj.get_data()
@@ -72,7 +72,7 @@ async def load_extensions(bot: commands.Bot):
         bot.load_extension(f"extensions.{extension}")
         logger.debug(f"Loaded extension {extension}.")
         
-    if not config.is_server:
+    if not config.IS_SERVER:
         for extension in test_extensions:
             bot.load_extension(f"extensions.tests.{extension}")
             logger.debug(f"Loaded test extension {extension}.")
@@ -89,14 +89,14 @@ class Bot(commands.Bot):
             status=disnake.Status.idle,
             
             activity=disnake.Game(name="booting up.."),
-            owner_id=config.owners[0],
+            owner_id=config.OWNERS[0],
             reconnect=True,
             
-            reload=config.is_server,
+            reload=config.IS_SERVER,
             max_messages=10000,
             strip_after_prefix=True,
             
-            test_guilds=[config.bot_server, 746363347829784646] if not config.is_server else None,
+            test_guilds=[config.BOT_SERVER, 746363347829784646] if not config.IS_SERVER else None,
             sync_permissions=True,
             
             intents=disnake.Intents(
@@ -123,7 +123,7 @@ class Bot(commands.Bot):
         self.mode247 = {}
         
     def start_bot(self):
-        self.run(bot_token if config.is_server else test_bot_token)
+        self.run(bot_token if config.IS_SERVER else test_bot_token)
         
     async def on_ready(self):
         if self.started == True:
@@ -132,24 +132,24 @@ class Bot(commands.Bot):
         self.avatar = await self.user.avatar.read()
         self.started = True
         
-        if config.is_server:
-            status_channel = self.get_channel(config.messages_channel)
+        if config.IS_SERVER:
+            STATUS_CHANNEL = self.get_channel(config.MESSAGES_CHANNEL)
             embed = disnake.Embed(title=f"Singed In As: {self.user.name} ({self.user.id})", 
                                 description=f"Bot started in `{str(len(self.guilds))}` servers, with total of `{len(self.users)}` users, on an average latency of `{round(bot.latency * 1000)} ms`.", 
-                                color=config.success_embed_color)
+                                color=colors.success_embed_color)
             
-            await status_channel.send(embed=embed)
+            await STATUS_CHANNEL.send(embed=embed)
 
-        print(f"Bot started on {'the server' if config.is_server else 'a local computer'}.\nStats: {len(self.guilds)} servers, {len(self.users)} users.")
+        print(f"Bot started on {'the server' if config.IS_SERVER else 'a local computer'}.\nStats: {len(self.guilds)} servers, {len(self.users)} users.")
         
         with open("data/stats.json", "w") as file:
             json.dump({ "commands_run": 0}, file)
             
     async def is_booster(self, user: disnake.User):
-        if user.id in config.owners:
+        if user.id in config.OWNERS:
             return True
         
-        bot_guild = self.get_guild(config.bot_server)
+        bot_guild = self.get_guild(config.BOT_SERVER)
         member = bot_guild.get_member(user.id)
         
         if disnake.utils.get(member.roles, id=955179507055222834):
@@ -177,8 +177,8 @@ extension_options = commands.option_enum(extension_options)
 @bot.slash_command(name="extensions",
                    description="Manages the bot's extensions.",
                    default_permission=False,
-                   guild_ids=[config.bot_server])
-@commands.guild_permissions(guild_id=int(config.bot_server), roles={871899070283800636: True})
+                   guild_ids=[config.BOT_SERVER])
+@commands.guild_permissions(guild_id=int(config.BOT_SERVER), roles={871899070283800636: True})
 async def slash_extensions(inter):
     pass
 
@@ -224,7 +224,7 @@ async def reload_extension(inter: disnake.ApplicationCommandInteraction, extensi
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
-    if not config.is_server:
+    if not config.IS_SERVER:
         Thread(target=run_api).start()
     
     bot.loop.create_task(load_extensions(bot))

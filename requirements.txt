@@ -13,3 +13,5 @@ Flask-Cors
 flask-limiter
 disrank
 psutil
+pillow
+disnake-ext-menus

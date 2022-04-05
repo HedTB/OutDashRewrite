@@ -3,7 +3,7 @@
 import json
 import time
 
-from utils import config
+from utils import config, functions, colors
 
 ## -- VARIABLES -- ##
 
@@ -46,7 +46,7 @@ def guild_data(guild_id: int):
                 "title": None,
                 "description": "**Welcome to __{guild_name}__!**",
                 
-                "color": config.logs_embed_color,
+                "color": colors.logs_embed_color,
                 "timestamp": True,
                 
                 "thumbnail": {

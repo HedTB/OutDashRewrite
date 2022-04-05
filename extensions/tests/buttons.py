@@ -11,8 +11,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
+
 from utils.checks import *
 from utils.classes import *
 
@@ -61,12 +61,15 @@ class Buttons(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.slash_command(name="ask", guild_ids=[config.bot_server])
+    @commands.slash_command(name="ask", guild_ids=[config.BOT_SERVER])
     async def ask(self, ctx):
         view = Confirm()
-        embed = disnake.Embed(description="Do you want to continue?", color=config.logs_embed_color)
+        embed = disnake.Embed(
+            description="Do you want to continue?",
+            color=colors.logs_embed_color
+        )
         
-        await ctx.send(embed=embed, view=view, ephemeral=True)
+        await ctx.send(embed=embed, view=view, ephemeral=False)
         await view.wait()
         
         if not view.value:

@@ -10,10 +10,11 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
+
 from utils.checks import *
 from utils.classes import *
+from utils.emojis import *
 
 ## -- VARIABLES -- ##
 
@@ -133,9 +134,11 @@ async def get_webhook(bot: commands.Bot, channel: disnake.TextChannel, can_creat
 
 ## -- COG -- ##
 
-
-class BotSettings(commands.Cog):
-
+class Settings(commands.Cog):
+    name = f":gear: Settings"
+    description = "These commands allow you to change how OutDash behaves."
+    emoji = "⚙️"
+    
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -153,7 +156,7 @@ class BotSettings(commands.Cog):
             return
 
     @settings.command()
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @commands.has_permissions(administrator=True)
     async def lock(self, ctx: commands.Context):
         """Locks the server's settings."""
@@ -163,17 +166,17 @@ class BotSettings(commands.Cog):
 
         if data["settings_locked"]:
             embed = disnake.Embed(
-                description=f"{config.no} The server's settings are already locked!", color=config.error_embed_color)
+                description=f"{no} The server's settings are already locked!", color=colors.error_embed_color)
             return await ctx.send(embed=embed)
 
         embed = disnake.Embed(
-            description=f"{config.yes} The server's settings are now locked.", color=config.success_embed_color)
+            description=f"{yes} The server's settings are now locked.", color=colors.success_embed_color)
 
         data_obj.update_data({"settings_locked": "false"})
         await ctx.send(embed=embed)
 
     @settings.command()
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @commands.has_permissions(administrator=True)
     async def unlock(self, ctx: commands.Context):
         """Unlocks the server's settings."""
@@ -183,11 +186,11 @@ class BotSettings(commands.Cog):
 
         if not data["settings_locked"]:
             embed = disnake.Embed(
-                description=f"{config.no} The server's settings aren't locked!", color=config.error_embed_color)
+                description=f"{no} The server's settings aren't locked!", color=colors.error_embed_color)
             return await ctx.send(embed=embed)
 
         embed = disnake.Embed(
-            description=f"{config.yes} The server's settings are now unlocked.", color=config.success_embed_color)
+            description=f"{yes} The server's settings are now unlocked.", color=colors.success_embed_color)
 
         data_obj.update_data({"settings_locked": "true"})
         await ctx.send(embed=embed)
@@ -199,7 +202,7 @@ class BotSettings(commands.Cog):
     """
 
     @commands.command(aliases=["changeprefix", "prefix"])
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @is_moderator(manage_guild=True)
     @server_setting()
     async def setprefix(self, ctx: commands.Context, new_prefix: str):
@@ -210,11 +213,11 @@ class BotSettings(commands.Cog):
 
         if guild_data["prefix"] == new_prefix:
             embed = disnake.Embed(
-                description=f"{config.no} The prefix is already set to `{new_prefix}`.", color=config.error_embed_color)
+                description=f"{no} The prefix is already set to `{new_prefix}`.", color=colors.error_embed_color)
             return await ctx.send(embed=embed)
 
         embed = disnake.Embed(
-            description=f"{config.yes} Changed the prefix to `{new_prefix}` successfully.", color=config.success_embed_color)
+            description=f"{yes} Changed the prefix to `{new_prefix}` successfully.", color=colors.success_embed_color)
 
         data_obj.update_data({"prefix": new_prefix})
         await ctx.send(embed=embed)
@@ -231,10 +234,10 @@ class BotSettings(commands.Cog):
             return
 
     @editwelcome.command(name="toggle")
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @is_moderator(manage_guild=True)
     @server_setting()
-    async def editwelcome_toggle(self, ctx: commands.Context, toggle: str = "on"):
+    async def editwelcome_toggle(self, ctx: commands.Context, toggle: str):
         """Toggles if welcome messages should be sent."""
 
         data_obj = GuildData(ctx.guild)
@@ -242,21 +245,21 @@ class BotSettings(commands.Cog):
         if toggle.lower() == "on" or toggle.lower() == "true":
             update = {"welcome_toggle": "true"}
             embed = disnake.Embed(
-                description=f"{config.yes} Welcome messages have been enabled.", color=config.success_embed_color)
+                description=f"{yes} Welcome messages have been enabled.", color=colors.success_embed_color)
 
         elif toggle.lower() == "off" or toggle.lower() == "false":
             update = {"welcome_toggle": "false"}
             embed = disnake.Embed(
-                description=f"{config.yes} Welcome messages have been disabled.", color=config.success_embed_color)
+                description=f"{yes} Welcome messages have been disabled.", color=colors.success_embed_color)
         else:
             embed = disnake.Embed(
-                description=f"{config.no} Please give a valid toggle value!\nToggles:\n```on, true - welcome messages enabled\noff, false - welcome messages disabled```", color=config.error_embed_color)
+                description=f"{no} Please give a valid toggle value!\nToggles:\n```on, true - welcome messages enabled\noff, false - welcome messages disabled```", color=colors.error_embed_color)
 
         data_obj.update_data(update)
         await ctx.send(embed=embed)
 
     @editwelcome.command(name="content")
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @is_moderator(manage_guild=True)
     @server_setting()
     async def editwelcome_content(self, ctx: commands.Context, *, content: str):
@@ -269,13 +272,13 @@ class BotSettings(commands.Cog):
         welcome_message["content"] = content
 
         embed = disnake.Embed(
-            description=f"{config.yes} The welcome message content has been set to:\n`{content}`", color=config.success_embed_color)
+            description=f"{yes} The welcome message content has been set to:\n`{content}`", color=colors.success_embed_color)
 
         data_obj.update_data({"welcome_message": welcome_message})
         await ctx.send(embed=embed)
 
     @editwelcome.command(name="embed")
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @is_moderator(manage_guild=True)
     @server_setting()
     async def editwelcome_embed(self, ctx: commands.Context, embed_part: str, *, value: str):
@@ -286,16 +289,19 @@ class BotSettings(commands.Cog):
         data = data_obj.get_data()
 
         embed_update = get_embed_update(
-            data["welcome_message"]["embed"], embed_part, value)
+            current_embed = data["welcome_message"]["embed"],
+            embed_part = embed_part,
+            value = value
+        )
         data["welcome_message"]["embed"] = embed_update
 
         if not embed_part in embed_values:
             embed = disnake.Embed(
-                description=f"{config.no} Please specify a valid part of the embed!\nEmbed parts:\n```{', '.join(e for e in embed_values)}```", color=config.error_embed_color)
+                description=f"{no} Please specify a valid part of the embed!\nEmbed parts:\n```{', '.join(e for e in embed_values)}```", color=colors.error_embed_color)
             return await ctx.send(embed=embed)
 
         embed = disnake.Embed(
-            description=f"{config.yes} ", color=config.success_embed_color)
+            description=f"{yes} ", color=colors.success_embed_color)
 
         if embed_part.startswith("author") or embed_part.startswith("footer"):
             top_part = embed_part[0:6]
@@ -309,7 +315,7 @@ class BotSettings(commands.Cog):
         await ctx.send(embed=embed)
 
     @editwelcome.command(name="channel")
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @is_moderator(manage_guild=True)
     @server_setting()
     async def editwelcome_channel(self, ctx: commands.Context, channel: disnake.TextChannel):
@@ -319,7 +325,7 @@ class BotSettings(commands.Cog):
         embed_part = embed_part.lower()
 
         embed = disnake.Embed(
-            description=f"{config.yes} Welcome messages will now be sent in <#{channel.id}>.", color=config.success_embed_color)
+            description=f"{yes} Welcome messages will now be sent in <#{channel.id}>.", color=colors.success_embed_color)
 
         data_obj.update_data(
             {"welcome_channel": channel.id, "welcome_toggle": True})
@@ -336,7 +342,7 @@ class BotSettings(commands.Cog):
 
         if not data["welcome_toggle"]:
             embed = disnake.Embed(
-                description=f"{config.no} Welcome messages have been disabled for this guild.", color=config.error_embed_color)
+                description=f"{no} Welcome messages have been disabled for this guild.", color=colors.error_embed_color)
             return await ctx.send(embed=embed)
 
         await self.bot.dispatch("welcome_member", ctx.author, kwargs={"channel": ctx.channel})
@@ -363,7 +369,7 @@ class BotSettings(commands.Cog):
 
         webhook = await get_webhook(self.bot, channel)
         embed = disnake.Embed(
-            description=f"{config.yes} {log_description} logs will now be sent in {channel.mention}.", color=config.success_embed_color)
+            description=f"{yes} {log_description} logs will now be sent in {channel.mention}.", color=colors.success_embed_color)
 
         data_obj.update_data({str(log_type): str(webhook.url)})
         await ctx.send(embed=embed)
@@ -378,16 +384,16 @@ class BotSettings(commands.Cog):
 
         if not categories[category.lower()]:
             embed = disnake.Embed(
-                description=f"{config.no} Please provide a valid category!\nCategories:\n```messages, members, channels, roles, guild```", color=config.error_embed_color)
+                description=f"{no} Please provide a valid category!\nCategories:\n```messages, members, channels, roles, guild```", color=colors.error_embed_color)
             await ctx.send(embed=embed)
         if not channel:
             update_dict = await get_update_dictionary(category, "None")
             embed = disnake.Embed(
-                description=f"{config.yes} All {category.lower()[:-1]} logs have been disabled", color=config.success_embed_color)
+                description=f"{yes} All {category.lower()[:-1]} logs have been disabled", color=colors.success_embed_color)
 
         update_dict = await get_update_dictionary(category, str(channel.id))
         embed = disnake.Embed(
-            description=f"{config.yes} All {category.lower()[:-1]} logs will now be sent in {channel.mention}.", color=config.success_embed_color)
+            description=f"{yes} All {category.lower()[:-1]} logs will now be sent in {channel.mention}.", color=colors.success_embed_color)
 
         data_obj.update_data(update_dict)
         await ctx.send(embed=embed)
@@ -404,7 +410,7 @@ class BotSettings(commands.Cog):
             return
 
     @chatbot.command(name="channel")
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @is_moderator(manage_guild=True)
     @server_setting()
     async def chatbot_channel(self, ctx: commands.Context, channel: disnake.TextChannel):
@@ -412,14 +418,14 @@ class BotSettings(commands.Cog):
 
         data_obj = GuildData(ctx.guild)
         embed = disnake.Embed(
-            description=f"{config.yes} The chat bot will now respond to messages in {channel.mention}.", color=config.success_embed_color)
+            description=f"{yes} The chat bot will now respond to messages in {channel.mention}.", color=colors.success_embed_color)
 
         data_obj.update_data(
             {"chat_bot_channel": channel.id, "chat_bot_toggle": True})
         await ctx.send(embed=embed)
 
     @chatbot.command(name="enable")
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @is_moderator(manage_guild=True)
     @server_setting()
     async def chatbot_enable(self, ctx: commands.Context):
@@ -429,18 +435,18 @@ class BotSettings(commands.Cog):
         data = data_obj.get_data()
 
         embed = disnake.Embed(
-            description=f"{config.yes} The chat bot feature has been enabled.", color=config.success_embed_color)
+            description=f"{yes} The chat bot feature has been enabled.", color=colors.success_embed_color)
 
         if data["chat_bot_toggle"] == True:
             embed = disnake.Embed(
-                description=f"{config.no} The chat bot feature is already enabled!", color=config.error_embed_color)
+                description=f"{no} The chat bot feature is already enabled!", color=colors.error_embed_color)
         else:
             data_obj.update_data({"chat_bot_toggle": True})
 
         await ctx.send(embed=embed)
 
     @chatbot.command(name="disable")
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     @is_moderator(manage_guild=True)
     @server_setting()
     async def chatbot_disable(self, ctx: commands.Context):
@@ -450,11 +456,11 @@ class BotSettings(commands.Cog):
         data = data_obj.get_data()
 
         embed = disnake.Embed(
-            description=f"{config.yes} The chat bot feature has been disabled.", color=config.success_embed_color)
+            description=f"{yes} The chat bot feature has been disabled.", color=colors.success_embed_color)
 
         if data["chat_bot_toggle"] == False:
             embed = disnake.Embed(
-                description=f"{config.no} The chat bot feature is already disabled!", color=config.error_embed_color)
+                description=f"{no} The chat bot feature is already disabled!", color=colors.error_embed_color)
         else:
             data_obj.update_data({"chat_bot_toggle": False})
 
@@ -476,14 +482,14 @@ class BotSettings(commands.Cog):
         """Edit your message privacy settings."""
 
         if not type in message_settings_description:
-            embed = disnake.Embed(description=f"{config.no} Please provide a valid privacy setting."
+            embed = disnake.Embed(description=f"{no} Please provide a valid privacy setting."
                                   f"\nTo view all privacy settings, run `{self.bot.get_bot_prefix(ctx.guild)}privacy settings`.",
-                                  color=config.error_embed_color)
+                                  color=colors.error_embed_color)
             return await ctx.send(embed=embed)
 
         data_obj = UserData(ctx.author)
         embed = disnake.Embed(
-            description=f"{config.yes} The {message_settings_description[type]} privacy setting has been {'enabled' if toggle else 'disabled'}.", color=config.success_embed_color)
+            description=f"{yes} The {message_settings_description[type]} privacy setting has been {'enabled' if toggle else 'disabled'}.", color=colors.success_embed_color)
 
         data_obj.update({"message_content_privacy": str(toggle).lower()})
         await ctx.send(embed=embed)
@@ -510,11 +516,11 @@ class BotSettings(commands.Cog):
 
         if guild_data.get("settings_locked") == True:
             embed = disnake.Embed(
-                description=f"{config.no} The server's settings are already locked!", color=config.error_embed_color)
+                description=f"{no} The server's settings are already locked!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
 
         embed = disnake.Embed(
-            description=f"{config.yes} The server's settings are now locked.", color=config.success_embed_color)
+            description=f"{yes} The server's settings are now locked.", color=colors.success_embed_color)
 
         data_obj.update_data({"settings_locked": True})
         await inter.send(embed=embed)
@@ -528,11 +534,11 @@ class BotSettings(commands.Cog):
 
         if guild_data.get("settings_locked") == False:
             embed = disnake.Embed(
-                description=f"{config.no} The server's settings aren't locked!", color=config.error_embed_color)
+                description=f"{no} The server's settings aren't locked!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
 
         embed = disnake.Embed(
-            description=f"{config.yes} The server's settings are now unlocked.", color=config.success_embed_color)
+            description=f"{yes} The server's settings are now unlocked.", color=colors.success_embed_color)
 
         data_obj.update_data({"settings_locked": False})
         await inter.send(embed=embed)
@@ -558,11 +564,11 @@ class BotSettings(commands.Cog):
 
         if guild_data.get("prefix") == new_prefix:
             embed = disnake.Embed(
-                description=f"{config.no} The prefix is already set to `{new_prefix}`.", color=config.error_embed_color)
+                description=f"{no} The prefix is already set to `{new_prefix}`.", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
 
         embed = disnake.Embed(
-            description=f"{config.yes} Changed the prefix to `{new_prefix}` successfully.", color=config.success_embed_color)
+            description=f"{yes} Changed the prefix to `{new_prefix}` successfully.", color=colors.success_embed_color)
 
         data_obj.update_data({"prefix": new_prefix})
         await inter.send(embed=embed)
@@ -596,11 +602,11 @@ class BotSettings(commands.Cog):
         if not channel:
             update = await get_update_dictionary(self.bot, category, None)
             embed = disnake.Embed(
-                description=f"{config.yes} All {category.lower()[:-1]} logs have been disabled", color=config.success_embed_color)
+                description=f"{yes} All {category.lower()[:-1]} logs have been disabled", color=colors.success_embed_color)
         else:
             update = await get_update_dictionary(self.bot, category, str(channel.id))
             embed = disnake.Embed(
-                description=f"{config.yes} All {category.lower()[:-1]} logs will now be sent in {channel.mention}.", color=config.success_embed_color)
+                description=f"{yes} All {category.lower()[:-1]} logs will now be sent in {channel.mention}.", color=colors.success_embed_color)
 
         data_obj.update_log_webhooks(update)
         await inter.send(embed=embed)
@@ -621,14 +627,14 @@ class BotSettings(commands.Cog):
 
         if not channel:
             embed = disnake.Embed(
-                description=f"{config.yes} {log_description} logs have now been disabled.", color=config.success_embed_color)
+                description=f"{yes} {log_description} logs have now been disabled.", color=colors.success_embed_color)
 
             data_obj.update_data({log_type: None})
             return await inter.send(embed=embed)
 
         webhook = await get_webhook(self.bot, channel)
         embed = disnake.Embed(
-            description=f"{config.yes} {log_description} logs will now be sent in {channel.mention}.", color=config.success_embed_color)
+            description=f"{yes} {log_description} logs will now be sent in {channel.mention}.", color=colors.success_embed_color)
 
         data_obj.update_log_webhook(
             log_type, {"url": webhook.url, "toggle": True})
@@ -652,7 +658,7 @@ class BotSettings(commands.Cog):
 
         data_obj = GuildData(inter.guild)
         embed = disnake.Embed(
-            description=f"{config.yes} Welcome messages have been {'disabled' if not toggle else 'enabled'}.", color=config.success_embed_color)
+            description=f"{yes} Welcome messages have been {'disabled' if not toggle else 'enabled'}.", color=colors.success_embed_color)
 
         data_obj.update_data({"welcome_toggle": toggle})
         await inter.send(embed=embed)
@@ -670,7 +676,7 @@ class BotSettings(commands.Cog):
         welcome_message["content"] = content
 
         embed = disnake.Embed(
-            description=f"{config.yes} The welcome message content has been set to:\n`{content}`", color=config.success_embed_color)
+            description=f"{yes} The welcome message content has been set to:\n`{content}`", color=colors.success_embed_color)
 
         data_obj.update_data({"welcome_message": welcome_message})
         await inter.send(embed=embed)
@@ -690,7 +696,7 @@ class BotSettings(commands.Cog):
         data["welcome_message"]["embed"] = embed_update
 
         embed = disnake.Embed(
-            description=f"{config.yes} ", color=config.success_embed_color)
+            description=f"{yes} ", color=colors.success_embed_color)
 
         if embed_part.startswith("author") or embed_part.startswith("footer"):
             top_part = embed_part[0:6]
@@ -713,7 +719,7 @@ class BotSettings(commands.Cog):
         embed_part = embed_part.lower()
 
         embed = disnake.Embed(
-            description=f"{config.yes} Welcome messages will now be sent in <#{channel.id}>.", color=config.success_embed_color)
+            description=f"{yes} Welcome messages will now be sent in <#{channel.id}>.", color=colors.success_embed_color)
 
         data_obj.update_data(
             {"welcome_channel": str(channel.id), "welcome_toggle": True})
@@ -729,8 +735,8 @@ class BotSettings(commands.Cog):
 
         if not data["welcome_toggle"]:
             embed = disnake.Embed(
-                description=f"{config.no} Welcome messages are disabled for this guild.",
-                color=config.error_embed_color
+                description=f"{no} Welcome messages are disabled for this guild.",
+                color=colors.error_embed_color
             )
             return await inter.send(embed=embed)
 
@@ -760,8 +766,8 @@ class BotSettings(commands.Cog):
 
         data_obj = GuildData(inter.guild)
         embed = disnake.Embed(
-            description=f"{config.yes} The chat bot will now respond to messages in {channel.mention}.",
-            color=config.success_embed_color
+            description=f"{yes} The chat bot will now respond to messages in {channel.mention}.",
+            color=colors.success_embed_color
         )
 
         data_obj.update_data({"chat_bot_channel": channel.id, "chat_bot_toggle": True})
@@ -781,14 +787,14 @@ class BotSettings(commands.Cog):
         data = data_obj.get_data()
 
         embed = disnake.Embed(
-            description=f"{config.yes} The chat bot feature has been " +
+            description=f"{yes} The chat bot feature has been " +
                         "enabled" if toggle else "disabled" + ".",
-            color=config.success_embed_color
+            color=colors.success_embed_color
         )
 
         if data["chat_bot_toggle"] == toggle:
-            embed = disnake.Embed(description=f"{config.no} The chat bot feature is already " +
-                                  "enabled" if toggle else "disabled" + "!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} The chat bot feature is already " +
+                                  "enabled" if toggle else "disabled" + "!", color=colors.error_embed_color)
         else:
             data_obj.update_data({"chat_bot_toggle": toggle})
 
@@ -816,157 +822,10 @@ class BotSettings(commands.Cog):
 
         data_obj = UserData(inter.author)
         embed = disnake.Embed(
-            description=f"{config.yes} The {message_settings_description[type]} privacy setting has been {'enabled' if toggle else 'disabled'}.", color=config.success_embed_color)
+            description=f"{yes} The {message_settings_description[type]} privacy setting has been {'enabled' if toggle else 'disabled'}.", color=colors.success_embed_color)
 
         data_obj.update({"message_content_privacy": str(toggle).lower()})
         await inter.send(embed=embed)
-
-    ## -- TEXT COMMAND ERRORS -- ##
-
-    # # SETTING LOCKING
-    # @lock.error
-    # async def lock_error(self, ctx: commands.Context, error: commands.CommandError):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-
-    # @unlock.error
-    # async def unlock_error(self, ctx: commands.Context, error: commands.CommandError):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-
-    # # SERVER SETTINGS
-    # @setprefix.error
-    # async def prefix_error(self, ctx: commands.Context, error: commands.CommandError):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-    #     elif isinstance(error, commands.MissingRequiredArgument):
-    #         embed = disnake.Embed(description=f"{config.no} You need to specify the new prefix.", color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-    #     elif isinstance(error, SettingsLocked):
-    #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-
-    # # WELCOME/GOODBYE SETTINGS
-    # # @editwelcome_toggle.error
-    # # async def editwelcome_toggle_error(self, ctx: commands.Context, error: commands.CommandError):
-    # #     if isinstance(error, commands.MissingPermissions):
-    # #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    # #         await ctx.send(embed=embed)
-    # #     elif isinstance(error, SettingsLocked):
-    # #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    # #         await ctx.send(embed=embed)
-
-    # # @editwelcome_content.error
-    # # async def editwelcome_content_error(self, ctx: commands.Context, error: commands.CommandError):
-    # #     if isinstance(error, commands.MissingPermissions):
-    # #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    # #         await ctx.send(embed=embed)
-    # #     elif isinstance(error, commands.MissingRequiredArgument):
-    # #         missing_argument = error.param.name
-    # #         embed = disnake.Embed(description=f"{config.no} ", color=config.error_embed_color)
-
-    # #         if missing_argument == "content":
-    # #             embed.description = "Please specify what the welcome message content should be set to!"
-
-    # #         await ctx.send(embed=embed)
-    # #     elif isinstance(error, SettingsLocked):
-    # #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    # #         await ctx.send(embed=embed)
-
-    # # CHATBOT SETTINGS
-    # @chatbot_channel.error
-    # async def chatbot_channel_error(self, ctx: commands.Context, error: commands.CommandError):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-    #     elif isinstance(error, commands.MissingRequiredArgument):
-    #         embed = disnake.Embed(description=f"{config.no} Please provide a channel!", color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-    #     elif isinstance(error, SettingsLocked):
-    #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-
-    # @chatbot_enable.error
-    # async def chatbot_enable_error(self, ctx: commands.Context, error: commands.CommandError):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-    #     elif isinstance(error, SettingsLocked):
-    #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-
-    # @chatbot_disable.error
-    # async def chatbot_disable_error(self, ctx: commands.Context, error: commands.CommandError):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-    #     elif isinstance(error, SettingsLocked):
-    #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    #         await ctx.send(embed=embed)
-
-    # ## -- SLASH COMMAND ERRORS -- ##
-
-    # # SETTING LOCKING
-    # @slash_settings.error
-    # async def slash_settings_lock_error(self, inter: disnake.ApplicationCommandInteraction, error):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed)
-
-    # # SERVER SETTING
-    # @slash_setprefix.error
-    # async def prefix_error(self, inter, error):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-    #     elif isinstance(error, commands.MissingRequiredArgument):
-    #         embed = disnake.Embed(description=f"{config.no} You need to specify the new prefix.", color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-    #     elif isinstance(error, SettingsLocked):
-    #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-
-    # # CHATBOT SETTINGS
-    # @slash_chatbot_channel.error
-    # async def slash_chatbot_channel_error(self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-    #     elif isinstance(error, SettingsLocked):
-    #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-
-    # @slash_chatbot_toggle.error
-    # async def slash_chatbot_toggle_error(self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-    #     elif isinstance(error, SettingsLocked):
-    #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-
-    # # LOGS SETTINGS
-    # @slash_edit_logs_channel.error
-    # async def slash_edit_logs_channel_error(self, inter: disnake.ApplicationCommandInteraction, error):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-    #     elif isinstance(error, SettingsLocked):
-    #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-
-    # @slash_edit_logs_category.error
-    # async def slash_edit_logs_category_error(self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError):
-    #     if isinstance(error, commands.MissingPermissions):
-    #         embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-    #     elif isinstance(error, SettingsLocked):
-    #         embed = disnake.Embed(description=f"{config.no} The server's settings are locked.", color=config.error_embed_color)
-    #         await inter.response.send_message(embed=embed, ephemeral=True)
-
-
+        
 def setup(bot):
-    bot.add_cog(BotSettings(bot))
+    bot.add_cog(Settings(bot))

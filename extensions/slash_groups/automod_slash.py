@@ -16,8 +16,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
+
 from utils.checks import *
 
 load_dotenv()
@@ -26,7 +26,7 @@ load_dotenv()
 
 mongo_login = os.environ.get("MONGO_LOGIN")
 client = MongoClient(mongo_login, tlsCAFile=certifi.where())
-db = client[config.database_collection]
+db = client[config.DATABASE_COLLECTION]
 
 guild_data_col = db["guild_data"]
 muted_users_col = db["muted_users"]
@@ -59,7 +59,7 @@ class AutomodSlash(commands.Cog):
     @slash_automod.error
     async def slash_automod_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
+            embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=no, permission=error.missing_permissions[0].title().replace("_", " ")), color=colors.error_embed_color)
             await inter.response.send_message(embed=embed)
         
     

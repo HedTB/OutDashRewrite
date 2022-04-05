@@ -17,10 +17,12 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
 from utils.classes import *
-from extensions import leveling
+from utils.emojis import *
+
+from .. import leveling
+from . import errors
 
 ## -- VARIABLES -- ##
 
@@ -33,7 +35,7 @@ randomstuff_key = os.environ.get("RANDOMSTUFF_KEY")
 logger = logging.getLogger("OutDash")
 
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
-db = client[config.database_collection]
+db = client[config.DATABASE_COLLECTION]
 
 guild_data_col = db["guild_data"]
 user_data_col = db["user_data"]
@@ -45,10 +47,10 @@ ignored = (commands.CommandNotFound, commands.MissingPermissions, disnake.errors
 def get_variables(member: disnake.Member, guild: disnake.Guild):
     return {
         # member variables
-        "{member_username}": str(member), "{member_name}": member.name, "{member_discriminator}": member.discriminator, "{member_mention}": member.mention, "{member_avatar}": member.avatar.url,
+        "{member_username}": str(member), "{member_name}": member.name, "{member_discriminator}": member.discriminator, "{member_mention}": member.mention, "{member_avatar}": str(member.avatar) or config.DEFAULT_AVATAR_URL,
         
         # guild variables
-        "{guild_name}": guild.name, "{guild_icon}": guild.icon.url, "{guild_member_count}": guild.member_count,
+        "{guild_name}": guild.name, "{guild_icon}": str(guild.icon) or config.DEFAULT_AVATAR_URL, "{guild_member_count}": guild.member_count,
     }
     
 def format_variables(string: str, original_variables: dict):
@@ -166,14 +168,14 @@ class Events(commands.Cog):
             
     @commands.Cog.listener()
     async def on_slash_command_error(self, inter: disnake.ApplicationCommandInteraction, error):
-        channel = self.bot.get_channel(config.error_channel)
+        channel = self.bot.get_channel(config.ERROR_CHANNEL)
         
         if isinstance(error, ignored):
             return
             
         elif isinstance(error, commands.CommandInvokeError):
-            embed = disnake.Embed(title="Slash Command Error", description=f"```py\n{error}\n```\n_ _", color=config.error_embed_color)
-            error_embed = disnake.Embed(description=f"{config.no} Oh no! Something went wrong while running the command! Please join our [support server](https://discord.com/invite/4pfUqEufUm) and report the bug.", color=config.error_embed_color)
+            embed = disnake.Embed(title="Slash Command Error", description=f"```py\n{error}\n```\n_ _", color=colors.error_embed_color)
+            error_embed = disnake.Embed(description=f"{no} Oh no! Something went wrong while running the command! Please join our [support server](https://discord.com/invite/4pfUqEufUm) and report the bug.", color=colors.error_embed_color)
             
             embed.add_field(name="Occured in:", value=f"{inter.guild.name} ({inter.guild.id})", inline=False)
             embed.add_field(name="Occured by:", value=f"{inter.author.name} ({inter.author.id})", inline=False)
@@ -189,18 +191,18 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        channel = self.bot.get_channel(config.error_channel)
+        channel = self.bot.get_channel(config.ERROR_CHANNEL)
         
         if isinstance(error, ignored) or str(error).find("Missing Permissions"):
             return
             
         elif isinstance(error, commands.CommandOnCooldown):
-            embed = disnake.Embed(description=f"{config.no} You're on a cooldown. Please try again after **{str(round(error.retry_after, 1))} seconds.**", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're on a cooldown. Please try again after **{str(round(error.retry_after, 1))} seconds.**", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             
         elif isinstance(error, commands.CommandInvokeError):
-            embed = disnake.Embed(title="Command Error", description=f"```py\n{error}\n```\n_ _", color=config.error_embed_color)
-            error_embed = disnake.Embed(description=f"{config.no} Oh no! Something went wrong while running the command! Please join our [support server](https://discord.com/invite/4pfUqEufUm) and report the bug.", color=config.error_embed_color)
+            embed = disnake.Embed(title="Command Error", description=f"```py\n{error}\n```\n_ _", color=colors.error_embed_color)
+            error_embed = disnake.Embed(description=f"{no} Oh no! Something went wrong while running the command! Please join our [support server](https://discord.com/invite/4pfUqEufUm) and report the bug.", color=colors.error_embed_color)
             
             embed.add_field(name="Occured in:", value=f"{ctx.guild.name} ({ctx.guild.id})", inline=False)
             embed.add_field(name="Occured by:", value=f"{ctx.author.name} ({ctx.author.id})", inline=False)
@@ -223,9 +225,20 @@ class Events(commands.Cog):
 
         if message.content == f"<@{self.bot.user.id}>" or message.content == f"<@!{self.bot.user.id}>":
             prefix = guild_data.get("prefix")
-            embed = disnake.Embed(description=f"{config.info} The prefix for this server is `{prefix}`.", color=config.embed_color)
+            embed = disnake.Embed(description=f"{info} The prefix for this server is `{prefix}`.", color=colors.embed_color)
             
-            await message.channel.send(embed=embed)
+            try:
+                await message.channel.send(embed=embed)
+            except disnake.errors.Forbidden as error:
+                await errors.Errors.handle_bot_missing_perms(
+                    self=errors.Errors,
+                    ctx=commands.Context(
+                        message=message,
+                        bot=self.bot,
+                        view=None
+                    ),
+                    error=error
+                )
 
     @commands.Cog.listener("on_message")
     async def chatbot_responder(self, message: disnake.Message):
@@ -283,10 +296,10 @@ class Events(commands.Cog):
         except:
             last_xp_award = None
         
-        if not last_xp_award or last_xp_award and time.time() - last_xp_award["awarded_at"] > last_xp_award["cooldown_time"]:
+        if not last_xp_award or last_xp_award and time.time() - last_xp_award["awarded_at"] > last_xp_award["COOLDOWN_TIME"]:
             xp_amount = random.randint(17, 27)
             
-            result, potential_level = leveling.add_xp(message.author, xp_amount if config.is_server else xp_amount * 5)
+            result, potential_level = leveling.add_xp(message.author, xp_amount if config.IS_SERVER else xp_amount * 5)
             if result == "level_up":
                 try:
                     member_data_obj = MemberData(message.author)
@@ -318,7 +331,7 @@ class Events(commands.Cog):
             
             self.bot.leveling_awards[message.guild.id][message.author.id] = {
                 "awarded_at": time.time(),
-                "cooldown_time": 1 if not config.is_server else random.randint(55, 65),
+                "COOLDOWN_TIME": 1 if not config.IS_SERVER else random.randint(55, 65),
             }
             
     @commands.Cog.listener("on_message_delete")
@@ -342,7 +355,7 @@ class Events(commands.Cog):
         data_obj = GuildData(guild)
         data_obj.get_data()
 
-        embed = disnake.Embed(title="New Server", description=f"OutDash was added to a new server!\n\nWe're now in `{len(self.bot.guilds)}` guilds.", color=config.logs_add_embed_color)
+        embed = disnake.Embed(title="New Server", description=f"OutDash was added to a new server!\n\nWe're now in `{len(self.bot.guilds)}` guilds.", color=colors.logs_add_embed_color)
         
         embed.add_field(name="Server Name", value=f"`{guild.name}`")
         embed.add_field(name="Server ID", value=f"`{guild.id}`")
@@ -351,11 +364,11 @@ class Events(commands.Cog):
         embed.set_thumbnail(url=guild.icon.url)
         embed.timestamp = datetime.datetime.utcnow()
 
-        await self.bot.get_channel(config.messages_channel).send(embed=embed)
+        await self.bot.get_channel(config.MESSAGES_CHANNEL).send(embed=embed)
         
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: disnake.Guild):
-        embed = disnake.Embed(title="Server Left", description=f"OutDash was removed from a server..\n\nWe're now in `{len(self.bot.guilds)}` guilds.", color=config.logs_delete_embed_color)
+        embed = disnake.Embed(title="Server Left", description=f"OutDash was removed from a server..\n\nWe're now in `{len(self.bot.guilds)}` guilds.", color=colors.logs_delete_embed_color)
         
         embed.add_field(name="Server Name", value=f"`{guild.name}`")
         embed.add_field(name="Server ID", value=f"`{guild.id}`")
@@ -363,7 +376,7 @@ class Events(commands.Cog):
         embed.set_thumbnail(url=guild.icon.url)
         embed.timestamp = datetime.datetime.utcnow()
 
-        await self.bot.get_channel(config.messages_channel).send(embed=embed)
+        await self.bot.get_channel(config.MESSAGES_CHANNEL).send(embed=embed)
         
     ## -- MEMBERS -- ##
     
