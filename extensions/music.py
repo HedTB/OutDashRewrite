@@ -12,10 +12,11 @@ from dotenv import load_dotenv
 from utils.DiscordUtils import Music as MusicManager
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
+
 from utils.checks import *
 from utils.classes import *
+from utils.emojis import *
 
 ## -- VARIABLES -- ##
 
@@ -24,6 +25,9 @@ load_dotenv()
 ## -- COG -- ##
 
 class Music(commands.Cog):
+    name = ":notes: Music"
+    description = "Want to listen to some music? This module is for you!"
+    emoji = "🎶"
     
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -32,7 +36,7 @@ class Music(commands.Cog):
     ## -- TEXT COMMANDS -- ##
     
     @commands.command()
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     async def play(self, ctx: commands.Context, *, query: str):
         """Play some music!"""
         
@@ -41,7 +45,7 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=ctx.guild.id)
 
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         user_vc = user_voice.channel
@@ -58,34 +62,34 @@ class Music(commands.Cog):
         
         if voice_client and voice_client.is_connected():
             if voice_client.channel != user_vc:
-                embed = disnake.Embed(description=f"{config.no} I'm already playing music in {voice_client.channel.mention}!", color=config.error_embed_color)
+                embed = disnake.Embed(description=f"{no} I'm already playing music in {voice_client.channel.mention}!", color=colors.error_embed_color)
                 await ctx.send(embed=embed)
                 return
         
         if not voice_client.is_playing():
-            embed = disnake.Embed(description=f"{config.loading} Retreiving video..", color=config.embed_color)
+            embed = disnake.Embed(description=f"{loading} Retreiving video..", color=colors.embed_color)
             message = await ctx.send(embed=embed)
 
             song = await player.queue(query, bettersearch=True)
             await player.play()
             
-            embed = disnake.Embed(description=f":notes: Playing **[{song.name}]({song.url})** now.", color=config.embed_color)
+            embed = disnake.Embed(description=f":notes: Playing **[{song.name}]({song.url})** now.", color=colors.embed_color)
             embed.set_image(url=song.thumbnail)
 
             await message.edit(embed=embed)
         else:
-            embed = disnake.Embed(description=f"{config.loading} Retreiving video..", color=config.embed_color)
+            embed = disnake.Embed(description=f"{loading} Retreiving video..", color=colors.embed_color)
             message = await ctx.send(embed=embed)
 
             song = await player.queue(query, bettersearch=True)
             
-            embed = disnake.Embed(description=f":notes: Queued **[{song.name}]({song.url})** successfully.", color=config.embed_color)
+            embed = disnake.Embed(description=f":notes: Queued **[{song.name}]({song.url})** successfully.", color=colors.embed_color)
             embed.set_image(url=song.thumbnail)
             
             await message.edit(embed=embed)
 
     @commands.command()
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     async def pause(self, ctx: commands.Context):
         """Pauses the playing music."""
 
@@ -94,23 +98,23 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=ctx.guild.id)
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} The music have been paused.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} The music have been paused.", color=colors.success_embed_color)
         
         if voice_client and not voice_client.channel == user_vc:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to my voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to my voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         elif not voice_client.is_playing() or not player:
-            embed = disnake.Embed(description=f"{config.no} I'm not playing anything!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not playing anything!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         elif not voice_client or not voice_client.is_connected():
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not connected to a voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
             
@@ -118,7 +122,7 @@ class Music(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     async def resume(self, ctx: commands.Context):
         """Resume your music!"""
 
@@ -127,23 +131,23 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=ctx.guild.id)
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} The music have been resumed.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} The music have been resumed.", color=colors.success_embed_color)
         
         if voice_client and not voice_client.channel == user_vc:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to my voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to my voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         elif voice_client.is_playing() or not player:
-            embed = disnake.Embed(description=f"{config.no} The music isn't paused!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} The music isn't paused!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         elif not voice_client or not voice_client.is_connected():
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not connected to a voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
             
@@ -151,7 +155,7 @@ class Music(commands.Cog):
         await ctx.send(embed=embed)
           
     @commands.command()
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     async def stop(self, ctx: commands.Context):
         """Stops the playing music."""
         
@@ -160,23 +164,23 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=ctx.guild.id)
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} The music have been stopped.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} The music have been stopped.", color=colors.success_embed_color)
         
         if voice_client and not voice_client.channel == user_vc:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to my voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to my voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         elif not player:
-            embed = disnake.Embed(description=f"{config.no} I'm not playing any music!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not playing any music!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         elif not voice_client or not voice_client.is_connected():
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not connected to a voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         
@@ -185,7 +189,7 @@ class Music(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=["repeat"])
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     async def loop(self, ctx: commands.Context):
         """Put the playing song on repeat!"""
 
@@ -194,24 +198,24 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=ctx.guild.id)
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} The music has been put on loop.", color=config.success_embed_color)
-        embed2 = disnake.Embed(description=f"{config.yes} The music loop has been disabled.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} The music has been put on loop.", color=colors.success_embed_color)
+        embed2 = disnake.Embed(description=f"{yes} The music loop has been disabled.", color=colors.success_embed_color)
         
         if voice_client and not voice_client.channel == user_vc:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to my voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to my voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         elif not voice_client.is_playing() or not player:
-            embed = disnake.Embed(description=f"{config.no} I'm not playing anything!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not playing anything!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
         elif not voice_client or not voice_client.is_connected():
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not connected to a voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
             return
 
@@ -222,7 +226,7 @@ class Music(commands.Cog):
             await ctx.send(embed=embed2)
       
     @commands.command()
-    @commands.cooldown(1, config.cooldown_time, commands.BucketType.member)
+    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
     async def join(self, ctx: commands.Context):
         """Makes me join your voice channel."""
         
@@ -230,11 +234,11 @@ class Music(commands.Cog):
         user_voice = ctx.author.voice
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             return await ctx.send(embed=embed)
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} Joined {user_vc.mention} successfully.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} Joined {user_vc.mention} successfully.", color=colors.success_embed_color)
         
         if voice_client and voice_client.is_connected():
             await voice_client.disconnect()
@@ -257,7 +261,7 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=inter.guild.id)
 
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         user_vc = user_voice.channel
@@ -273,27 +277,27 @@ class Music(commands.Cog):
         
         if voice_client and voice_client.is_connected():
             if voice_client.channel != user_vc:
-                embed = disnake.Embed(description=f"{config.no} I'm already playing music in {voice_client.channel.mention}!", color=config.error_embed_color)
+                embed = disnake.Embed(description=f"{no} I'm already playing music in {voice_client.channel.mention}!", color=colors.error_embed_color)
                 return await inter.send(embed=embed, ephemeral=True)
         
         if not voice_client.is_playing():
-            embed = disnake.Embed(description=f"{config.loading} Retreiving video..", color=config.embed_color)
+            embed = disnake.Embed(description=f"{loading} Retreiving video..", color=colors.embed_color)
             await inter.send(embed=embed)
 
             song = await player.queue(query, bettersearch=True)
             await player.play()
             
-            embed = disnake.Embed(description=f":notes: Playing **[{song.name}]({song.url})** now.", color=config.embed_color)
+            embed = disnake.Embed(description=f":notes: Playing **[{song.name}]({song.url})** now.", color=colors.embed_color)
             embed.set_image(url=song.thumbnail)
 
             await inter.edit_original_message(embed=embed)
         else:
-            embed = disnake.Embed(description=f"{config.loading} Retreiving video..", color=config.embed_color)
+            embed = disnake.Embed(description=f"{loading} Retreiving video..", color=colors.embed_color)
             await inter.send(embed=embed)
 
             song = await player.queue(query, bettersearch=True)
             
-            embed = disnake.Embed(description=f":notes: Queued **[{song.name}]({song.url})** successfully.", color=config.embed_color)
+            embed = disnake.Embed(description=f":notes: Queued **[{song.name}]({song.url})** successfully.", color=colors.embed_color)
             embed.set_image(url=song.thumbnail)
             
             await inter.edit_original_message(embed=embed)
@@ -307,22 +311,22 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=inter.guild.id)
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} The music have been paused.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} The music have been paused.", color=colors.success_embed_color)
         
         if voice_client and not voice_client.channel == user_vc:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to my voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to my voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         elif not voice_client.is_playing() or not player:
-            embed = disnake.Embed(description=f"{config.no} I'm not playing anything!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not playing anything!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         elif not voice_client or not voice_client.is_connected():
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
             
         await player.pause()
@@ -337,22 +341,22 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=inter.guild.id)
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} The music have been resumed.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} The music have been resumed.", color=colors.success_embed_color)
         
         if voice_client and not voice_client.channel == user_vc:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to my voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to my voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         elif voice_client.is_playing() or not player:
-            embed = disnake.Embed(description=f"{config.no} The music isn't paused!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} The music isn't paused!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         elif not voice_client or not voice_client.is_connected():
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
             
         await player.resume()
@@ -367,22 +371,22 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=inter.guild.id)
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} The music have been stopped.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} The music have been stopped.", color=colors.success_embed_color)
         
         if voice_client and not voice_client.channel == user_vc:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to my voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to my voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         elif not player:
-            embed = disnake.Embed(description=f"{config.no} I'm not playing any music!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not playing any music!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         elif not voice_client or not voice_client.is_connected():
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         await player.stop()
@@ -398,23 +402,23 @@ class Music(commands.Cog):
         player = self.music.get_player(guild_id=inter.guild.id)
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} The music has been put on loop.", color=config.success_embed_color)
-        embed2 = disnake.Embed(description=f"{config.yes} The music loop has been disabled.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} The music has been put on loop.", color=colors.success_embed_color)
+        embed2 = disnake.Embed(description=f"{yes} The music loop has been disabled.", color=colors.success_embed_color)
         
         if voice_client and not voice_client.channel == user_vc:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to my voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to my voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         elif not voice_client.is_playing() or not player:
-            embed = disnake.Embed(description=f"{config.no} I'm not playing anything!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not playing anything!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         elif not voice_client or not voice_client.is_connected():
-            embed = disnake.Embed(description=f"{config.no} I'm not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I'm not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
 
@@ -432,11 +436,11 @@ class Music(commands.Cog):
         user_voice = inter.author.voice
         
         if not user_voice:
-            embed = disnake.Embed(description=f"{config.no} You're not connected to a voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You're not connected to a voice channel!", color=colors.error_embed_color)
             return await inter.send(embed=embed, ephemeral=True)
         
         user_vc = user_voice.channel
-        embed = disnake.Embed(description=f"{config.yes} Joined {user_vc.mention} successfully.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} Joined {user_vc.mention} successfully.", color=colors.success_embed_color)
         
         if voice_client and voice_client.is_connected():
             await voice_client.disconnect()
@@ -450,7 +454,7 @@ class Music(commands.Cog):
     @play.error
     async def command_error(self, ctx: commands.Context, error):
         if isinstance(error, disnake.errors.Forbidden):
-            embed = disnake.Embed(description=f"{config.no} I don't have permission to join your voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I don't have permission to join your voice channel!", color=colors.error_embed_color)
             await ctx.send(embed=embed)
     
     ## -- SLASH COMMAND HANDLERS -- ##
@@ -459,7 +463,7 @@ class Music(commands.Cog):
     @slash_play.error
     async def slash_play_error(self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError):
         if isinstance(error, disnake.errors.Forbidden):
-            embed = disnake.Embed(description=f"{config.no} I don't have permission to join your voice channel!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} I don't have permission to join your voice channel!", color=colors.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
 
 

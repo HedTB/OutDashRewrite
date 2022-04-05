@@ -11,8 +11,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
+
 from utils.checks import *
 from utils.statcord import StatcordClient
 
@@ -25,7 +25,7 @@ google_api_key = os.environ.get("GOOGLE_API_KEY")
 statcord_api_key = os.environ.get("STATCORD_API_KEY")
 
 client = MongoClient(mongo_login, tlsCAFile=certifi.where())
-db = client[config.database_collection]
+db = client[config.DATABASE_COLLECTION]
 
 youtube_uploads_col = db["youtube_uploads"]
 
@@ -62,7 +62,7 @@ class Loops(commands.Cog):
                     continue
 
                 published_videos = document.get(str(channel_index) + "_videos")
-                ping_channel = self.bot.get_channel(config.messages_channel)
+                ping_channel = self.bot.get_channel(config.MESSAGES_CHANNEL)
                 
                 str_list = channel.split("/")
                 channel_id = str_list[-1]
@@ -106,9 +106,9 @@ class Loops(commands.Cog):
             await self.bot.wait_until_ready()
             
         presence_list = [
-            f"{len(self.bot.guilds)} servers | {config.default_prefix}help",
-            f"{len(self.bot.users)} users | {config.default_prefix}help",
-            f"outdash.ga | {config.default_prefix}help",
+            f"{len(self.bot.guilds)} servers | {config.DEFAULT_PREFIX}help",
+            f"{len(self.bot.users)} users | {config.DEFAULT_PREFIX}help",
+            f"outdash.ga | {config.DEFAULT_PREFIX}help",
         ]
         
         if self.bot.presence_index + 1 > len(presence_list) - 1:

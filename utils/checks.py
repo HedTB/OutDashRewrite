@@ -11,15 +11,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
+
 from utils.classes import *
 
 ## -- VARIABLES -- ##
 
 mongo_login = os.environ.get("MONGO_LOGIN")
 client = MongoClient(mongo_login, tlsCAFile=certifi.where())
-db = client[config.database_collection]
+db = client[config.DATABASE_COLLECTION]
 
 guild_data_col = db["guild_data"]
 warns_col = db["warns"]

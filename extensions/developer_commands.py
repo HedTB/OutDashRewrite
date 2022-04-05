@@ -16,9 +16,10 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
+
 from utils.checks import *
+from utils.emojis import *
 
 ## -- VARIABLES -- ##
 
@@ -55,13 +56,13 @@ class DeveloperCommands(commands.Cog):
     
     @commands.command(hidden=True)
     async def exec(self, ctx: commands.Context, *, code: str):
-        if ctx.author.id not in config.owners:
+        if ctx.author.id not in config.OWNERS:
             return
 
         code_to_run = code[code.find("```py") + len("```py"): code.rfind("```")]
         
         if not code_to_run:
-            embed = disnake.Embed(description=f"{config.no} There's no code I can run!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} There's no code I can run!", color=colors.error_embed_color)
             
             await ctx.send(embed=embed)
             return
@@ -73,7 +74,7 @@ class DeveloperCommands(commands.Cog):
         
     @commands.command(hidden=True)
     async def generatecaptcha(self, ctx: commands.Context):
-        if ctx.author.id not in config.owners:
+        if ctx.author.id not in config.OWNERS:
             return
 
         captcha = functions.generate_captcha()
@@ -87,26 +88,26 @@ class DeveloperCommands(commands.Cog):
         try:
             await self.bot.wait_for("message", timeout=15.0, check=check)
         except asyncio.TimeoutError:
-            await ctx.send(f"{config.no} the captcha was: `" + captcha + "`")
+            await ctx.send(f"{no} the captcha was: `" + captcha + "`")
         else:
-            await ctx.send(config.yes)
+            await ctx.send(yes)
             
     @commands.command(hidden=True)
     async def getguilddata(self, ctx: commands.Context, guild_id: int = 836495137651294258):
-        if ctx.author.id not in config.owners:
+        if ctx.author.id not in config.OWNERS:
             return
 
         guild = self.bot.get_guild(guild_id)
         embed = disnake.Embed(title=guild.name, description="")
 
-        embed.set_thumbnail(guild.icon or config.default_avatar_url)
+        embed.set_thumbnail(guild.icon or config.DEFAULT_AVATAR_URL)
         embed.add_field("Member Count", len(guild.members))
 
         await ctx.send(embed=embed)
         
     @commands.command(hidden=True)
     async def getbotguilds(self, ctx: commands.Context):
-        if ctx.author.id not in config.owners:
+        if ctx.author.id not in config.OWNERS:
             return
 
         guilds = self.bot.guilds

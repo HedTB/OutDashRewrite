@@ -20,8 +20,7 @@ from flask_limiter.util import get_remote_address
 from uuid import uuid4
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
 from utils.database_types import *
 from utils.classes import *
 
@@ -35,9 +34,9 @@ load_dotenv()
 mongo_token = os.environ.get("MONGO_LOGIN")
 api_key = os.environ.get("API_KEY")
 
-bot_token = os.environ.get("BOT_TOKEN" if config.is_server else "TEST_BOT_TOKEN")
-bot_id = os.environ.get("BOT_ID" if config.is_server else "TEST_BOT_ID")
-bot_secret = os.environ.get("BOT_SECRET" if config.is_server else "TEST_BOT_SECRET")
+bot_token = os.environ.get("BOT_TOKEN" if config.IS_SERVER else "TEST_BOT_TOKEN")
+bot_id = os.environ.get("BOT_ID" if config.IS_SERVER else "TEST_BOT_ID")
+bot_secret = os.environ.get("BOT_SECRET" if config.IS_SERVER else "TEST_BOT_SECRET")
 
 # APP VARIABLES
 app = Flask(__name__)
@@ -57,12 +56,12 @@ logger = logging.getLogger("OutDash")
 bot = BotObject()
 
 # CONSTANTS
-SERVER_URL = "http://127.0.0.1:8080" if not config.is_server else "https://outdash-beta2.herokuapp.com"
-REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.is_server else "https://outdash-beta2.herokuapp.com/callback"
+SERVER_URL = "http://127.0.0.1:8080" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com"
+REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com/callback"
 
 # DATABASE VARIABLES
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
-db = client[config.database_collection]
+db = client[config.DATABASE_COLLECTION]
 
 guild_data_col = db["guild_data"]
 api_data_col = db["api_data"]
@@ -390,5 +389,5 @@ def run_api():
     server = Thread(target=app.run, args=("127.0.0.1", 8080, ))
     server.run()
 
-if __name__ == "__main__" and not config.is_server:
+if __name__ == "__main__" and not config.IS_SERVER:
     run_api()

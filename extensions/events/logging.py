@@ -12,8 +12,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
+
 from utils.checks import *
 from utils.webhooks import *
 from utils.classes import *
@@ -73,9 +73,9 @@ class LoggingEvents(commands.Cog):
         except InvalidWebhook:
             return
         
-        embed = disnake.Embed(description=f"**Bulk delete in <#{messages[0].channel.id}>, {len(messages)} messages deleted**", color=config.logs_embed_color)
+        embed = disnake.Embed(description=f"**Bulk delete in <#{messages[0].channel.id}>, {len(messages)} messages deleted**", color=colors.logs_embed_color)
         
-        embed.set_author(name=messages[0].guild.name, icon_url=messages[0].guild.icon or config.default_avatar_url)
+        embed.set_author(name=messages[0].guild.name, icon_url=messages[0].guild.icon or config.DEFAULT_AVATAR_URL)
         embed.timestamp = datetime.datetime.utcnow()
         
         webhook.add_embed(embed)
@@ -109,18 +109,18 @@ class LoggingEvents(commands.Cog):
             return
 
         if message_content_privacy != "true":
-            embed = disnake.Embed(description=f"**Message edited in <#{before.channel.id}>**\n[Jump to message](https://discordapp.com/channels/{after.guild.id}/{after.channel.id}/{after.id})", color=config.logs_embed_color)
+            embed = disnake.Embed(description=f"**Message edited in <#{before.channel.id}>**\n[Jump to message](https://discordapp.com/channels/{after.guild.id}/{after.channel.id}/{after.id})", color=colors.logs_embed_color)
             embed.add_field(name="Before", value=before_text, inline=False)
             embed.add_field(name="After", value=after_text, inline=False)
 
-            embed.set_author(name=f"{before.author.name}#{before.author.discriminator}", icon_url=before.author.avatar or config.default_avatar_url)
+            embed.set_author(name=f"{before.author.name}#{before.author.discriminator}", icon_url=before.author.avatar or config.DEFAULT_AVATAR_URL)
             embed.set_footer(text=f"Message ID: {before.id}")
             embed.timestamp = datetime.datetime.utcnow()
         else:
-            embed = disnake.Embed(description=f"**Message edited in <#{before.channel.id}>** \n[Jump to message](https://discordapp.com/channels/{after.guild.id}/{after.channel.id}/{after.id})", color=config.logs_embed_color)
+            embed = disnake.Embed(description=f"**Message edited in <#{before.channel.id}>** \n[Jump to message](https://discordapp.com/channels/{after.guild.id}/{after.channel.id}/{after.id})", color=colors.logs_embed_color)
             embed.add_field(name="Notice", value="`This user has message content privacy enabled.`")
             
-            embed.set_author(name=f"{before.author.name}#{before.author.discriminator}", icon_url=before.author.avatar or config.default_avatar_url)
+            embed.set_author(name=f"{before.author.name}#{before.author.discriminator}", icon_url=before.author.avatar or config.DEFAULT_AVATAR_URL)
             embed.set_footer(text=f"Message ID: {before.id}")
             embed.timestamp = datetime.datetime.utcnow()
 
@@ -149,9 +149,9 @@ class LoggingEvents(commands.Cog):
             message_text = "`This user has message content privacy enabled.`"
 
         embed = disnake.Embed(description=f"**Message deleted in {message.channel.mention}**"
-                              f"\n{message_text}", color=config.logs_delete_embed_color)
+                              f"\n{message_text}", color=colors.logs_delete_embed_color)
 
-        embed.set_author(name=f"{message.author.name}#{message.author.discriminator}", icon_url=message.author.avatar or config.default_avatar_url)
+        embed.set_author(name=f"{message.author.name}#{message.author.discriminator}", icon_url=message.author.avatar or config.DEFAULT_AVATAR_URL)
         embed.set_footer(text=f"Message ID: {message.id}")
         embed.timestamp = datetime.datetime.utcnow()
 
@@ -168,13 +168,13 @@ class LoggingEvents(commands.Cog):
             return
         
         await self.bot.dispatch("welcome_member", member)
-        embed = disnake.Embed(description="**Member joined**", color=config.logs_add_embed_color, timestamp=datetime.datetime.utcnow())
+        embed = disnake.Embed(description="**Member joined**", color=colors.logs_add_embed_color, timestamp=datetime.datetime.utcnow())
         
         created_ago_native = datetime.datetime.replace(member.created_at, tzinfo=None)
         created_ago = (datetime.datetime.now() - created_ago_native)
         created_seconds_ago = created_ago.total_seconds()
         
-        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or config.default_avatar_url)
+        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or config.DEFAULT_AVATAR_URL)
         embed.add_field(name="Account Created", value=f"{functions.seconds_to_text(created_seconds_ago, 3)} ago", inline=False)
         
         webhook.add_embed(embed)
@@ -198,11 +198,11 @@ class LoggingEvents(commands.Cog):
         joined_at = (datetime.datetime.now() - joined_at_native)
         joined_seconds_ago = joined_at.total_seconds()
         
-        embed = disnake.Embed(description=f"**Member left**", color=config.logs_delete_embed_color, timestamp=datetime.datetime.utcnow())
+        embed = disnake.Embed(description=f"**Member left**", color=colors.logs_delete_embed_color, timestamp=datetime.datetime.utcnow())
 
         embed.add_field(name="Member Since", value=f"{functions.seconds_to_text(joined_seconds_ago, 3)} ago", inline=False)
         embed.add_field(name="Roles", value=str(member_roles), inline=False)
-        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or config.default_avatar_url)
+        embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar or config.DEFAULT_AVATAR_URL)
         
         webhook.add_embed(embed)
         webhook.post()
@@ -215,7 +215,7 @@ class LoggingEvents(commands.Cog):
             return
         
         if before.nick != after.nick:
-            embed = disnake.Embed(description="Nickname changed", color=config.logs_embed_color)
+            embed = disnake.Embed(description="Nickname changed", color=colors.logs_embed_color)
             
             embed.add_field("Before", disnake.utils.escape_markdown(before.nick if before.nick else before.name))
             embed.add_field("After", disnake.utils.escape_markdown(after.nick if after.nick else after.name))

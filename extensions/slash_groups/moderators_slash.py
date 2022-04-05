@@ -16,8 +16,8 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config
-from utils import functions
+from utils import config, functions, colors
+
 from utils.checks import *
 
 load_dotenv()
@@ -26,7 +26,7 @@ load_dotenv()
 
 mongo_login = os.environ.get("MONGO_LOGIN")
 client = MongoClient(mongo_login, tlsCAFile=certifi.where())
-db = client[config.database_collection]
+db = client[config.DATABASE_COLLECTION]
 
 guild_data_col = db["guild_data"]
 muted_users_col = db["muted_users"]
@@ -58,15 +58,15 @@ class ModeratorsSlash(commands.Cog):
         """
 
         if member == inter.author:
-            embed = disnake.Embed(description=f"{config.no} You can't make yourself a moderator!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You can't make yourself a moderator!", color=colors.error_embed_color)
             await inter.send(embed=embed, ephemeral=True)
             return
         elif member.bot:
-            embed = disnake.Embed(description=f"{config.no} You can't make a bot a moderator!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You can't make a bot a moderator!", color=colors.error_embed_color)
             await inter.send(embed=embed, ephemeral=True)
             return
         elif functions.is_role_above_role(member.top_role, inter.author.top_role):
-            embed = disnake.Embed(description=f"{config.no} You don't have permission to make this member a moderator!", color=config.error_embed_color)
+            embed = disnake.Embed(description=f"{no} You don't have permission to make this member a moderator!", color=colors.error_embed_color)
             await inter.send(embed=embed, ephemeral=True)
             return
         
@@ -96,7 +96,7 @@ class ModeratorsSlash(commands.Cog):
             for moderator in moderators:
                 moderator = moderators[moderator]
                 if int(moderator["id"]) == member.id:
-                    embed = disnake.Embed(description=f"{config.no} This member is already a moderator!", color=config.error_embed_color)
+                    embed = disnake.Embed(description=f"{no} This member is already a moderator!", color=colors.error_embed_color)
                     await inter.send(embed=embed, ephemeral=True)
                     return
 
@@ -110,7 +110,7 @@ class ModeratorsSlash(commands.Cog):
             }
         guild_data_col.update_one(query, {"$set": update})
 
-        embed = disnake.Embed(description=f"{config.yes} **{member}** has been added as a moderator.", color=config.success_embed_color)
+        embed = disnake.Embed(description=f"{yes} **{member}** has been added as a moderator.", color=colors.success_embed_color)
         await inter.send(embed=embed)
 
 
@@ -136,7 +136,7 @@ class ModeratorsSlash(commands.Cog):
         description = ""
 
         if not moderators:
-            description = f"{config.info} There's no moderators."
+            description = f"{info} There's no moderators."
         else:
             moderators = json.loads(moderators)
             for moderator in moderators:
@@ -146,9 +146,9 @@ class ModeratorsSlash(commands.Cog):
                 added_user = self.bot.get_user(int(moderator["moderator"]))
                 description += f"**{moderator_user}** ({moderator_user.mention})" + "\n" + f"Added by {added_user} | {moderator['time'][:16]} UTC\n\n"
 
-        embed = disnake.Embed(title=f"Moderators for {inter.guild.name}", description=description, color=config.embed_color)
+        embed = disnake.Embed(title=f"Moderators for {inter.guild.name}", description=description, color=colors.embed_color)
 
-        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or config.default_avatar_url)
+        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL)
         await inter.send(embed=embed)
 
 
@@ -156,7 +156,7 @@ class ModeratorsSlash(commands.Cog):
     @slash_moderators.error
     async def slash_moderators_error(self, inter: disnake.ApplicationCommandInteraction, error):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=config.no, permission=error.missing_permissions[0].title().replace("_", " ")), color=config.error_embed_color)
+            embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=no, permission=error.missing_permissions[0].title().replace("_", " ")), color=colors.error_embed_color)
             await inter.response.send_message(embed=embed, ephemeral=True)
         
     
