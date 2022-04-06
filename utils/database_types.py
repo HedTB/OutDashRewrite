@@ -24,8 +24,9 @@ log_types = [
 
 ## -- TYPES -- ##
 
+
 def guild_data(guild_id: int):
-    data =  {
+    data = {
         "guild_id": guild_id,
         "prefix": "?",
         "settings_locked": False,
@@ -40,15 +41,15 @@ def guild_data(guild_id: int):
 
         "welcome_channel": None,
         "welcome_toggle": False,
-        
+
         "welcome_message": {
             "embed": {
                 "title": None,
                 "description": "**Welcome to __{guild_name}__!**",
-                
+
                 "color": colors.logs_embed_color,
                 "timestamp": True,
-                
+
                 "thumbnail": {
                     "url": "{guild_icon}",
                 },
@@ -62,30 +63,61 @@ def guild_data(guild_id: int):
                     "icon": None,
                 },
             },
-            
+
             "content": "{member_mention}"
         },
-        
+
         "leveling_toggle": True,
         "leveling_message": {
             "delete_after": None,
             "content": "{member_mention} is now level **{new_level}!** :tada:"
+        },
+
+        "automod_toggle": False,
+        "automod_filters": {
+            "exact": [
+                "anal", "anus", "arse", "ass",
+                "bastard", "bitch", "biatch",
+                "blowjob", "blow job", "bollock", "bollok",
+                "boner", "boob", "bugger", "bum",
+                "butt", "buttplug", "clitoris", "cock",
+                "coon", "cunt", "damn",
+                "dick", "dildo", "dyke", "fag",
+                "feck", "fellate", "fellatio", "felching",
+                "fuck", "f u c k", "fudgepacker", "fudge packer",
+                "flange", "jerk", "jizz", "knobend",
+                "knob end", "labia", "muff", "nigger",
+                "nigga", "penis", "piss", "prick",
+                "pube", "pussy", "queer", "scrotum",
+                "sex", "shit", "s hit", "sh1t",
+                "slut", "smegma", "spunk", "tit",
+                "tosser", "turd", "twat", "vagina",
+                "wank", "whore",
+            ],
+            "wildcard": []
+        },
+        "automod_warning_rules": {
+            "warnings": 3,
+            "action": "mute",
+            "duration": "30m"
         }
     }
-    
+
     for log_type in log_types:
-        data["webhooks"].update({ log_type: {
+        data["webhooks"].update({log_type: {
             "toggle": False,
             "url": None,
         }})
-    
+
     return data
-    
+
+
 def warns_data(guild_id: int):
     return {
         "guild_id": guild_id
     }
-    
+
+
 def user_data(user_id: int):
     return {
         "user_id": user_id,
@@ -93,32 +125,35 @@ def user_data(user_id: int):
         "message_content_privacy": False,
     }
 
+
 def member_data(member_id: int, guild_id: int):
     return {
         "user_id": member_id,
         "timezone": "Europe/Belfast",
         "message_content_privacy": False,
-        
+
         str(guild_id): json.dumps({
             "level": 0,
             "xp": 0,
             "total_xp": 0
         })
     }
-    
+
+
 def user_api_data(access_token: str, refresh_token: str, access_code: str, user: dict):
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
         "access_code": access_code,
-        
+
         "user": json.dumps(user)
     }
-    
+
+
 def bot_api_data():
     return {
         "bot_document": True,
-        
+
         "last_refresh": time.time(),
         "guilds": {}
     }
