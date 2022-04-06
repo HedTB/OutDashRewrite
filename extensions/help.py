@@ -20,6 +20,8 @@ from . import fun, leveling, miscellaneous, moderation, music, settings
 
 load_dotenv()
 
+AnyContext = typing.Union[commands.Context, disnake.ApplicationCommandInteraction]
+
 pages = [
     1,
     settings.Settings, fun.Fun, leveling.Leveling, miscellaneous.Miscellaneous,
@@ -48,32 +50,22 @@ def get_group_commands(group: commands.Group, *, original_group: commands.Group 
     group_commands = []
     
     if group.name not in empty_group_bases:
-        group_commands.append(group.name)
+        group_commands.append(group.qualified_name)
 
     for command in group.commands:
-        if isinstance(command, commands.Group) and command.commands:
-            group_commands.extend(get_group_commands(
-                group=command,
-                original_group=group,
-            ))
-        else:
-            if original_group == None:
-                group_commands.append(f"{group.name} {command.name}")
-            else:
-                group_commands.append(
-                    f"{original_group.name} {group.name} {command.name}")
+        group_commands.append(command.qualified_name)
 
     return group_commands
 
 
 def get_extension_commands(extension: commands.Cog):
     commands_list = []
-
-    for command in extension.get_commands(extension):
-        if isinstance(command, commands.Group):
-            commands_list.extend(get_group_commands(command))
-        else:
-            commands_list.append(command.name)
+            
+    for command in extension.walk_commands(extension):
+        if isinstance(command, commands.Group) and command.name in empty_group_bases:
+            continue
+        
+        commands_list.append(command.qualified_name)
 
     return commands_list
 
@@ -181,20 +173,23 @@ class HelpPaginator(disnake.ui.View, menus.MenuPages):
 
         return embed
 
-    async def start(self, ctx: commands.Context, *, channel: disnake.TextChannel | None = None):
+    async def start(self, ctx: AnyContext, *, channel: disnake.TextChannel | None = None):
         self.ctx = ctx
 
         await self._source._prepare_once()
         await self.send_initial_message(ctx, channel or ctx.channel)
 
-    async def send_initial_message(self, ctx: commands.Context, channel: disnake.TextChannel):
+    async def send_initial_message(self, ctx: AnyContext, channel: disnake.TextChannel):
         embed = HelpPageSource.format_page(self, 1)
-
+        
         if self.message:
             self.current_page = 0
             await self.message.edit(embed=embed, view=self)
         else:
             self.message = await ctx.send(embed=embed, view=self)
+            
+            if isinstance(ctx, disnake.Interaction):
+                self.message = await ctx.original_message()
 
     async def interaction_check(self, interaction: disnake.MessageInteraction) -> bool:
         return interaction.user == self.ctx.author
@@ -264,7 +259,8 @@ class CommandHelpView(disnake.ui.View):
 
 
 class HelpCommand(commands.HelpCommand):
-    def get_command_signature(self, prefix: str, command: commands.Command) -> str:
+    @staticmethod
+    def get_command_signature(prefix: str, command: commands.Command) -> str:
         return "%s%s %s" % (prefix, command.qualified_name, command.signature)
 
     async def send_bot_help(self, mapping: dict):
@@ -282,15 +278,21 @@ class HelpCommand(commands.HelpCommand):
 
         prefix = ctx.bot.get_bot_prefix(ctx.channel.guild)
         embed = disnake.Embed(
-            title=self.get_command_signature(prefix, command),
+            title=command.qualified_name.title(),
             description="`<>` means that the argument is required.\n`[]` means that the argument is optional.",
             color=colors.embed_color,
             timestamp=datetime.datetime.utcnow(),
         )
 
         embed.add_field(
+            name="Usage",
+            value=self.get_command_signature(prefix, command),
+            inline=False
+        )
+        embed.add_field(
             name="Description",
-            value=description
+            value=description,
+            inline=False
         )
 
         if len(command.aliases) >= 1:
@@ -383,7 +385,6 @@ class HelpCommand(commands.HelpCommand):
 
 
 class Help(commands.Cog):
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self._original_help_command = bot.help_command
@@ -393,16 +394,72 @@ class Help(commands.Cog):
 
     def cog_unload(self) -> None:
         self.bot.help_command = self._original_help_command
+        
+    def get_slash_command_signature(self, command: commands.InvokableSlashCommand):
+        parameters = ""
+        
+        for option in command.options:
+            bracket1 = "<" if option.required else "["
+            bracket2 = ">" if option.required else "]"
+            
+            parameters += f"{bracket1}{option.name}{bracket2} "
+            
+        parameters[:-1]
+        return "/%s %s" % (command.name, parameters)
 
     ## -- SLASH COMMANDS -- ##
 
-    @commands.slash_command(name="help", description="Lost? Use this command!")
+    @commands.slash_command(name="help")
     async def slash_help(self, inter: disnake.ApplicationCommandInteraction):
+        """Lost? Check out this command!"""
+        pass
+    
+    @slash_help.sub_command(name="menu")
+    async def slash_help_menu(self, inter: disnake.ApplicationCommandInteraction):
+        """Open up the interactive help menu."""
+        
         formatter = HelpPageSource(pages)
         menu = HelpPaginator(formatter)
 
         await menu.start(inter, channel=inter.channel)
+        
+    @slash_help.sub_command(name="command")
+    async def slash_help_command(self, inter: disnake.ApplicationCommandInteraction, command: str):
+        """Get information about a specific command.
+        Parameters
+        ----------
+        command: The command you want information on.
+        """
+        
+        command_obj = self.bot.get_slash_command(command)
+        
+        if not command_obj:
+            embed = disnake.Embed(
+                description=f"{no} There's no command called `{command}`.",
+                color=colors.error_embed_color,
+            )
+            return await inter.send(embed=embed, ephemeral=True)
+        
+        embed = disnake.Embed(
+            title=command_obj.qualified_name.title(),
+            description="`<>` means that the argument is required.\n`[]` means that the argument is optional.",
+            color=colors.embed_color,
+            timestamp=datetime.datetime.utcnow(),
+        )
 
+        embed.add_field(
+            name="Usage",
+            value=self.get_slash_command_signature(command_obj),
+            inline=False
+        )
+        embed.add_field(
+            name="Description",
+            value=command_obj.description,
+            inline=False
+        )
+
+        await inter.send(embed=embed, view=CommandHelpView())
+        
 
 def setup(bot):
     bot.add_cog(Help(bot))
