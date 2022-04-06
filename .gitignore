@@ -5,3 +5,4 @@ __pycache__
 archive
 
 .env
+test.py
