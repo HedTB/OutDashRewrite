@@ -22,6 +22,13 @@ from utils.emojis import *
 
 load_dotenv()
 
+automod_type_warnings = {
+    "banned_words": "Watch your language, {}!",
+    "all_caps": "Keep your caps down, {}!",
+    "fast_spam": "Slow down, {}!",
+    "text_flood": "Don't flood the chat, {}!",
+}
+
 ## -- COG -- ##
 
 
@@ -29,59 +36,124 @@ class Automod(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        
+
     ## -- FUNCTIONS -- ##
 
-    async def exact_match(self, ctx: commands.Context, filters: List[str]) -> bool:
-        message = ctx.message
-
-        for word in message.content.split():
-            if word in filters:
-                embed = disnake.Embed(
-                    description=f"{moderator} Watch your language, {ctx.author.mention}!",
-                    color=colors.embed_color,
-                )
-
-                await message.delete()
-                await ctx.send(embed=embed, delete_after=7)
-
-                await self.bot.log_automod(ctx.author, {
-                    "type": "exact",
-                    "word": word,
-                    "message": message,
-                    "time": time.time(),
-                })
-                
-                return True
-
-    async def wildcard_match(self, ctx: commands.Context, filters: List[str]) -> bool:
-        message = ctx.message
-        search = re.match(
-            pattern=r"^.*(?:{}).*$".format("|".join(filters)),
-            string=message.content,
-            flags=re.IGNORECASE
+    async def log_automod(self, ctx: commands.Context, automod_type: str) -> None:
+        data_obj = GuildData(ctx.author.guild)
+        data = data_obj.get_data()
+        
+        embed = disnake.Embed(
+            description=moderator + " " + automod_type_warnings[automod_type].format(
+                ctx.author.mention
+            ),
+            color=colors.embed_color,
         )
 
-        if bool(search) == True:
-            embed = disnake.Embed(
-                description=f"{moderator} Watch your language, {ctx.author.mention}!",
-                color=colors.embed_color,
-            )
+        if not ctx.author.id in self.bot.automod_warnings:
+            self.bot.automod_warnings[ctx.author.id] = []
 
-            await message.delete()
-            await ctx.send(embed=embed, delete_after=7)
+        self.bot.automod_warnings[ctx.author.id].append(data)
+        self.bot.moderated_messages.append(ctx.message.id)
+        
+        await ctx.message.delete()
+        await ctx.send(
+            content=f"{ctx.author.mention},",
+            embed=embed,
+            delete_after=7,
+        )
 
-            await self.bot.log_automod(ctx.author, {
-                "type": "wildcard",
-                "word": search.group(0),
-                "message": message,
-                "time": time.time(),
-            })
-            
-    ## -- KEYWORD FILTERS -- ##
+        automod_warning_rules = data["automod_warning_rules"][automod_type]
 
+        if len(self.bot.automod_warnings[ctx.author.id]) >= automod_warning_rules["warnings"]:
+            action = automod_warning_rules["action"]
+
+            if action == "mute":
+                try:
+                    await ctx.author.timeout(
+                        duration=functions.manipulate_time(
+                            time_str=automod_warning_rules["duration"],
+                            return_type="seconds",
+                        ),
+                    )
+
+                except disnake.errors.Forbidden:
+                    pass
+    
+    ## -- AUTOMOD CHECKS -- ##
+    
+    async def banned_words(self, ctx: commands.Context, data: dict) -> bool:
+        if ctx.message.id in self.bot.moderated_messages:
+            return False
+        elif not data["automod_toggle"]["banned_words"]:
+            return False
+
+        automod_filters = data["automod_settings"]["banned_words"]
+        
+        for word in ctx.message.content.split():
+            if word in automod_filters["exact"]:
+                await self.log_automod(ctx, "banned_words")
+                return True
+
+        if len(automod_filters["wildcard"]) < 1:
+            return False
+        
+        search = re.match(
+            pattern=r"^.*(?:{}).*$".format("|".join(automod_filters["wildcard"])),
+            string=ctx.message.content,
+            flags=re.IGNORECASE
+        )
+        if bool(search):
+            await self.log_automod(ctx, "banned_words")
+            return True
+        
+    
+    async def all_caps(self, ctx: commands.Context, data: dict) -> bool:
+        if ctx.message.id in self.bot.moderated_messages:
+            return
+        elif not data["automod_toggle"]["all_caps"]:
+            return
+
+        caps_percentage = data["automod_settings"]["caps_percentage"]
+        message_caps = 0
+
+        for character in ctx.message.content:
+            if character.isupper():
+                message_caps += 1
+
+        message_caps_percentage = message_caps / len(ctx.message.content) * 100
+        print(message_caps_percentage)
+        
+    ## -- MAIN EVENT HANDLER -- ##
+    
     @commands.Cog.listener("on_message")
-    async def automod_message(self, message: disnake.Message):
+    async def automod_trigger(self, message: disnake.Message):
+        if message.author.bot:
+            return
+        
+        ctx = commands.Context(
+            message=message,
+            bot=self.bot,
+            view=None
+        )
+        
+        data_obj = GuildData(ctx.guild)
+        data = data_obj.get_data()
+        
+        if not data["automod_toggle"]["global"]:
+            return
+        
+        await self.banned_words(ctx, data)
+        await self.all_caps(ctx, data)
+
+    @commands.Cog.listener("on_message_edit")
+    async def automod_edit_trigger(self, before: disnake.Message, after: disnake.Message):
+        await self.automod_trigger(after)
+
+    ## -- SPAM FILTERS -- ##
+
+    @commands.Cog.listener("on_message_spam")
+    async def automod_message_spam(self, message: disnake.Message):
         ctx = commands.Context(
             message=message,
             bot=self.bot,
@@ -91,20 +163,37 @@ class Automod(commands.Cog):
         data_obj = GuildData(ctx.guild)
         data = data_obj.get_data()
 
-        if not data["automod_toggle"]:
+        if message.id in self.bot.moderated_messages:
+            return
+        elif not data["automod_toggle"]["global"] or not data["automod_toggle"]["fast_spam"]:
             return
 
-        automod_filters = data["automod_filters"]
-        exact_result = await self.exact_match(ctx, automod_filters["exact"])
+    @commands.Cog.listener("on_message_flood")
+    async def automod_flood(self, message: disnake.Message):
+        ctx = commands.Context(
+            message=message,
+            bot=self.bot,
+            view=None
+        )
 
-        if exact_result == True:
+        data_obj = GuildData(ctx.guild)
+        data = data_obj.get_data()
+
+        if message.id in self.bot.moderated_messages:
+            return
+        elif not data["automod_toggle"]["global"] or not data["automod_toggle"]["text_flood"]:
             return
 
-        await self.wildcard_match(ctx, automod_filters["wildcard"])
+    @commands.Cog.listener("on_message")
+    async def automod_caps(self, message: disnake.Message):
+        ctx = commands.Context(
+            message=message,
+            bot=self.bot,
+            view=None
+        )
 
-    @commands.Cog.listener("on_message_edit")
-    async def automod_edit_trigger(self, before: disnake.Message, after: disnake.Message):
-        await self.automod_message(after)
+        data_obj = GuildData(ctx.guild)
+        data = data_obj.get_data()
 
 
 def setup(bot):

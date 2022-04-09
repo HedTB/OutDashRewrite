@@ -3,6 +3,9 @@
 import datetime
 import json
 import re
+from sys import stdout
+import sys
+import typing
 import disnake
 import os
 import certifi
@@ -11,6 +14,8 @@ import requests
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from uuid import uuid4
+from motor.motor_asyncio import AsyncIOMotorClient
+from types import NoneType
 
 from utils.webhooks import *
 from utils.database_types import *
@@ -24,11 +29,20 @@ load_dotenv()
 _client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
 _db = _client[config.DATABASE_COLLECTION]
 
+_motor_client = AsyncIOMotorClient(
+    os.environ.get("MONGO_LOGIN"),
+    zlibCompressionLevel=7,
+    compressors="xlib"
+)
+_motor_db = _motor_client.get_database(config.DATABASE_COLLECTION)
+
 _guild_data_col = _db["guild_data"]
 _user_data_col = _db["user_data"]
 _access_codes_col = _db["access_codes"]
 _api_data_col = _db["api_data"]
 _warns_col = _db["warns"]
+
+_motor_guild_data_col = _motor_db.get_collection("guild_data")
 
 _log_types = [
     # messages
@@ -57,6 +71,79 @@ request_headers = {
 
 ## -- FUNCTIONS -- ##
 
+
+def reconcicle_dict(base: dict, current: dict) -> typing.Dict[str,
+    str | int | dict | list | bool | NoneType
+]:
+    data = {**base, **current}
+
+    for key in data:
+        value = data[key]
+        
+        try:
+            int(key)
+            continue
+        except:
+            pass
+
+        if isinstance(key, str) and key.startswith("_"):
+            continue
+
+        if not type(value) == type(base[key]):
+            data[key] = base[key]
+        elif isinstance(value, dict):
+            data[key] = reconcicle_dict(base[key], value)
+
+    return data
+
+
+def clean_dict(base: dict, current: dict) -> typing.Dict[str, str]:
+    data = {}
+    
+    for key in current:
+        try:
+            int(key)
+            data[key] = current[key]
+        except:
+            pass
+        
+        if not key in base:
+            continue
+        if isinstance(current[key], dict):
+            current[key] = clean_dict(base[key], current[key])
+            
+        data[key] = current[key]
+
+    return data
+
+
+def load_json(data: dict) -> typing.Dict[str, str | int | dict | list | bool | NoneType]:
+    for key in data:
+        value = data[key]
+
+        if type(value) != str:
+            continue
+
+        elif value.startswith("{") and value.endswith("}") or value.startswith("[") and value.endswith("]"):
+            try:
+                data[key] = json.loads(value)
+            except:
+                continue
+
+    return data
+
+
+def to_json(data: dict) -> typing.Dict[str, str | int]:
+    for key in data:
+        value = data[key]
+
+        if not isinstance(value, (dict, list)):
+            continue
+
+        data[key] = json.dumps(value)
+
+    return data
+
 ## -- CLASSES -- ##
 
 # EXCEPTIONS
@@ -66,48 +153,20 @@ class InvalidLogType(Exception):
     """Raised if the passed log type is an invalid log type."""
     pass
 
-# UTIL CLASSES
+
+class InvalidAccessCode(Exception):
+    """Raised if the passed access code is invalid"""
+    pass
 
 
-class LoggingWebhook():
-    def __init__(self, avatar: disnake.Asset, guild: disnake.Guild, log_type: str):
-        data_obj = GuildData(guild)
-        guild_data = data_obj.get_data()
-
-        if not log_type in _log_types:
-            raise InvalidLogType
-
-        webhook = guild_data["webhooks"][log_type]
-        url = webhook["url"]
-        toggle = webhook["toggle"]
-
-        if not toggle or not url:
-            if toggle and not url:
-                data_obj.update_log_webhook(
-                    log_type, {"toggle": False, "url": None})
-
-            raise InvalidWebhook
-
-        self._guild_id = guild.id
-        self._log_type = log_type
-        self._webhook = Webhook(url, avatar_url=str(avatar))
-
-    def add_embed(self, embed: disnake.Embed):
-        self._webhook.add_embed(embed)
-
-    def post(self) -> requests.Response | None:
-        query = {"guild_id": str(self._guild_id)}
-        update = {"$set": {f"{self._log_type}_logs_webhook": "None"}}
-
-        try:
-            return self._webhook.post()
-        except InvalidWebhook:
-            _guild_data_col.update_one(query, update)
+class RequestFailed(Exception):
+    """Raised if a HTTP request failed"""
+    pass
 
 # DATABASE CLASSES
 
 
-class DatabaseObjectBase:
+class _DatabaseObjectBase:
     def get_data(self, can_insert=True, reconcicle=True):
         data = self._DATABASE_COLLECTION.find_one(self._query)
 
@@ -115,87 +174,45 @@ class DatabaseObjectBase:
             self.insert_data()
             return self.get_data(can_insert, reconcicle)
 
+        data = load_json(data)
+        data.pop("_id")
+
         if reconcicle:
-            unavailable_keys = []
-            invalid_keys = []
+            temp_data = clean_dict(self._insert_data, data)
+            temp_data = reconcicle_dict(self._insert_data, temp_data)
 
-            reconcicle_data = {}
-            invalid_data = {}
-
-            for key in data.keys():
-                try:
-                    int(key)
-                    continue
-                except ValueError:
-                    pass
-
-                if not key in self._insert_data.keys() and not key.startswith("_"):
-                    invalid_keys.append(key)
-
-            for key in self._insert_data.keys():
-                try:
-                    data[key]
-                except:
-                    unavailable_keys.append(key)
-
-            for key in unavailable_keys:
-                reconcicle_data[key] = self._insert_data[key]
-            for key in invalid_keys:
-                invalid_data[key] = ""
-
-            if len(reconcicle_data) > 0:
-                self.update_data(reconcicle_data)
-            if len(invalid_data) > 0:
-                self.unset_data(invalid_data)
-
-            if len(reconcicle_data) > 0 or len(invalid_data) > 0:
+            if temp_data != data:
+                self.update_data(temp_data)
                 return self.get_data(can_insert, reconcicle)
-
-        for key in data:
-            value = data[key]
-
-            if not type(value) == str:
-                continue
-
-            elif value.startswith("{") and value.endswith("}") or value.startswith("[") and value.endswith("]"):
-                try:
-                    data[key] = json.loads(value)
-                except:
-                    continue
 
         return data
 
     def insert_data(self):
-        insert_data = self._insert_data
+        insert_data = to_json(self._insert_data)
 
-        for key in insert_data:
-            value = insert_data[key]
-
-            if isinstance(value, (dict, list)):
-                try:
-                    insert_data[key] = json.dumps(value)
-                except:
-                    continue
+        if insert_data.get("_id"):
+            insert_data.pop("_id")
 
         self._DATABASE_COLLECTION.insert_one(insert_data)
 
     def update_data(self, data: dict):
-        for key in data:
-            value = data[key]
+        if not isinstance(data, dict):
+            raise TypeError
 
-            if isinstance(value, (dict, list)):
-                try:
-                    data[key] = json.dumps(value)
-                except:
-                    continue
+        if data.get("_id"):
+            data.pop("_id")
 
+        data = to_json(data)
         self._DATABASE_COLLECTION.update_one(self._query, {"$set": data})
 
     def unset_data(self, data: dict):
+        if data.get("_id"):
+            data.pop("_id")
+
         self._DATABASE_COLLECTION.update_one(self._query, {"$unset": data})
 
 
-class GuildData(DatabaseObjectBase):
+class GuildData(_DatabaseObjectBase):
     def __init__(self, guild: disnake.Guild):
         self.guild = guild
 
@@ -235,7 +252,7 @@ class GuildData(DatabaseObjectBase):
         self.update_log_webhooks({log_type: data})
 
 
-class WarnsData(DatabaseObjectBase):
+class WarnsData(_DatabaseObjectBase):
     def __init__(self, guild: disnake.Guild):
         self.guild = guild
 
@@ -279,7 +296,7 @@ class WarnsData(DatabaseObjectBase):
         self.update_warnings(member, member_warnings)
 
 
-class UserData(DatabaseObjectBase):
+class UserData(_DatabaseObjectBase):
     def __init__(self, user: disnake.User):
         self.user = user
 
@@ -290,7 +307,7 @@ class UserData(DatabaseObjectBase):
         self.get_data()
 
 
-class MemberData(DatabaseObjectBase):
+class MemberData(_DatabaseObjectBase):
     def __init__(self, member: disnake.Member):
         self.user = member
         self.guild = member.guild
@@ -317,9 +334,49 @@ class MemberData(DatabaseObjectBase):
         guild_data.update(data)
         self.update_data({str(self.guild.id): json.dumps(guild_data)})
 
+# UTIL CLASSES
+
+
+class LoggingWebhook():
+    def __init__(self, avatar: disnake.Asset, guild: disnake.Guild, log_type: str):
+        self._data_obj = GuildData(guild)
+
+        if not log_type in _log_types:
+            raise InvalidLogType
+
+        webhook = self._data_obj.get_log_webhook(log_type)
+        url = webhook["url"]
+        toggle = webhook["toggle"]
+
+        if not toggle or not url:
+            if toggle and not url:
+                self._data_obj.update_log_webhook(
+                    log_type=log_type,
+                    data={"toggle": False, "url": None},
+                )
+
+            raise InvalidWebhook
+
+        self._guild = guild
+        self._log_type = log_type
+        self._webhook = Webhook(url, avatar_url=str(avatar))
+
+    def add_embed(self, embed: disnake.Embed):
+        self._webhook.add_embed(embed)
+
+    def post(self) -> requests.Response | None:
+        data_obj = GuildData(self._guild)
+        data = data_obj.get_data()
+
+        try:
+            return self._webhook.post()
+        except InvalidWebhook:
+            data["webhooks"][self._log_type]["toggle"] = False
+            data_obj.update_data(data)
+
 
 # API
-class BotObject(DatabaseObjectBase):
+class BotObject(_DatabaseObjectBase):
     def __init__(self) -> None:
         self._query = {"bot_document": True}
         self._DATABASE_COLLECTION = _api_data_col
@@ -382,7 +439,7 @@ class BotObject(DatabaseObjectBase):
         return None
 
 
-class UserObject(DatabaseObjectBase):
+class UserObject(_DatabaseObjectBase):
     def __init__(self, access_code: str) -> None:
         self._access_code = access_code
 
@@ -443,14 +500,3 @@ class UserObject(DatabaseObjectBase):
                 return guild
 
         return None
-
-
-# EXCEPTIONS
-class InvalidAccessCode(Exception):
-    """Raised if the passed access code is invalid"""
-    pass
-
-
-class RequestFailed(Exception):
-    """Raised if a HTTP request failed"""
-    pass

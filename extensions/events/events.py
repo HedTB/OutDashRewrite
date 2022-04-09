@@ -223,6 +223,9 @@ class Events(commands.Cog):
         data_obj = GuildData(message.guild)
         guild_data = data_obj.get_data()
 
+        if message.id in self.bot.moderated_messages:
+            return
+
         if message.content == f"<@{self.bot.user.id}>" or message.content == f"<@!{self.bot.user.id}>":
             prefix = guild_data.get("prefix")
             embed = disnake.Embed(description=f"{info} The prefix for this server is `{prefix}`.", color=colors.embed_color)
@@ -247,6 +250,9 @@ class Events(commands.Cog):
         
         data_obj = GuildData(message.guild)
         guild_data = data_obj.get_data()
+
+        if message.id in self.bot.moderated_messages:
+            return
         
         chat_bot_channel = guild_data.get("chat_bot_channel")
         
@@ -286,7 +292,9 @@ class Events(commands.Cog):
         data_obj = GuildData(message.guild)
         data = data_obj.get_data()
         
-        if not data["leveling_toggle"]:
+        if message.id in self.bot.moderated_messages:
+            return
+        elif not data["leveling_toggle"]:
             return
         elif message.content.startswith(data["prefix"]):
             return

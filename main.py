@@ -116,6 +116,7 @@ class Bot(commands.Bot):
 
         # automod data
         self.automod_warnings = {}
+        self.moderated_messages = []
 
         # user data
         self.snipes = {}
@@ -170,32 +171,6 @@ class Bot(commands.Bot):
         data = data_obj.get_data()
 
         return data["prefix"]
-
-    async def log_automod(self, member: disnake.Member, data: dict):
-        data_obj = GuildData(member.guild)
-        data = data_obj.get_data()
-
-        automod_warning_rules = data["automod_warning_rules"]
-
-        if member.id not in self.automod_warnings:
-            self.automod_warnings[member.id] = []
-
-        if len(self.automod_warnings[member.id]) >= automod_warning_rules["warnings"]:
-            action = automod_warning_rules["action"]
-
-            if action == "mute":
-                try:
-                    await member.timeout(
-                        duration=functions.manipulate_time(
-                            time_str=automod_warning_rules["duration"],
-                            return_type="seconds",
-                        ),
-                    )
-                    
-                except disnake.errors.Forbidden:
-                    pass
-
-        self.automod_warnings[member.id].append(data)
 
 
 bot = Bot()

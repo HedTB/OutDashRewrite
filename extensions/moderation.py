@@ -757,14 +757,16 @@ class Moderation(commands.Cog):
         if not channel or channel and channel == inter.channel:
             channel = inter.channel
             deleted = await channel.purge(limit=amount)
+            deleted = len(deleted)
             
             embed.description += f"Deleted {deleted} messsages." if not deleted == 1 else f"{yes} Deleted {deleted} messsage."
             await inter.send(embed=embed, ephemeral=True)
             
         else:
             deleted = await channel.purge(limit=amount)
-            embed.description += f"Deleted {deleted} messsages in <#{channel.id}>." if deleted != 1 else f"{yes} Deleted {deleted} messsage in <#{channel.id}>."
+            deleted = len(deleted)
             
+            embed.description += f"Deleted {deleted} messsages in <#{channel.id}>." if deleted != 1 else f"{yes} Deleted {deleted} messsage in <#{channel.id}>."
             await inter.send(embed=embed)
 
 

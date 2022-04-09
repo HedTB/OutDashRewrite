@@ -73,34 +73,91 @@ def guild_data(guild_id: int):
             "content": "{member_mention} is now level **{new_level}!** :tada:"
         },
 
-        "automod_toggle": False,
-        "automod_filters": {
-            "exact": [
-                "anal", "anus", "arse", "ass",
-                "bastard", "bitch", "biatch",
-                "blowjob", "blow job", "bollock", "bollok",
-                "boner", "boob", "bugger", "bum",
-                "butt", "buttplug", "clitoris", "cock",
-                "coon", "cunt", "damn",
-                "dick", "dildo", "dyke", "fag",
-                "feck", "fellate", "fellatio", "felching",
-                "fuck", "f u c k", "fudgepacker", "fudge packer",
-                "flange", "jerk", "jizz", "knobend",
-                "knob end", "labia", "muff", "nigger",
-                "nigga", "penis", "piss", "prick",
-                "pube", "pussy", "queer", "scrotum",
-                "sex", "shit", "s hit", "sh1t",
-                "slut", "smegma", "spunk", "tit",
-                "tosser", "turd", "twat", "vagina",
-                "wank", "whore",
-            ],
-            "wildcard": []
+        "automod_toggle": {
+            "global": False,
+            "banned_words": True,
+            "fast_spam": True,
+            "text_flood": True,
+            "all_caps": False,
         },
+        
+        "automod_settings": {
+            "banned_words": {
+                "exact": [
+                    "anal", "anus", "arse", "ass",
+                    "bastard", "bitch", "biatch",
+                    "blowjob", "blow job", "bollock", "bollok",
+                    "boner", "boob", "bugger", "bum",
+                    "butt", "buttplug", "clitoris", "cock",
+                    "coon", "cunt", "damn",
+                    "dick", "dildo", "dyke", "fag",
+                    "feck", "fellate", "fellatio", "felching",
+                    "fuck", "f u c k", "fudgepacker", "fudge packer",
+                    "flange", "jerk", "jizz", "knobend",
+                    "knob end", "labia", "muff", "nigger",
+                    "nigga", "penis", "piss", "prick",
+                    "pube", "pussy", "queer", "scrotum",
+                    "sex", "shit", "s hit", "sh1t",
+                    "slut", "smegma", "spunk", "tit",
+                    "tosser", "turd", "twat", "vagina",
+                    "wank", "whore",
+                ],
+                "wildcard": []
+            },
+            
+            "caps_percentage": 65,
+        },
+        
         "automod_warning_rules": {
-            "warnings": 3,
-            "action": "mute",
-            "duration": "30m"
-        }
+            "banned_words": {
+                "warnings": 3,
+                "action": "mute",
+                "duration": "30m"
+            },
+            "all_caps": {
+                "warnings": 3,
+                "action": "mute",
+                "duration": "30m"
+            },
+            "text_flood": {
+                "warnings": 3,
+                "action": "mute",
+                "duratiom": "30m"
+            },
+            "fast_spam": {
+                "warnings": 3,
+                "action": "mute",
+                "duratiom": "2h"
+            },
+            "discord_invites": {
+                "warnings": 3,
+                "action": "mute",
+                "duratiom": "30m"
+            },
+            "links": {
+                "warnings": 3,
+                "action": "mute",
+                "duratiom": "30m"
+            },
+            "mass_mention": {
+                "warnings": 3,
+                "action": "mute",
+                "duratiom": "30m"
+            },
+            "link_cooldown": {
+                "warnings": 3,
+                "action": "mute",
+                "duratiom": "30m"
+            },
+            "image_spam": {
+                "warnings": 3,
+                "action": "mute",
+                "duratiom": "1h"
+            },
+        },
+        # "automod_rules": {
+        #     ""
+        # }
     }
 
     for log_type in log_types:
