@@ -18,12 +18,13 @@ from utils.classes import *
 
 load_dotenv()
 
-mongo_login = os.environ.get("MONGO_LOGIN")
-
-client = MongoClient(mongo_login, tlsCAFile=certifi.where())
-db = client[config.DATABASE_COLLECTION]
-
-guild_data_col = db["guild_data"]
+units = {
+    "s": 1,
+    "m": 60,
+    "h": 3600,
+    "d": 86400,
+    "w": 604800
+}
 
 ## -- FUNCTIONS -- ##
 
@@ -38,41 +39,17 @@ def generate_captcha(length: int = 8) -> str:
     
     return captcha_text
     
-def manipulate_time(time_str: str, return_type: str) -> int or str:
-    if return_type == "seconds":
-        try:
-            time = int(time_str[:-1])
-            duration = time_str[-1].lower()
-
-            if duration == "s":
-                return time
-            elif duration == "m":
-                return time * 60
-            elif duration == "h":
-                return time * 60 * 60
-            elif duration == "d":
-                return time * 60 * 60 * 24
-            else:
-                return None
-        except Exception:
-            return None
-
-    elif return_type == "duration_type":
-        duration = time_str[-1].lower()
-
-        if duration == "s":
-            return "seconds"
-        elif duration == "m":
-            return "minutes"
-        elif duration == "h":
-            return "hours"
-        elif duration == "d":
-            return "days"
-        else:
-            return "InvalidInput"
-
-    elif return_type == "time":
-        return time_str[:-1]
+def format_time(s: str) -> typing.Union[int, None]:
+    try:
+        unit = units.get(s[-1])
+        duration = float(s[:-1])
+    except:
+        unit, duration = None, None
+    
+    if not unit or not duration:
+        return None
+    
+    return int(duration * unit)
 
 def seconds_to_text(secs, max_amount: int = 6) -> str:
     secs = int(secs)
