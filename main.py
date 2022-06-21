@@ -102,7 +102,6 @@ class Bot(commands.Bot):
             strip_after_prefix=True,
             test_guilds=[config.BOT_SERVER, 746363347829784646]
             if not config.IS_SERVER else None,
-            sync_permissions=True,
             intents=disnake.Intents(
                 guilds=True,
                 members=True,
@@ -117,6 +116,7 @@ class Bot(commands.Bot):
                 guild_reactions=True,
                 guild_typing=False,
                 dm_typing=False,
+                message_content=True,
             ),
         )
 
@@ -198,7 +198,7 @@ extension_options = commands.option_enum(extension_options)
     default_permission=False,
     guild_ids=[config.BOT_SERVER],
 )
-@commands.guild_permissions(guild_id=int(config.BOT_SERVER),
+@commands.has_guild_permissions(guild_id=int(config.BOT_SERVER),
                             roles={871899070283800636: True})
 async def slash_extensions(inter):
     pass
