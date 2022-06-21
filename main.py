@@ -185,72 +185,73 @@ bot = Bot()
 
 ## -- EXTENSIONS -- ##
 
-extension_options = {}
-for extension in extensions:
-    extension_options[extension] = extension
-
-extension_options = commands.option_enum(extension_options)
-
-
-@bot.slash_command(
-    name="extensions",
-    description="Manages the bot's extensions.",
-    default_permission=False,
-    guild_ids=[config.BOT_SERVER],
-)
-@commands.has_guild_permissions(guild_id=int(config.BOT_SERVER),
-                            roles={871899070283800636: True})
-async def slash_extensions(inter):
-    pass
-
-
-@slash_extensions.sub_command(name="load",
-                              description="Load a specific extension.")
-async def load_extension(inter: disnake.ApplicationCommandInteraction,
-                         extension: extension_options):
-    await inter.send("Loading extension...", ephemeral=True)
-
-    try:
-        bot.load_extension(f"extensions.{extension}")
-    except Exception as error:
-        logger.warning(f"Failed to load extension {extension} | {error}")
-
-    await inter.edit_original_message(
-        content=f"`{extension}` has been loaded (?)")
-
-
-@slash_extensions.sub_command_group(name="reload")
-async def reload(inter):
-    pass
-
-
-@reload.sub_command(name="all", description="Reload all extensions.")
-async def reload_extensions(inter: disnake.ApplicationCommandInteraction):
-    await inter.send("Reloading all extensions...", ephemeral=True)
-
+if not config.IS_SERVER:
+    extension_options = {}
     for extension in extensions:
+        extension_options[extension] = extension
+
+    extension_options = commands.option_enum(extension_options)
+
+
+    @bot.slash_command(
+        name="extensions",
+        description="Manages the bot's extensions.",
+        default_permission=False,
+        guild_ids=[config.BOT_SERVER],
+    )
+    @commands.has_guild_permissions(guild_id=int(config.BOT_SERVER),
+                                roles={871899070283800636: True})
+    async def slash_extensions(inter):
+        pass
+
+
+    @slash_extensions.sub_command(name="load",
+                                  description="Load a specific extension.")
+    async def load_extension(inter: disnake.ApplicationCommandInteraction,
+                             extension: extension_options):
+        await inter.send("Loading extension...", ephemeral=True)
+
+        try:
+            bot.load_extension(f"extensions.{extension}")
+        except Exception as error:
+            logger.warning(f"Failed to load extension {extension} | {error}")
+
+        await inter.edit_original_message(
+            content=f"`{extension}` has been loaded (?)")
+
+
+    @slash_extensions.sub_command_group(name="reload")
+    async def reload(inter):
+        pass
+
+
+    @reload.sub_command(name="all", description="Reload all extensions.")
+    async def reload_extensions(inter: disnake.ApplicationCommandInteraction):
+        await inter.send("Reloading all extensions...", ephemeral=True)
+
+        for extension in extensions:
+            try:
+                bot.reload_extension(f"extensions.{extension}")
+            except Exception as error:
+                logger.warning(f"Failed to reload extension {extension} | {error}")
+
+        await inter.edit_original_message(
+            content=f"All extensions have been reloaded (?)")
+
+
+    @reload.sub_command(name="extension",
+                        description="Reload one specific extension.")
+    async def reload_extension(inter: disnake.ApplicationCommandInteraction,
+                               extension: extension_options):
+        await inter.send("Reloading extension...", ephemeral=True)
+
         try:
             bot.reload_extension(f"extensions.{extension}")
         except Exception as error:
             logger.warning(f"Failed to reload extension {extension} | {error}")
 
-    await inter.edit_original_message(
-        content=f"All extensions have been reloaded (?)")
-
-
-@reload.sub_command(name="extension",
-                    description="Reload one specific extension.")
-async def reload_extension(inter: disnake.ApplicationCommandInteraction,
-                           extension: extension_options):
-    await inter.send("Reloading extension...", ephemeral=True)
-
-    try:
-        bot.reload_extension(f"extensions.{extension}")
-    except Exception as error:
-        logger.warning(f"Failed to reload extension {extension} | {error}")
-
-    await inter.edit_original_message(
-        content=f"`{extension}` has been reloaded (?)")
+        await inter.edit_original_message(
+            content=f"`{extension}` has been reloaded (?)")
 
 
 ## -- RUNNING BOT -- ##
