@@ -28,8 +28,7 @@ load_dotenv()
 
 logger = logging.getLogger("OutDash")
 
-AnyContext = typing.Union[commands.Context,
-                          disnake.ApplicationCommandInteraction]
+AnyContext = typing.Union[commands.Context, disnake.ApplicationCommandInteraction]
 
 ## -- FUNCTIONS -- ##
 
@@ -37,10 +36,15 @@ AnyContext = typing.Union[commands.Context,
 def get_variables(member: disnake.Member, guild: disnake.Guild):
     return {
         # member variables
-        "{member_username}": str(member), "{member_name}": member.name, "{member_discriminator}": member.discriminator, "{member_mention}": member.mention, "{member_avatar}": member.avatar.url,
-
+        "{member_username}": str(member),
+        "{member_name}": member.name,
+        "{member_discriminator}": member.discriminator,
+        "{member_mention}": member.mention,
+        "{member_avatar}": member.avatar.url,
         # guild variables
-        "{guild_name}": guild.name, "{guild_icon}": guild.icon.url, "{guild_member_count}": guild.member_count,
+        "{guild_name}": guild.name,
+        "{guild_icon}": guild.icon.url,
+        "{guild_member_count}": guild.member_count,
     }
 
 
@@ -92,7 +96,7 @@ def insert_variables(message: dict | str, **kwargs):
 
 def xp_to_levelup(lvl: int, xp: int = 0) -> int:
     lvl -= 1
-    return 5 * (lvl ** 2) + (50 * lvl) + 100 - xp
+    return 5 * (lvl**2) + (50 * lvl) + 100 - xp
 
 
 def total_xp_for_level(lvl: int, current_total_xp: int = 0) -> int:
@@ -125,7 +129,8 @@ def add_xp(member: disnake.Member, amount: int) -> tuple[str, int | None]:
     else:
         update["xp"] = xp + amount
         logger.debug(
-            f"{member} has been given {amount} XP, they now have a total of {total_xp + amount} XP!")
+            f"{member} has been given {amount} XP, they now have a total of {total_xp + amount} XP!"
+        )
 
     member_data_obj.update_guild_data(update)
 
@@ -133,6 +138,7 @@ def add_xp(member: disnake.Member, amount: int) -> tuple[str, int | None]:
         return "level_up", level + 1
     else:
         return "xp_add", None
+
 
 ## -- COG -- ##
 
@@ -155,30 +161,23 @@ class Leveling(commands.Cog):
         data = data_obj.get_data()
         member_data = member_data_obj.get_guild_data()
 
-        raw_message = kwargs.get(
-            "raw_message", data["leveling_message"]["content"]
-        )
+        raw_message = kwargs.get("raw_message", data["leveling_message"]["content"])
 
         variables = get_variables(ctx.author, ctx.guild)
-        variables.update({
-            "{new_level}": member_data["level"],
-            "{previous_level}": member_data["level"] - 1,
-
-            "{new_xp}": member_data["xp"],
-            "{previous_xp}": member_data["xp"] - random.randint(17, 27),
-
-            "{total_xp}": member_data["total_xp"],
-        })
-
-        return insert_variables(
-            raw_message, variables=variables, member=ctx.author
+        variables.update(
+            {
+                "{new_level}": member_data["level"],
+                "{previous_level}": member_data["level"] - 1,
+                "{new_xp}": member_data["xp"],
+                "{previous_xp}": member_data["xp"] - random.randint(17, 27),
+                "{total_xp}": member_data["total_xp"],
+            }
         )
+
+        return insert_variables(raw_message, variables=variables, member=ctx.author)
 
     def generate_card(self, args: dict):
-        return disnake.File(
-            fp=rankcard.generate_card(**args),
-            filename="card.png"
-        )
+        return disnake.File(fp=rankcard.generate_card(**args), filename="card.png")
 
     ## -- TEXT COMMANDS -- ##
 
@@ -200,15 +199,16 @@ class Leveling(commands.Cog):
         level = member_data.get("level")
         xp = member_data.get("xp")
 
-        file = self.generate_card({
-            "username": ctx.author.__str__(),
-            "avatar": ctx.author.avatar.url,
-
-            "level": level,
-            "rank": 1,
-            "current_xp": xp,
-            "next_level_xp": xp_to_levelup(level + 1),
-        })
+        file = self.generate_card(
+            {
+                "username": ctx.author.__str__(),
+                "avatar": ctx.author.avatar.url,
+                "level": level,
+                "rank": 1,
+                "current_xp": xp,
+                "next_level_xp": xp_to_levelup(level + 1),
+            }
+        )
         await ctx.send(file=file)
 
     """
@@ -219,13 +219,17 @@ class Leveling(commands.Cog):
 
     @commands.command()
     @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    async def rank(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member = None):
+    async def rank(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        member: disnake.Member = None,
+    ):
         """View the rank card of a member.
         Parameters
         ----------
         member: The member to view the rank of.
         """
-        
+
         if not member:
             member = inter.author
 
@@ -235,16 +239,18 @@ class Leveling(commands.Cog):
         level = member_data.get("level")
         xp = member_data.get("xp")
 
-        file = self.generate_card({
-            "username": inter.author.__str__(),
-            "avatar": inter.author.avatar.url,
-            "level": level,
-            "rank": 1,
-            "current_xp": xp,
-            "custom_background": "#000000",
-            "xp_color": "#FF7A7A",
-            "next_level_xp": xp_to_levelup(level + 1),
-        })
+        file = self.generate_card(
+            {
+                "username": inter.author.__str__(),
+                "avatar": inter.author.avatar.url,
+                "level": level,
+                "rank": 1,
+                "current_xp": xp,
+                "custom_background": "#000000",
+                "xp_color": "#FF7A7A",
+                "next_level_xp": xp_to_levelup(level + 1),
+            }
+        )
         await inter.send(file=file)
 
     """
@@ -260,7 +266,9 @@ class Leveling(commands.Cog):
 
     @level.command(name="set")
     @is_moderator(administrator=True)
-    async def level_set(self, ctx: commands.Context, member: disnake.Member, level: int):
+    async def level_set(
+        self, ctx: commands.Context, member: disnake.Member, level: int
+    ):
         """Set the level of a member.
         Parameters
         ----------
@@ -284,20 +292,20 @@ class Leveling(commands.Cog):
         elif level < 0:
             embed = disnake.Embed(
                 description=f"{no} The member's level cannot be lower than 0.",
-                color=colors.error_embed_color
+                color=colors.error_embed_color,
             )
             return await ctx.send(embed=embed)
 
-        data_obj.update_guild_data({
-            "level": level,
-            "xp": 0,
-            "total_xp": total_xp_for_level(level)
-        })
+        data_obj.update_guild_data(
+            {"level": level, "xp": 0, "total_xp": total_xp_for_level(level)}
+        )
         await ctx.send(embed=embed)
 
     @level.command(name="add")
     @is_moderator(administrator=True)
-    async def level_add(self, ctx: commands.Context, member: disnake.Member, levels: int):
+    async def level_add(
+        self, ctx: commands.Context, member: disnake.Member, levels: int
+    ):
         """Add a specific amount of level to a member.
         Parameters
         ----------
@@ -321,7 +329,7 @@ class Leveling(commands.Cog):
 
         embed = disnake.Embed(
             description=f"{yes} {member.mention} has been given {levels} levels. They are now level {data['level']}.",
-            color=colors.success_embed_color
+            color=colors.success_embed_color,
         )
 
         data_obj.update_guild_data(data)
@@ -329,7 +337,9 @@ class Leveling(commands.Cog):
 
     @level.command(name="remove")
     @is_moderator(administrator=True)
-    async def level_remove(self, ctx: commands.Context, member: disnake.Member, levels: int):
+    async def level_remove(
+        self, ctx: commands.Context, member: disnake.Member, levels: int
+    ):
         """Remove a specific amount of levels from a member.
         Parameters
         ----------
@@ -343,7 +353,7 @@ class Leveling(commands.Cog):
         if data["level"] - levels < 0:
             embed = disnake.Embed(
                 description=f"{no} The member's level cannot be lower than 0.",
-                color=colors.error_embed_color
+                color=colors.error_embed_color,
             )
             return await ctx.send(embed=embed)
 
@@ -353,7 +363,7 @@ class Leveling(commands.Cog):
 
         embed = disnake.Embed(
             description=f"{yes} {member.mention} has had {levels} levels removed. They are now level {data['level']}.",
-            color=colors.success_embed_color
+            color=colors.success_embed_color,
         )
 
         data_obj.update_guild_data(data)
@@ -405,7 +415,7 @@ class Leveling(commands.Cog):
     @is_moderator(manage_guild=True)
     async def leveling_message(self, ctx: commands.Context):
         """View or manage the levelup message."""
-        
+
         if ctx.invoked_subcommand != None:
             return
 
@@ -475,13 +485,17 @@ class Leveling(commands.Cog):
     """
 
     @commands.slash_command(name="rank")
-    async def slash_rank(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member = None):
+    async def slash_rank(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        member: disnake.Member = None,
+    ):
         """View the rank card of a member.
         Parameters
         ----------
         member: The member to view the rank of.
         """
-        
+
         if not member:
             member = inter.author
 
@@ -491,16 +505,18 @@ class Leveling(commands.Cog):
         level = member_data.get("level")
         xp = member_data.get("xp")
 
-        file = self.generate_card({
-            "username": inter.author.__str__(),
-            "avatar": inter.author.avatar.url,
-            "level": level,
-            "rank": 1,
-            "current_xp": xp,
-            "custom_background": "#000000",
-            "xp_color": "#FF7A7A",
-            "next_level_xp": xp_to_levelup(level + 1),
-        })
+        file = self.generate_card(
+            {
+                "username": inter.author.__str__(),
+                "avatar": inter.author.avatar.url,
+                "level": level,
+                "rank": 1,
+                "current_xp": xp,
+                "custom_background": "#000000",
+                "xp_color": "#FF7A7A",
+                "next_level_xp": xp_to_levelup(level + 1),
+            }
+        )
         await inter.send(file=file)
 
     """
@@ -516,7 +532,12 @@ class Leveling(commands.Cog):
 
     @slash_level.sub_command(name="set")
     @is_moderator(administrator=True)
-    async def slash_level_set(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member, level: int):
+    async def slash_level_set(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        member: disnake.Member,
+        level: int,
+    ):
         """Set the level of a member.
         Parameters
         ----------
@@ -540,20 +561,23 @@ class Leveling(commands.Cog):
         elif level < 0:
             embed = disnake.Embed(
                 description=f"{no} The member's level cannot be lower than 0.",
-                color=colors.error_embed_color
+                color=colors.error_embed_color,
             )
             return await inter.send(embed=embed, ephemeral=True)
 
-        data_obj.update_guild_data({
-            "level": level,
-            "xp": 0,
-            "total_xp": total_xp_for_level(level)
-        })
+        data_obj.update_guild_data(
+            {"level": level, "xp": 0, "total_xp": total_xp_for_level(level)}
+        )
         await inter.send(embed=embed)
 
     @slash_level.sub_command(name="add")
     @is_moderator(administrator=True)
-    async def slash_level_add(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member, levels: int):
+    async def slash_level_add(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        member: disnake.Member,
+        levels: int,
+    ):
         """Add a specific amount of level to a member.
         Parameters
         ----------
@@ -577,7 +601,7 @@ class Leveling(commands.Cog):
 
         embed = disnake.Embed(
             description=f"{yes} {member.mention} has been given {levels} levels. They are now level {data['level']}.",
-            color=colors.success_embed_color
+            color=colors.success_embed_color,
         )
 
         data_obj.update_guild_data(data)
@@ -585,7 +609,12 @@ class Leveling(commands.Cog):
 
     @slash_level.sub_command(name="remove")
     @is_moderator(administrator=True)
-    async def slash_level_remove(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member, levels: int):
+    async def slash_level_remove(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        member: disnake.Member,
+        levels: int,
+    ):
         """Remove a specific amount of levels from a member.
         Parameters
         ----------
@@ -599,7 +628,7 @@ class Leveling(commands.Cog):
         if data["level"] - levels < 0:
             embed = disnake.Embed(
                 description=f"{no} The member's level cannot be lower than 0.",
-                color=colors.error_embed_color
+                color=colors.error_embed_color,
             )
             return await inter.send(embed=embed, ephemeral=True)
 
@@ -609,7 +638,7 @@ class Leveling(commands.Cog):
 
         embed = disnake.Embed(
             description=f"{yes} {member.mention} has had {levels} levels removed. They are now level {data['level']}.",
-            color=colors.success_embed_color
+            color=colors.success_embed_color,
         )
 
         data_obj.update_guild_data(data)
@@ -628,7 +657,9 @@ class Leveling(commands.Cog):
 
     @slash_leveling.sub_command(name="toggle")
     @is_moderator(manage_guild=True)
-    async def slash_leveling_toggle(self, inter: disnake.ApplicationCommandInteraction, toggle: bool):
+    async def slash_leveling_toggle(
+        self, inter: disnake.ApplicationCommandInteraction, toggle: bool
+    ):
         """Toggle the leveling feature.
         Parameters
         ----------
@@ -645,13 +676,17 @@ class Leveling(commands.Cog):
         await inter.send(embed=embed)
 
     @slash_leveling.sub_command_group(name="message")
-    async def slash_leveling_message(self, inter: disnake.ApplicationCommandInteraction):
+    async def slash_leveling_message(
+        self, inter: disnake.ApplicationCommandInteraction
+    ):
         """View or manage the levelup message."""
         pass
 
     @slash_leveling_message.sub_command(name="view")
     @is_moderator(manage_guild=True)
-    async def slash_leveling_message_view(self, inter: disnake.ApplicationCommandInteraction):
+    async def slash_leveling_message_view(
+        self, inter: disnake.ApplicationCommandInteraction
+    ):
         """View the current levelup message."""
 
         levelup_message = self.get_levelup_message(inter)
@@ -663,7 +698,9 @@ class Leveling(commands.Cog):
 
     @slash_leveling_message.sub_command(name="deletion")
     @is_moderator(manage_guild=True)
-    async def slash_leveling_message_deletion(self, inter: disnake.ApplicationCommandInteraction, delay: int):
+    async def slash_leveling_message_deletion(
+        self, inter: disnake.ApplicationCommandInteraction, delay: int
+    ):
         """Set the levelup message deletion delay.
         Parameters
         ----------
@@ -689,7 +726,9 @@ class Leveling(commands.Cog):
 
     @slash_leveling_message.sub_command(name="content")
     @is_moderator(manage_guild=True)
-    async def slash_leveling_message_content(self, inter: disnake.ApplicationCommandInteraction, content: str):
+    async def slash_leveling_message_content(
+        self, inter: disnake.ApplicationCommandInteraction, content: str
+    ):
         """Edit the levelup message content.
         Parameters
         ----------

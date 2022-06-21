@@ -88,7 +88,11 @@ class StatcordClient:
         """Gets the user count of the bot as accurately as it can."""
         cache_size = len(self.bot.users)
         member_count = sum(
-            [g.member_count for g in self.bot.guilds if hasattr(g, "member_count") and g.member_count is not None]
+            [
+                g.member_count
+                for g in self.bot.guilds
+                if hasattr(g, "member_count") and g.member_count is not None
+            ]
         )
 
         return max(cache_size, member_count)
@@ -103,7 +107,10 @@ class StatcordClient:
         self._active_users.add(ctx.author.id)
         self._popular_commands[ctx.command.name] += 1
 
-    async def _disnake_slash_command_ran(self, inter: "disnake.ApplicationCommandInteraction") -> None:  # type: ignore
+    # type: ignore
+    async def _disnake_slash_command_ran(
+        self, inter: "disnake.ApplicationCommandInteraction"
+    ) -> None:
         """Updates disnake slash command-related statistics."""
 
         self._command_count += 1
@@ -119,7 +126,9 @@ class StatcordClient:
             try:
                 await self.post_stats()
             except Exception as e:
-                self.logger.error(f"Statcord stat posting error:\n{self._format_traceback(e)}")
+                self.logger.error(
+                    f"Statcord stat posting error:\n{self._format_traceback(e)}"
+                )
 
             await asyncio.sleep(60)
 
@@ -145,8 +154,11 @@ class StatcordClient:
             cpu_load = str(psutil.cpu_percent())
 
             net_io_counter = psutil.net_io_counters()
-            total_net_usage = net_io_counter.bytes_sent + net_io_counter.bytes_recv  # current net usage
-            period_net_usage = str(total_net_usage - self._prev_net_usage)  # net usage to be sent
+            total_net_usage = (
+                net_io_counter.bytes_sent + net_io_counter.bytes_recv
+            )  # current net usage
+            # net usage to be sent
+            period_net_usage = str(total_net_usage - self._prev_net_usage)
             self._prev_net_usage = total_net_usage  # update previous net usage counter
         else:
             mem_used = "0"
@@ -163,7 +175,10 @@ class StatcordClient:
             "users": str(self._get_user_count()),  # user count
             "commands": str(self._command_count),  # command count
             "active": list(self._active_users),
-            "popular": [{"name": k, "count": v} for k, v in self._popular_commands.items()],  # active commands
+            # active commands
+            "popular": [
+                {"name": k, "count": v} for k, v in self._popular_commands.items()
+            ],
             "memactive": mem_used,
             "memload": mem_load,
             "cpuload": cpu_load,
@@ -185,15 +200,22 @@ class StatcordClient:
         self._active_users = set()
 
         # actually send the post request
-        resp = await self._aiohttp_ses.post(url=STAT_ENDPOINT, json=data, headers=HEADERS)
-        resp2 = await self._aiohttp_ses.post(url=f"https://statcord.com/bot/{self.bot.user.id}/clearcache", headers={
-            "cookie": f"connect.sid=s%3A7g9VQBYdQgvgyKSSsVq2uIZY7e2D8Toa.lYSN0MMxOLrCffnM%2Foym4bfL0DLogLfPv3uGnjxAIow; _gid=GA1.2.642864976.1647789734; _ga=GA1.2.572428963.1646068094; _gat_gtag_UA_170926897_1=1; _ga_JT5NSL8623=GS1.1.1647789733.4.1.1647789810.0; _gat_gtag_UA_170926897_1=1; _ga_JT5NSL8623=GS1.1.1646072266.3.1.1646073702.0"
-        })
+        resp = await self._aiohttp_ses.post(
+            url=STAT_ENDPOINT, json=data, headers=HEADERS
+        )
+        resp2 = await self._aiohttp_ses.post(
+            url=f"https://statcord.com/bot/{self.bot.user.id}/clearcache",
+            headers={
+                "cookie": f"connect.sid=s%3A7g9VQBYdQgvgyKSSsVq2uIZY7e2D8Toa.lYSN0MMxOLrCffnM%2Foym4bfL0DLogLfPv3uGnjxAIow; _gid=GA1.2.642864976.1647789734; _ga=GA1.2.572428963.1646068094; _gat_gtag_UA_170926897_1=1; _ga_JT5NSL8623=GS1.1.1647789733.4.1.1647789810.0; _gat_gtag_UA_170926897_1=1; _ga_JT5NSL8623=GS1.1.1646072266.3.1.1646073702.0"
+            },
+        )
 
         # handle server response
         if (resp.status or resp2.status) == 429:
             self.logger.warning("Statcord is ratelimiting us.")
         elif (resp.status or resp2.status) != 200:
-            raise Exception(f"Statcord server response status was not 200 OK (Was {resp.status}):\n{await resp.text()}")
+            raise Exception(
+                f"Statcord server response status was not 200 OK (Was {resp.status}):\n{await resp.text()}"
+            )
         else:
             self.logger.debug("Successfully posted stats to Statcord.")

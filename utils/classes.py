@@ -2,9 +2,6 @@
 
 import datetime
 import json
-import re
-from sys import stdout
-import sys
 import typing
 import disnake
 import os
@@ -14,7 +11,6 @@ import requests
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from uuid import uuid4
-from motor.motor_asyncio import AsyncIOMotorClient
 from types import NoneType
 
 from utils.webhooks import *
@@ -29,34 +25,39 @@ load_dotenv()
 _client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
 _db = _client[config.DATABASE_COLLECTION]
 
-_motor_client = AsyncIOMotorClient(
-    os.environ.get("MONGO_LOGIN"),
-    zlibCompressionLevel=7,
-    compressors="xlib"
-)
-_motor_db = _motor_client.get_database(config.DATABASE_COLLECTION)
-
 _guild_data_col = _db["guild_data"]
 _user_data_col = _db["user_data"]
 _access_codes_col = _db["access_codes"]
 _api_data_col = _db["api_data"]
 _warns_col = _db["warns"]
 
-_motor_guild_data_col = _motor_db.get_collection("guild_data")
-
 _log_types = [
     # messages
-    "message_delete", "message_edit", "message_bulk_delete",
+    "message_delete",
+    "message_edit",
+    "message_bulk_delete",
     # members
-    "member_join", "member_remove", "member_update", "member_ban", "member_unban", "user_update",
+    "member_join",
+    "member_remove",
+    "member_update",
+    "member_ban",
+    "member_unban",
+    "user_update",
     # channels
-    "guild_channel_create", "guild_channel_delete", "guild_channel_update",
+    "guild_channel_create",
+    "guild_channel_delete",
+    "guild_channel_update",
     # roles
-    "guild_role_create", "guild_role_delete", "guild_role_update",
+    "guild_role_create",
+    "guild_role_delete",
+    "guild_role_update",
     # voice channels
-    "voice_channel_join", "voice_channel_leave",
+    "voice_channel_join",
+    "voice_channel_leave",
     # guild
-    "guild_update", "guild_emojis_update", "guild_stickers_update",
+    "guild_update",
+    "guild_emojis_update",
+    "guild_stickers_update",
 ]
 
 # API VARIABLES
@@ -64,7 +65,9 @@ BASE_DISCORD_URL = "https://discordapp.com/api/v9{}"
 DATA_REFRESH_DELAY = 180
 
 request_headers = {
-    "Authorization": "Bot {}".format(os.environ.get("BOT_TOKEN" if config.IS_SERVER else "TEST_BOT_TOKEN")),
+    "Authorization": "Bot {}".format(
+        os.environ.get("BOT_TOKEN" if config.IS_SERVER else "TEST_BOT_TOKEN")
+    ),
     "User-Agent": "OutDash (https://outdash.ga, v0.1)",
     "Content-Type": "application/json",
 }
@@ -72,14 +75,15 @@ request_headers = {
 ## -- FUNCTIONS -- ##
 
 
-def reconcicle_dict(base: dict, current: dict) -> typing.Dict[str,
-    str | int | dict | list | bool | NoneType
-]:
+def reconcicle_dict(
+    base: dict, current: dict
+) -> typing.Dict[str, str | int | dict | list | bool | NoneType]:
     data = {**base, **current}
 
     for key in data:
         value = data[key]
-        
+        base_value = base.get(key)
+
         try:
             int(key)
             continue
@@ -89,42 +93,49 @@ def reconcicle_dict(base: dict, current: dict) -> typing.Dict[str,
         if isinstance(key, str) and key.startswith("_"):
             continue
 
-        if not type(value) == type(base[key]):
-            data[key] = base[key]
+        if base_value != None and type(value) != type(base_value):
+            data[key] = base_value
         elif isinstance(value, dict):
-            data[key] = reconcicle_dict(base[key], value)
+            data[key] = reconcicle_dict(base_value, value)
 
     return data
 
 
 def clean_dict(base: dict, current: dict) -> typing.Dict[str, str]:
     data = {}
-    
+
     for key in current:
         try:
             int(key)
             data[key] = current[key]
         except:
             pass
-        
+
         if not key in base:
             continue
         if isinstance(current[key], dict):
             current[key] = clean_dict(base[key], current[key])
-            
+
         data[key] = current[key]
 
     return data
 
 
-def load_json(data: dict) -> typing.Dict[str, str | int | dict | list | bool | NoneType]:
+def load_json(
+    data: dict,
+) -> typing.Dict[str, str | int | dict | list | bool | NoneType]:
     for key in data:
         value = data[key]
 
         if type(value) != str:
             continue
 
-        elif value.startswith("{") and value.endswith("}") or value.startswith("[") and value.endswith("]"):
+        elif (
+            value.startswith("{")
+            and value.endswith("}")
+            or value.startswith("[")
+            and value.endswith("]")
+        ):
             try:
                 data[key] = json.loads(value)
             except:
@@ -144,6 +155,7 @@ def to_json(data: dict) -> typing.Dict[str, str | int]:
 
     return data
 
+
 ## -- CLASSES -- ##
 
 # EXCEPTIONS
@@ -151,17 +163,21 @@ def to_json(data: dict) -> typing.Dict[str, str | int]:
 
 class InvalidLogType(Exception):
     """Raised if the passed log type is an invalid log type."""
+
     pass
 
 
 class InvalidAccessCode(Exception):
     """Raised if the passed access code is invalid"""
+
     pass
 
 
 class RequestFailed(Exception):
     """Raised if a HTTP request failed"""
+
     pass
+
 
 # DATABASE CLASSES
 
@@ -273,16 +289,22 @@ class WarnsData(_DatabaseObjectBase):
 
         return member_warnings
 
-    def add_warning(self, member: disnake.Member, moderator: disnake.Member, reason: str):
+    def add_warning(
+        self, member: disnake.Member, moderator: disnake.Member, reason: str
+    ):
         warning_id = str(uuid4())
         member_warnings = self.get_member_warnings(member)
 
-        member_warnings.update({warning_id: {
-            "reason": reason,
-            "moderator": moderator.id,
-            "time": str(datetime.datetime.utcnow()),
-            "id": warning_id
-        }})
+        member_warnings.update(
+            {
+                warning_id: {
+                    "reason": reason,
+                    "moderator": moderator.id,
+                    "time": str(datetime.datetime.utcnow()),
+                    "id": warning_id,
+                }
+            }
+        )
         self.update_warnings(member, member_warnings)
 
     def remove_warning(self, member: disnake.Member, warning_id: str):
@@ -322,8 +344,7 @@ class MemberData(_DatabaseObjectBase):
         if not data.get(str(self.guild.id)) and can_update:
             insert_data = member_data(self.user.id, self.guild.id)
 
-            self.update_data(
-                {str(self.guild.id): insert_data.get(str(self.guild.id))})
+            self.update_data({str(self.guild.id): insert_data.get(str(self.guild.id))})
             return self.get_guild_data(can_update, reconcicle)
 
         return data.get(str(self.guild.id))
@@ -334,10 +355,11 @@ class MemberData(_DatabaseObjectBase):
         guild_data.update(data)
         self.update_data({str(self.guild.id): json.dumps(guild_data)})
 
+
 # UTIL CLASSES
 
 
-class LoggingWebhook():
+class LoggingWebhook:
     def __init__(self, avatar: disnake.Asset, guild: disnake.Guild, log_type: str):
         self._data_obj = GuildData(guild)
 
@@ -388,7 +410,11 @@ class BotObject(_DatabaseObjectBase):
         last_refresh = data.get("last_refresh")
         guilds_cache = data.get("guilds")
 
-        if not (guilds_cache or last_refresh) or len(guilds_cache) == 0 or time.time() - last_refresh > DATA_REFRESH_DELAY:
+        if (
+            not (guilds_cache or last_refresh)
+            or len(guilds_cache) == 0
+            or time.time() - last_refresh > DATA_REFRESH_DELAY
+        ):
             guilds = self.request("/users/@me/guilds")
             guilds_dict = guilds.json()
 
@@ -407,7 +433,7 @@ class BotObject(_DatabaseObjectBase):
         return requests.get(
             url=BASE_DISCORD_URL.format(endpoint),
             headers=request_headers,
-            params=params
+            params=params,
         )
 
     def get_token_from_code(self, access_code: str):
@@ -417,7 +443,12 @@ class BotObject(_DatabaseObjectBase):
             for key in authorization:
                 value = authorization[key]
 
-                if value.startswith("{") and value.endswith("}") or value.startswith("[") and value.endswith("]"):
+                if (
+                    value.startswith("{")
+                    and value.endswith("}")
+                    or value.startswith("[")
+                    and value.endswith("]")
+                ):
                     try:
                         authorization[key] = json.loads(value)
                     except:
@@ -454,7 +485,8 @@ class UserObject(_DatabaseObjectBase):
         user = json.loads(result["user"])
 
         self._insert_data = user_api_data(
-            access_token, refresh_token, self._access_code, user)
+            access_token, refresh_token, self._access_code, user
+        )
 
     def request(self, endpoint, params=None) -> requests.Response:
         access_token = BotObject().get_token_from_code(self._access_code)
@@ -463,9 +495,9 @@ class UserObject(_DatabaseObjectBase):
             url=BASE_DISCORD_URL.format(endpoint),
             headers={
                 "Authorization": "Bearer " + access_token,
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
-            params=params
+            params=params,
         )
 
     def get_guilds(self) -> dict:
@@ -474,7 +506,12 @@ class UserObject(_DatabaseObjectBase):
         guilds_cache = data.get("guilds")
         last_refresh = data.get("last_refresh")
 
-        if not guilds_cache or not last_refresh or len(guilds_cache) == 0 or time.time() - last_refresh > DATA_REFRESH_DELAY:
+        if (
+            not guilds_cache
+            or not last_refresh
+            or len(guilds_cache) == 0
+            or time.time() - last_refresh > DATA_REFRESH_DELAY
+        ):
             user_result = self.request("/users/@me/guilds")
             user_guilds = user_result.json()
 

@@ -27,17 +27,20 @@ guild_data_col = db["guild_data"]
 
 ## -- FUNCTIONS -- ##
 
+
 def generate_captcha(length: int = 8) -> str:
     image = ImageCaptcha(width=300, height=90)
-    captcha_text = ''.join(
+    captcha_text = "".join(
         random.SystemRandom().choice(string.ascii_uppercase + string.digits)
-        for _ in range(length))
+        for _ in range(length)
+    )
 
     image.generate(captcha_text)
     image.write(captcha_text, f"{captcha_text}.png")
-    
+
     return captcha_text
-    
+
+
 def manipulate_time(time_str: str, return_type: str) -> int or str:
     if return_type == "seconds":
         try:
@@ -74,6 +77,7 @@ def manipulate_time(time_str: str, return_type: str) -> int or str:
     elif return_type == "time":
         return time_str[:-1]
 
+
 def seconds_to_text(secs, max_amount: int = 6) -> str:
     secs = int(secs)
 
@@ -96,7 +100,7 @@ def seconds_to_text(secs, max_amount: int = 6) -> str:
         "days": days,
         "hours": hours,
         "minutes": minutes,
-        "seconds": seconds
+        "seconds": seconds,
     }
 
     units = {i: units[i] for i in units if units[i]}
@@ -107,10 +111,12 @@ def seconds_to_text(secs, max_amount: int = 6) -> str:
     if len(units) == 0:
         string = "0 seconds"
     else:
-        string = ", ".join([
-            f'{units[i]} {i[:-1] if units[i] == 1 and i[-1] == "s" else i}'
-            for i in units
-        ])
+        string = ", ".join(
+            [
+                f'{units[i]} {i[:-1] if units[i] == 1 and i[-1] == "s" else i}'
+                for i in units
+            ]
+        )
 
         split_string = string.split(", ")
         for i in split_string[:]:
@@ -121,9 +127,10 @@ def seconds_to_text(secs, max_amount: int = 6) -> str:
 
         if len(units) > 1:  # replace last , with and
             index = string2.rfind(",")
-            string2 = string2[:index] + " and" + string2[index + 1:]
+            string2 = string2[:index] + " and" + string2[index + 1 :]
 
     return string2
+
 
 def is_role_above_role(role1: disnake.Role, role2: disnake.Role) -> bool:
     if role1.id == role2.id:
@@ -133,26 +140,36 @@ def is_role_above_role(role1: disnake.Role, role2: disnake.Role) -> bool:
     elif role2.position > role1.position:
         return False
 
-def log_moderation(guild: disnake.Guild, moderator: disnake.Member, action: str, reason: str = "No reason provided."):
+
+def log_moderation(
+    guild: disnake.Guild,
+    moderator: disnake.Member,
+    action: str,
+    reason: str = "No reason provided.",
+):
     data_obj = GuildData(guild)
     data = data_obj.get_data()
-        
+
     try:
         json.loads(data.get("moderation_logs"))
     except:
         return
-    
+
     mod_logs = json.loads(data.get("moderation_logs"))
-    
-    mod_logs.append({ moderator: moderator, action: action, reason: reason })
-    data_obj.update_data({ "moderation_logs": mod_logs })
+
+    mod_logs.append({moderator: moderator, action: action, reason: reason})
+    data_obj.update_data({"moderation_logs": mod_logs})
+
 
 def abbriviate_number(number: int):
     number = float("{:.3g}".format(number))
     magnitude = 0
-    
+
     while abs(number) >= 1000:
         magnitude += 1
         number /= 1000.0
-        
-    return "{}{}".format("{:f}".format(number).rstrip("0").rstrip("."), ["", "K", "M", "B", "T"][magnitude])
+
+    return "{}{}".format(
+        "{:f}".format(number).rstrip("0").rstrip("."),
+        ["", "K", "M", "B", "T", "QA", "QI", "SX"][magnitude],
+    )

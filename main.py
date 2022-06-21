@@ -15,7 +15,6 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 from threading import Thread
 
-
 # FILES
 
 from utils import config, functions, colors
@@ -23,7 +22,6 @@ from utils.checks import *
 from utils.classes import *
 
 from app import run_api
-
 
 ## -- VARIABLES -- ##
 
@@ -45,16 +43,22 @@ api_key = os.environ.get("API_KEY")
 
 # EXTENSIONS
 extensions = [
-    "events.events", "events.logging", "events.errors", "events.automod", "utils.loops",
-    "developer_commands", "settings",
-    "leveling", "fun", "miscellaneous", "help",
-
-    "moderation", "music",
+    "events.events",
+    "events.logging",
+    "events.errors",
+    "events.automod",
+    "utils.loops",
+    "developer_commands",
+    "settings",
+    "leveling",
+    "fun",
+    "miscellaneous",
+    "help",
+    "moderation",
+    "music",
 ]
 
-test_extensions = [
-    "buttons"
-]
+test_extensions = ["buttons"]
 
 ## -- FUNCTIONS -- ##
 
@@ -84,30 +88,36 @@ async def load_extensions(bot: commands.Bot):
 
 # BOT
 class Bot(commands.Bot):
+
     def __init__(self, *args, **kwargs):
         super().__init__(
             command_prefix=get_prefix,
             case_insensitive=True,
             status=disnake.Status.idle,
-
             activity=disnake.Game(name="booting up.."),
             owner_id=config.OWNERS[0],
             reconnect=True,
-
             reload=config.IS_SERVER,
             max_messages=10000,
             strip_after_prefix=True,
-
-            test_guilds=[config.BOT_SERVER,
-                         746363347829784646] if not config.IS_SERVER else None,
+            test_guilds=[config.BOT_SERVER, 746363347829784646]
+            if not config.IS_SERVER else None,
             sync_permissions=True,
-
             intents=disnake.Intents(
-                guilds=True, members=True, bans=True, emojis=True,
-                integrations=False, webhooks=False, invites=False,
-                voice_states=True, presences=True, guild_messages=True,
-                guild_reactions=True, guild_typing=False, dm_typing=False
-            )
+                guilds=True,
+                members=True,
+                bans=True,
+                emojis=True,
+                integrations=False,
+                webhooks=False,
+                invites=False,
+                voice_states=True,
+                presences=True,
+                guild_messages=True,
+                guild_reactions=True,
+                guild_typing=False,
+                dm_typing=False,
+            ),
         )
 
         self.launch_time = datetime.datetime.utcnow()
@@ -141,15 +151,13 @@ class Bot(commands.Bot):
             embed = disnake.Embed(
                 title=f"Singed In As: {self.user.name} ({self.user.id})",
                 description=f"Bot started in `{str(len(self.guilds))}` servers, with total of `{len(self.users)}` users, on an average latency of `{round(self.latency * 1000)} ms`.",
-                color=colors.success_embed_color
+                color=colors.success_embed_color,
             )
 
             await STATUS_CHANNEL.send(embed=embed)
 
-        print(
-            f"Singed in as {self.user}."
-            f"\nStats: {len(self.guilds)} servers, {len(self.users)} users."
-        )
+        print(f"Singed in as {self.user}."
+              f"\nStats: {len(self.guilds)} servers, {len(self.users)} users.")
 
         with open("data/stats.json", "w") as file:
             json.dump({"commands_run": 0}, file)
@@ -184,17 +192,22 @@ for extension in extensions:
 extension_options = commands.option_enum(extension_options)
 
 
-@bot.slash_command(name="extensions",
-                   description="Manages the bot's extensions.",
-                   default_permission=False,
-                   guild_ids=[config.BOT_SERVER])
-@commands.guild_permissions(guild_id=int(config.BOT_SERVER), roles={871899070283800636: True})
+@bot.slash_command(
+    name="extensions",
+    description="Manages the bot's extensions.",
+    default_permission=False,
+    guild_ids=[config.BOT_SERVER],
+)
+@commands.guild_permissions(guild_id=int(config.BOT_SERVER),
+                            roles={871899070283800636: True})
 async def slash_extensions(inter):
     pass
 
 
-@slash_extensions.sub_command(name="load", description="Load a specific extension.")
-async def load_extension(inter: disnake.ApplicationCommandInteraction, extension: extension_options):
+@slash_extensions.sub_command(name="load",
+                              description="Load a specific extension.")
+async def load_extension(inter: disnake.ApplicationCommandInteraction,
+                         extension: extension_options):
     await inter.send("Loading extension...", ephemeral=True)
 
     try:
@@ -202,7 +215,8 @@ async def load_extension(inter: disnake.ApplicationCommandInteraction, extension
     except Exception as error:
         logger.warning(f"Failed to load extension {extension} | {error}")
 
-    await inter.edit_original_message(content=f"`{extension}` has been loaded (?)")
+    await inter.edit_original_message(
+        content=f"`{extension}` has been loaded (?)")
 
 
 @slash_extensions.sub_command_group(name="reload")
@@ -220,11 +234,14 @@ async def reload_extensions(inter: disnake.ApplicationCommandInteraction):
         except Exception as error:
             logger.warning(f"Failed to reload extension {extension} | {error}")
 
-    await inter.edit_original_message(content=f"All extensions have been reloaded (?)")
+    await inter.edit_original_message(
+        content=f"All extensions have been reloaded (?)")
 
 
-@reload.sub_command(name="extension", description="Reload one specific extension.")
-async def reload_extension(inter: disnake.ApplicationCommandInteraction, extension: extension_options):
+@reload.sub_command(name="extension",
+                    description="Reload one specific extension.")
+async def reload_extension(inter: disnake.ApplicationCommandInteraction,
+                           extension: extension_options):
     await inter.send("Reloading extension...", ephemeral=True)
 
     try:
@@ -232,7 +249,8 @@ async def reload_extension(inter: disnake.ApplicationCommandInteraction, extensi
     except Exception as error:
         logger.warning(f"Failed to reload extension {extension} | {error}")
 
-    await inter.edit_original_message(content=f"`{extension}` has been reloaded (?)")
+    await inter.edit_original_message(
+        content=f"`{extension}` has been reloaded (?)")
 
 
 ## -- RUNNING BOT -- ##

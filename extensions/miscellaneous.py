@@ -42,7 +42,9 @@ def get_commands_run():
     with open("data/stats.json") as file:
         return json.load(file).get("commands_run")
 
+
 ## -- COG -- ##
+
 
 class Miscellaneous(commands.Cog):
     name = f"{work} Miscellaneous"
@@ -51,14 +53,13 @@ class Miscellaneous(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        
+
     def get_uptime(self) -> tuple[int, int, int]:
         delta_uptime = datetime.datetime.utcnow() - self.bot.launch_time
         hours, remainder = divmod(int(delta_uptime.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
-        
+
         return hours, minutes, seconds
-        
 
     ## -- TEXT COMMANDS -- ##
 
@@ -73,19 +74,19 @@ class Miscellaneous(commands.Cog):
     async def info(self, ctx: commands.Context):
         """Get to know about OutDash!"""
 
-        embed = disnake.Embed(title="Information",
-                              description=info_message.format(
-                                  hedtb=self.bot.get_user(config.OWNERS[0]),
-                                  taiyangshan=self.bot.get_user(
-                                      config.OWNERS[1]),
-                                  permissions=PERMISSIONS
-                              ),
-                              color=colors.embed_color
-                              )
+        embed = disnake.Embed(
+            title="Information",
+            description=info_message.format(
+                hedtb=self.bot.get_user(config.OWNERS[0]),
+                taiyangshan=self.bot.get_user(config.OWNERS[1]),
+                permissions=PERMISSIONS,
+            ),
+            color=colors.embed_color,
+        )
 
         embed.set_footer(
             text=f"Requested by {ctx.author}",
-            icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL
+            icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL,
         )
         embed.timestamp = datetime.datetime.utcnow()
 
@@ -98,7 +99,8 @@ class Miscellaneous(commands.Cog):
         start = time.time()
 
         embed_one = disnake.Embed(
-            description="Getting all data...", color=colors.embed_color)
+            description="Getting all data...", color=colors.embed_color
+        )
         msg = await ctx.send(embed=embed_one)
 
         end = time.time()
@@ -112,18 +114,29 @@ class Miscellaneous(commands.Cog):
         embed = disnake.Embed(
             title="OutDash Stats",
             description="A list of statistics for OutDash.",
-            color=colors.embed_color
+            color=colors.embed_color,
         )
 
-        embed.add_field(name=":signal_strength: Connection",
-                        value=f"Bot Latency: `{round(self.bot.latency * 1000)} ms`\nAPI Latency: `{round(time_result * 1000)} ms`\nUptime: `{hours} hrs {minutes} mins`", inline=True)
-        embed.add_field(name=":chart_with_upwards_trend: Bot Values",
-                        value=f"Server Count: `{len(self.bot.guilds)}`\nCommands Run: `{commands_run}`\nUser Count: `{len(self.bot.users)}`", inline=True)
-        embed.add_field(name=":bar_chart: Server Values",
-                        value=f"Member Count: `{ctx.guild.member_count}`\nServer Prefix: `{self.bot.get_bot_prefix(ctx.guild)}`", inline=True)
+        embed.add_field(
+            name=":signal_strength: Connection",
+            value=f"Bot Latency: `{round(self.bot.latency * 1000)} ms`\nAPI Latency: `{round(time_result * 1000)} ms`\nUptime: `{hours} hrs {minutes} mins`",
+            inline=True,
+        )
+        embed.add_field(
+            name=":chart_with_upwards_trend: Bot Values",
+            value=f"Server Count: `{len(self.bot.guilds)}`\nCommands Run: `{commands_run}`\nUser Count: `{len(self.bot.users)}`",
+            inline=True,
+        )
+        embed.add_field(
+            name=":bar_chart: Server Values",
+            value=f"Member Count: `{ctx.guild.member_count}`\nServer Prefix: `{self.bot.get_bot_prefix(ctx.guild)}`",
+            inline=True,
+        )
 
         embed.set_footer(
-            text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL)
+            text=f"Requested by {ctx.author}",
+            icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL,
+        )
         embed.timestamp = datetime.datetime.utcnow()
 
         await msg.edit(embed=embed)
@@ -134,10 +147,7 @@ class Miscellaneous(commands.Cog):
         """Gets the latency of the bot."""
 
         start = time.time()
-        embed = disnake.Embed(
-            description="Pinging...",
-            color=colors.embed_color
-        )
+        embed = disnake.Embed(description="Pinging...", color=colors.embed_color)
         message = await ctx.send(embed=embed)
 
         end = time.time()
@@ -145,11 +155,13 @@ class Miscellaneous(commands.Cog):
 
         embed = disnake.Embed(
             description=f":hourglass: Bot Latency - **{round(self.bot.latency * 1000)}** ms\n\n:stopwatch: API Latency - **{round(time_result * 1000)}** ms",
-            color=colors.embed_color
+            color=colors.embed_color,
         )
 
         embed.set_footer(
-            text=f"Requested by {ctx.author}", icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL)
+            text=f"Requested by {ctx.author}",
+            icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL,
+        )
         embed.timestamp = datetime.datetime.utcnow()
 
         await message.edit(content="_ _", embed=embed)
@@ -169,7 +181,9 @@ class Miscellaneous(commands.Cog):
         humans = []
 
         online_members = sum(
-            i.status == (disnake.Status.online or disnake.Status.dnd or disnake.Status.idle) for i in ctx.guild.members
+            i.status
+            == (disnake.Status.online or disnake.Status.dnd or disnake.Status.idle)
+            for i in ctx.guild.members
         )
         offline_members = sum(
             i.status == disnake.Status.offline for i in ctx.guild.members
@@ -192,12 +206,12 @@ class Miscellaneous(commands.Cog):
                 {online} Online - {online_members}
                 {offline} Offline - {offline_members}
                 """,
-            color=colors.embed_color
+            color=colors.embed_color,
         )
 
         embed.set_footer(
             text=f"Requested by {ctx.author}",
-            icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL
+            icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL,
         )
         embed.timestamp = datetime.datetime.utcnow()
 
@@ -211,7 +225,11 @@ class Miscellaneous(commands.Cog):
     Miscellaneous commands around the bot.
     """
 
-    @commands.slash_command(name="info", description="Get to know about OutDash!", guild_ids=[config.BOT_SERVER])
+    @commands.slash_command(
+        name="info",
+        description="Get to know about OutDash!",
+        guild_ids=[config.BOT_SERVER],
+    )
     async def slash_info(self, inter: disnake.ApplicationCommandInteraction):
         """Get to know about OutDash!"""
 
@@ -220,28 +238,29 @@ class Miscellaneous(commands.Cog):
             description=info_message.format(
                 hedtb=self.bot.get_user(config.OWNERS[0]),
                 taiyangshan=self.bot.get_user(config.OWNERS[1]),
-                permissions=PERMISSIONS
+                permissions=PERMISSIONS,
             ),
-            color=colors.embed_color
+            color=colors.embed_color,
         )
 
         embed.set_footer(
             text=f"Requested by {inter.author}",
-            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL
+            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
         )
         embed.timestamp = datetime.datetime.utcnow()
 
         await inter.send(embed=embed)
 
-    @commands.slash_command(name="stats", description="Get to know how OutDash is doing!")
+    @commands.slash_command(
+        name="stats", description="Get to know how OutDash is doing!"
+    )
     async def slash_stats(self, inter: disnake.ApplicationCommandInteraction):
         """Get to know how OutDash is doing!"""
-        
+
         start = time.time()
 
         embed = disnake.Embed(
-            description="Getting all data...",
-            color=colors.embed_color
+            description="Getting all data...", color=colors.embed_color
         )
         await inter.send(embed=embed)
 
@@ -253,28 +272,28 @@ class Miscellaneous(commands.Cog):
         embed = disnake.Embed(
             title="OutDash Stats",
             description="A list of statistics for OutDash.",
-            color=colors.embed_color
+            color=colors.embed_color,
         )
 
         embed.add_field(
             name=":signal_strength: Connection",
             value=f"Bot Latency: `{round(self.bot.latency * 1000)} ms`\nAPI Latency: `{round(time_result * 1000)} ms`\nUptime: `{hours} hrs {minutes} mins`",
-            inline=True
+            inline=True,
         )
         embed.add_field(
             name=":chart_with_upwards_trend: Bot Values",
             value=f"Server Count: `{len(self.bot.guilds)}`\nCommands Run: `{commands_run}`\nUser Count: `{len(self.bot.users)}`",
-            inline=True
+            inline=True,
         )
         embed.add_field(
             name=":bar_chart: Server Values",
             value=f"Member Count: `{inter.guild.member_count}`\nServer Prefix: `{self.bot.get_bot_prefix(inter.guild)}`",
-            inline=True
+            inline=True,
         )
 
         embed.set_footer(
             text=f"Requested by {inter.author}",
-            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL
+            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
         )
         embed.timestamp = datetime.datetime.utcnow()
 
@@ -285,11 +304,8 @@ class Miscellaneous(commands.Cog):
         """Gets the latency of the bot."""
 
         start = time.time()
-        
-        embed = disnake.Embed(
-            description="Pinging...",
-            color=colors.embed_color
-        )
+
+        embed = disnake.Embed(description="Pinging...", color=colors.embed_color)
         await inter.send(embed=embed)
 
         end = time.time()
@@ -297,12 +313,12 @@ class Miscellaneous(commands.Cog):
 
         embed = disnake.Embed(
             description=f":hourglass: Bot Latency - **{round(self.bot.latency * 1000)}** ms\n\n:stopwatch: API Latency - **{round(time_result * 1000)}** ms",
-            color=colors.embed_color
+            color=colors.embed_color,
         )
 
         embed.set_footer(
             text=f"Requested by {inter.author}",
-            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL
+            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
         )
         embed.timestamp = datetime.datetime.utcnow()
 
@@ -314,7 +330,9 @@ class Miscellaneous(commands.Cog):
     Miscellaneous commands around guilds.
     """
 
-    @commands.slash_command(name="membercount", description="Returns your current member count!")
+    @commands.slash_command(
+        name="membercount", description="Returns your current member count!"
+    )
     async def slash_membercount(self, inter: disnake.ApplicationCommandInteraction):
         """Returns your current member count!"""
 
@@ -322,7 +340,9 @@ class Miscellaneous(commands.Cog):
         humans = []
 
         online_members = sum(
-            i.status == (disnake.Status.online or disnake.Status.dnd or disnake.Status.idle) for i in inter.guild.members
+            i.status
+            == (disnake.Status.online or disnake.Status.dnd or disnake.Status.idle)
+            for i in inter.guild.members
         )
         offline_members = sum(
             i.status == disnake.Status.offline for i in inter.guild.members
@@ -345,12 +365,12 @@ class Miscellaneous(commands.Cog):
                 {online} Online - {online_members}
                 {offline} Offline - {offline_members}
                 """,
-            color=colors.embed_color
+            color=colors.embed_color,
         )
 
         embed.set_footer(
             text=f"Requested by {inter.author}",
-            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL
+            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
         )
         embed.timestamp = datetime.datetime.utcnow()
 

@@ -4,11 +4,9 @@
 import functools
 import typing
 import disnake
-import os
-import certifi
+import re
 
 from disnake.ext import commands
-from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
@@ -24,66 +22,52 @@ load_dotenv()
 logger = logging.getLogger("OutDash")
 
 IGNORED_ERRORS = (commands.NotOwner, commands.CommandNotFound)
-ERROR_TITLE_REGEX = re.compile(r"((?<=[a-z])[A-Z]|(?<=[a-zA-Z])[A-Z](?=[a-z]))")
+ERROR_TITLE_REGEX = re.compile(
+    r"((?<=[a-z])[A-Z]|(?<=[a-zA-Z])[A-Z](?=[a-z]))")
 
 command_types = {
     "member": [
-        "softban", "unban", "ban", "kick", "unmute", "mute", "warn",
+        "softban",
+        "unban",
+        "ban",
+        "kick",
+        "unmute",
+        "mute",
+        "warn",
     ]
 }
 
 argument_descriptions = {
     # MODERATION
-    "clear": {
-        "amount": "how many messages you want to delete"
-    },
-    "slowmode": {
-        "seconds": "what the slowmode should be set to"
-    },
-    "mute": {
-        "length": "how long you want to mute the member for"
-    },
-    "warn": {
-        "reason": "the reason for the warning"
-    },
+    "clear": {"amount": "how many messages you want to delete"},
+    "slowmode": {"seconds": "what the slowmode should be set to"},
+    "mute": {"length": "how long you want to mute the member for"},
+    "warn": {"reason": "the reason for the warning"},
     "warn_remove": {
         "member": "who to remove a warning from",
-        "warning_id": "the ID of the warning to remove"
+        "warning_id": "the ID of the warning to remove",
     },
-    "warnings_clear": {
-        "member": "whose warnings to clear"
-    },
-    
+    "warnings_clear": {"member": "whose warnings to clear"},
     # BOT SETTINGS
-    "chatbot_channel": {
-        "channel": "where the chatbot should respond to messages"
-    },
+    "chatbot_channel": {"channel": "where the chatbot should respond to messages"},
     "editwelcome_content": {
         "content": "what the welcome message content should be set to"
     },
-    "setprefix": {
-        "prefix": "the new prefix"
-    },
-    
+    "setprefix": {"prefix": "the new prefix"},
     # LEVELING
-    "leveling_message_deletion": {
-        "delay": "the levelup message deletion delay"
-    },
+    "leveling_message_deletion": {"delay": "the levelup message deletion delay"},
     "leveling_message_content": {
         "content": "what the levelup message content should be set to"
     },
     "level_set": {
         "member": "whose level to set",
-        "level": "what the level should be set to"
+        "level": "what the level should be set to",
     },
-    "level_add": {
-        "member": "who to add levels to",
-        "levels": "how many levels to add"
-    },
+    "level_add": {"member": "who to add levels to", "levels": "how many levels to add"},
     "level_remove": {
         "member": "who to remove levels from",
-        "levels": "how many levels to remove"
-    }
+        "levels": "how many levels to remove",
+    },
 }
 
 typing.TYPE_CHECKING = True
@@ -94,13 +78,14 @@ if typing.TYPE_CHECKING:
 
 
 class Errors(commands.Cog):
-
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @staticmethod
     def error_embed(description: str) -> disnake.Embed:
-        return disnake.Embed(description=f"{no} {description}", color=colors.error_embed_color)
+        return disnake.Embed(
+            description=f"{no} {description}", color=colors.error_embed_color
+        )
 
     @staticmethod
     def get_argument_description(command: str, argument: str) -> typing.Optional[str]:
@@ -112,7 +97,7 @@ class Errors(commands.Cog):
             return None
 
         return command_arguments.get(argument)
-    
+
     @staticmethod
     def get_command_name(command: commands.Command) -> str:
         return command.callback.__name__
@@ -158,16 +143,23 @@ class Errors(commands.Cog):
             ctx.command.reset_cooldown(ctx)
         return return_value
 
-    async def handle_user_input_error(self, ctx: AnyContext, error: commands.UserInputError, reset_cooldown: bool = True) -> disnake.Embed:
+    async def handle_user_input_error(
+        self,
+        ctx: AnyContext,
+        error: commands.UserInputError,
+        reset_cooldown: bool = True,
+    ) -> disnake.Embed:
         if reset_cooldown:
             self._reset_command_cooldown(ctx)
-            
+
         sub_str = " is a required argument that is missing."
-        
+
         command_name = self.get_command_name(ctx.command)
         missing_argument = str(error).replace(sub_str, "")
 
-        missing_argument_description = self.get_argument_description(command_name, missing_argument)
+        missing_argument_description = self.get_argument_description(
+            command_name, missing_argument
+        )
         description = f"Please specify {missing_argument_description}."
 
         if isinstance(error, commands.BadUnionArgument):
@@ -175,9 +167,11 @@ class Errors(commands.Cog):
 
         return self.error_embed(description)
 
-    async def handle_bot_missing_perms(self, ctx: AnyContext, error: commands.BotMissingPermissions) -> disnake.Embed:
+    async def handle_bot_missing_perms(
+        self, ctx: AnyContext, error: commands.BotMissingPermissions
+    ) -> disnake.Embed:
         bot_permissions = ctx.channel.permissions_for(ctx.me)
-        
+
         if ctx.invoked_with != None:
             partial_command_name, command_type = self.get_partial_command(ctx)
 
@@ -190,11 +184,15 @@ class Errors(commands.Cog):
                     description="I don't have the required permission to run this command."
                 )
 
-        if bot_permissions >= disnake.Permissions(send_messages=True, embed_links=True, external_emojis=True):
+        if bot_permissions >= disnake.Permissions(
+            send_messages=True, embed_links=True, external_emojis=True
+        ):
             await ctx.send(embed=embed)
 
         elif bot_permissions >= disnake.Permissions(send_messages=True):
-            await ctx.send(f"{no} Please give me the `Embed Links` permission, otherwise I won't work properly.")
+            await ctx.send(
+                f"{no} Please give me the `Embed Links` permission, otherwise I won't work properly."
+            )
 
             logger.warning(
                 f"Missing partial required permissions for {ctx.channel.id}. "
@@ -203,7 +201,9 @@ class Errors(commands.Cog):
         else:
             logger.error(f"Unable to send messages to {ctx.channel}.")
 
-    async def handle_check_failure(self, ctx: AnyContext, error: commands.CheckFailure) -> typing.Optional[disnake.Embed]:
+    async def handle_check_failure(
+        self, ctx: AnyContext, error: commands.CheckFailure
+    ) -> typing.Optional[disnake.Embed]:
         description = ""
 
         if isinstance(error, commands.CheckAnyFailure):
@@ -220,12 +220,15 @@ class Errors(commands.Cog):
         elif isinstance(error, commands.MissingPermissions):
             if len(error.missing_permissions) == 1:
                 description = "You're missing the `{}` permission.".format(
-                    error.missing_permissions[0].title().replace("_", " "))
+                    error.missing_permissions[0].title().replace("_", " ")
+                )
 
             else:
                 missing_permissions = ""
                 for missing_permission in error.missing_permissions:
-                    missing_permissions += f"{missing_permission.title().replace('_', ' ')}, "
+                    missing_permissions += (
+                        f"{missing_permission.title().replace('_', ' ')}, "
+                    )
 
                 missing_permissions = missing_permissions[:-2]
                 description = f"You're missing the `{missing_permissions}` permissions."
@@ -237,10 +240,13 @@ class Errors(commands.Cog):
 
         return self.error_embed(description)
 
-    async def on_command_error(self, ctx: AnyContext, error: commands.CommandError) -> None:
+    async def on_command_error(
+        self, ctx: AnyContext, error: commands.CommandError
+    ) -> None:
         if getattr(error, "handled", False):
             logging.debug(
-                f"Command {ctx.command} had its error handled locally, ignoring.")
+                f"Command {ctx.command} had its error handled locally, ignoring."
+            )
             return
 
         if isinstance(error, IGNORED_ERRORS):
@@ -275,17 +281,19 @@ class Errors(commands.Cog):
             else:
                 logger.error(
                     "Error occurred in command or message component",
-                    exc_info=error.original
+                    exc_info=error.original,
                 )
 
                 error_str = str(error.original).replace("``", "`\u200b`")
 
-                embed = self.error_embed((
-                    "Something went wrong while trying to execute the command. "
-                    "Please report this bug, the error below and what you were trying to do in "
-                    f"the [support server](https://discord.gg/{config.BOT_SERVER})."
-                    f"\n\n``{error_str}``"
-                ))
+                embed = self.error_embed(
+                    (
+                        "Something went wrong while trying to execute the command. "
+                        "Please report this bug, the error below and what you were trying to do in "
+                        f"the [support server](https://discord.gg/{config.BOT_SERVER})."
+                        f"\n\n``{error_str}``"
+                    )
+                )
 
         if not should_respond:
             logger.debug(
@@ -325,7 +333,9 @@ class Errors(commands.Cog):
                 ),
             ):
                 ctx.command = ctx.application_command
-            elif isinstance(ctx, (disnake.MessageInteraction, disnake.ModalInteraction)):
+            elif isinstance(
+                ctx, (disnake.MessageInteraction, disnake.ModalInteraction)
+            ):
                 ctx.command = ctx.message
             else:
                 ctx.command = ctx
