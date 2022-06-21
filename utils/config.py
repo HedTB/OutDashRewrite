@@ -40,7 +40,7 @@ responses_8ball = [
     "i doubt it buddy",
     "that sounds doubtful",
     "yeahhhh no",
-    "seriously bro? no way"
+    "seriously bro? no way",
 ]
 
 tips = [

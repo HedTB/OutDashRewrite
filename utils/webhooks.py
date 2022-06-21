@@ -3,18 +3,23 @@ import logging
 
 logger = logging.getLogger("webhooks")
 
+
 class InvalidWebhook(Exception):
     """Raised if the given webhook url is invalid."""
+
     pass
 
+
 class Webhook:
-    def __init__(self,
-                 url=None,
-                 content=None,
-                 username="OutDash Logging",
-                 avatar_url=None,
-                 **kwargs
+    def __init__(
+        self,
+        url=None,
+        content=None,
+        username="OutDash Logging",
+        avatar_url=None,
+        **kwargs
     ):
+
         self.url = url
         self.content = content
         self.username = username
@@ -54,7 +59,7 @@ class Webhook:
             return response
         elif response.status_code == 404:
             raise InvalidWebhook
-        
+
         try:
             response.raise_for_status()
         except Exception as error:

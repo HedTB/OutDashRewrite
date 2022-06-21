@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from utils import config, functions, colors
 
 from utils.checks import *
+from utils.emojis import *
 
 load_dotenv()
 
@@ -35,22 +36,25 @@ user_data_col = db["user_data"]
 ## -- FUNCTIONS -- ##
 
 
-
 ## -- COG -- ##
 
+
 class ModeratorsSlash(commands.Cog):
-    
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-    
+
     @commands.slash_command(name="moderators")
     @is_moderator(manage_guild=True)
     async def slash_moderators(self, inter):
         pass
 
-    @slash_moderators.sub_command(name="add", description="Add a moderator to your server.")
+    @slash_moderators.sub_command(
+        name="add", description="Add a moderator to your server."
+    )
     @is_moderator(manage_guild=True)
-    async def slash_moderatorsadd(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member):
+    async def slash_moderatorsadd(
+        self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member
+    ):
         """Add a moderator to your server.
         Parameters
         ----------
@@ -58,37 +62,46 @@ class ModeratorsSlash(commands.Cog):
         """
 
         if member == inter.author:
-            embed = disnake.Embed(description=f"{no} You can't make yourself a moderator!", color=colors.error_embed_color)
+            embed = disnake.Embed(
+                description=f"{no} You can't make yourself a moderator!",
+                color=colors.error_embed_color,
+            )
             await inter.send(embed=embed, ephemeral=True)
             return
         elif member.bot:
-            embed = disnake.Embed(description=f"{no} You can't make a bot a moderator!", color=colors.error_embed_color)
+            embed = disnake.Embed(
+                description=f"{no} You can't make a bot a moderator!",
+                color=colors.error_embed_color,
+            )
             await inter.send(embed=embed, ephemeral=True)
             return
         elif functions.is_role_above_role(member.top_role, inter.author.top_role):
-            embed = disnake.Embed(description=f"{no} You don't have permission to make this member a moderator!", color=colors.error_embed_color)
+            embed = disnake.Embed(
+                description=f"{no} You don't have permission to make this member a moderator!",
+                color=colors.error_embed_color,
+            )
             await inter.send(embed=embed, ephemeral=True)
             return
-        
+
         data = functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
         result = guild_data_col.find_one(query)
-        
+
         if not result:
             guild_data_col.insert_one(data)
             self.slash_moderatorsadd(inter, member)
-            
+
         moderators = result.get("moderators")
 
         if not moderators:
-            moderators = {1: {
-                "id": member.id,
-                "time": str(datetime.datetime.utcnow()),
-                "moderator": inter.author.id,
-            }}
-            update = {
-                "moderators": json.dumps(moderators)
+            moderators = {
+                1: {
+                    "id": member.id,
+                    "time": str(datetime.datetime.utcnow()),
+                    "moderator": inter.author.id,
+                }
             }
+            update = {"moderators": json.dumps(moderators)}
         else:
             moderators = json.loads(moderators)
             last_moderator = int(list(moderators.keys())[-1]) or 1
@@ -96,7 +109,10 @@ class ModeratorsSlash(commands.Cog):
             for moderator in moderators:
                 moderator = moderators[moderator]
                 if int(moderator["id"]) == member.id:
-                    embed = disnake.Embed(description=f"{no} This member is already a moderator!", color=colors.error_embed_color)
+                    embed = disnake.Embed(
+                        description=f"{no} This member is already a moderator!",
+                        color=colors.error_embed_color,
+                    )
                     await inter.send(embed=embed, ephemeral=True)
                     return
 
@@ -105,33 +121,39 @@ class ModeratorsSlash(commands.Cog):
                 "time": str(datetime.datetime.utcnow()),
                 "moderator": inter.author.id,
             }
-            update = {
-                "moderators": json.dumps(moderators)
-            }
+            update = {"moderators": json.dumps(moderators)}
         guild_data_col.update_one(query, {"$set": update})
 
-        embed = disnake.Embed(description=f"{yes} **{member}** has been added as a moderator.", color=colors.success_embed_color)
+        embed = disnake.Embed(
+            description=f"{yes} **{member}** has been added as a moderator.",
+            color=colors.success_embed_color,
+        )
         await inter.send(embed=embed)
 
-
-    @slash_moderators.sub_command(name="remove", description="Remove a moderator from the server.")
+    @slash_moderators.sub_command(
+        name="remove", description="Remove a moderator from the server."
+    )
     @is_moderator(manage_guild=True)
-    async def slash_moderatorsremove(self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member):
+    async def slash_moderatorsremove(
+        self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member
+    ):
         pass
 
-    @slash_moderators.sub_command(name="view", description="View all current moderators.")
+    @slash_moderators.sub_command(
+        name="view", description="View all current moderators."
+    )
     @is_moderator(manage_guild=True)
     async def slash_moderatorsview(self, inter: disnake.ApplicationCommandInteraction):
-        """"View all current moderators."""
-        
+        """ "View all current moderators."""
+
         data = functions.get_db_data(inter.guild.id)
         query = {"guild_id": str(inter.guild.id)}
         result = guild_data_col.find_one(query)
-        
+
         if not result:
             guild_data_col.insert_one(data)
             self.slash_moderatorsview(inter)
-            
+
         moderators = result.get("moderators")
         description = ""
 
@@ -144,21 +166,38 @@ class ModeratorsSlash(commands.Cog):
 
                 moderator_user = self.bot.get_user(int(moderator["id"]))
                 added_user = self.bot.get_user(int(moderator["moderator"]))
-                description += f"**{moderator_user}** ({moderator_user.mention})" + "\n" + f"Added by {added_user} | {moderator['time'][:16]} UTC\n\n"
+                description += (
+                    f"**{moderator_user}** ({moderator_user.mention})"
+                    + "\n"
+                    + f"Added by {added_user} | {moderator['time'][:16]} UTC\n\n"
+                )
 
-        embed = disnake.Embed(title=f"Moderators for {inter.guild.name}", description=description, color=colors.embed_color)
+        embed = disnake.Embed(
+            title=f"Moderators for {inter.guild.name}",
+            description=description,
+            color=colors.embed_color,
+        )
 
-        embed.set_footer(text=f"Requested by {inter.author}", icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL)
+        embed.set_footer(
+            text=f"Requested by {inter.author}",
+            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+        )
         await inter.send(embed=embed)
 
-
-        
     @slash_moderators.error
-    async def slash_moderators_error(self, inter: disnake.ApplicationCommandInteraction, error):
+    async def slash_moderators_error(
+        self, inter: disnake.ApplicationCommandInteraction, error
+    ):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=no, permission=error.missing_permissions[0].title().replace("_", " ")), color=colors.error_embed_color)
+            embed = disnake.Embed(
+                description="{emoji} You're missing the `{permission}` permission.".format(
+                    emoji=no,
+                    permission=error.missing_permissions[0].title().replace("_", " "),
+                ),
+                color=colors.error_embed_color,
+            )
             await inter.response.send_message(embed=embed, ephemeral=True)
-        
-    
+
+
 def setup(bot):
     bot.add_cog(ModeratorsSlash(bot))

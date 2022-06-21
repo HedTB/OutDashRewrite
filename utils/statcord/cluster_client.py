@@ -7,7 +7,9 @@ STAT_ENDPOINT = "https://api.statcord.com/v3/clusters"
 
 
 class StatcordClusterClient(StatcordClient):
-    def __init__(self, bot, statcord_key: str, cluster_id: str, resource_stats: bool = True) -> None:
+    def __init__(
+        self, bot, statcord_key: str, cluster_id: str, resource_stats: bool = True
+    ) -> None:
         super().__init__(bot, statcord_key, resource_stats=resource_stats)
         self.cluster_id = cluster_id
 
@@ -24,8 +26,11 @@ class StatcordClusterClient(StatcordClient):
             cpu_load = str(psutil.cpu_percent())
 
             net_io_counter = psutil.net_io_counters()
-            total_net_usage = net_io_counter.bytes_sent + net_io_counter.bytes_recv  # current net usage
-            period_net_usage = str(total_net_usage - self._prev_net_usage)  # net usage to be sent
+            total_net_usage = (
+                net_io_counter.bytes_sent + net_io_counter.bytes_recv
+            )  # current net usage
+            # net usage to be sent
+            period_net_usage = str(total_net_usage - self._prev_net_usage)
             self._prev_net_usage = total_net_usage  # update previous net usage counter
         else:
             mem_used = "0"
@@ -43,7 +48,10 @@ class StatcordClusterClient(StatcordClient):
             "users": str(self._get_user_count()),  # user count
             "commands": str(self._command_count),  # command count
             "active": list(self._active_users),
-            "popular": [{"name": k, "count": v} for k, v in self._popular_commands.items()],  # active commands
+            # active commands
+            "popular": [
+                {"name": k, "count": v} for k, v in self._popular_commands.items()
+            ],
             "memactive": mem_used,
             "memload": mem_load,
             "cpuload": cpu_load,
@@ -56,12 +64,16 @@ class StatcordClusterClient(StatcordClient):
         self._active_users = set()
 
         # actually send the post request
-        resp = await self._aiohttp_ses.post(url=STAT_ENDPOINT, json=data, headers=HEADERS)
+        resp = await self._aiohttp_ses.post(
+            url=STAT_ENDPOINT, json=data, headers=HEADERS
+        )
 
         # handle server response
         if resp.status == 429:
             self.logger.warning("Statcord is ratelimiting us.")
         elif resp.status != 200:
-            raise Exception(f"Statcord server response status was not 200 OK (Was {resp.status}):\n{await resp.text()}")
+            raise Exception(
+                f"Statcord server response status was not 200 OK (Was {resp.status}):\n{await resp.text()}"
+            )
         else:
             self.logger.debug("Successfully posted stats to Statcord.")

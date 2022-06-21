@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from utils import config, functions, colors
 
 from utils.checks import *
+from utils.emojis import *
 
 load_dotenv()
 
@@ -36,8 +37,8 @@ type_list = commands.option_enum({"wildcard": "wildcard", "normal": "normal"})
 
 ## -- COG -- ##
 
+
 class AutomodSlash(commands.Cog):
-    
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -52,16 +53,25 @@ class AutomodSlash(commands.Cog):
         pass
 
     @slash_filter.sub_command(name="add")
-    async def slash_filteradd(self, inter: disnake.ApplicationCommandInteraction, type: type_list, word: str):
+    async def slash_filteradd(
+        self, inter: disnake.ApplicationCommandInteraction, type: type_list, word: str
+    ):
         await inter.send("wip")
-    
 
     @slash_automod.error
-    async def slash_automod_error(self, inter: disnake.ApplicationCommandInteraction, error):
+    async def slash_automod_error(
+        self, inter: disnake.ApplicationCommandInteraction, error
+    ):
         if isinstance(error, commands.MissingPermissions):
-            embed = disnake.Embed(description="{emoji} You're missing the `{permission}` permission.".format(emoji=no, permission=error.missing_permissions[0].title().replace("_", " ")), color=colors.error_embed_color)
+            embed = disnake.Embed(
+                description="{emoji} You're missing the `{permission}` permission.".format(
+                    emoji=no,
+                    permission=error.missing_permissions[0].title().replace("_", " "),
+                ),
+                color=colors.error_embed_color,
+            )
             await inter.response.send_message(embed=embed)
-        
-    
+
+
 def setup(bot):
     bot.add_cog(AutomodSlash(bot))
