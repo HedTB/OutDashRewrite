@@ -325,9 +325,9 @@ class Events(commands.Cog):
                 text=f"Requested by {message.author}",
                 icon_url=message.author.avatar or config.DEFAULT_AVATAR_URL,
             )
-            await message.channel.send(embed=embed)
+            #await message.channel.send(embed=embed)
 
-            return
+            #return
 
             try:
                 response = requests.get(
