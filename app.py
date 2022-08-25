@@ -52,8 +52,8 @@ logger = logging.getLogger("OutDash")
 bot = BotObject()
 
 # CONSTANTS
-SERVER_URL = "http://127.0.0.1:8080" if not config.is_server else "https://outdash-beta2.herokuapp.com"
-REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.is_server else "https://outdash-beta2.herokuapp.com/callback"
+SERVER_URL = "http://127.0.0.1:8080" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com"
+REDIRECT_URI = "http://127.0.0.1:8080/callback" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com/callback"
 
 # DATABASE VARIABLES
 client = MongoClient(mongo_token, tlsCAFile=certifi.where())
