@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}" type="text/css" />
+    </head>
+
+    <body>
+      <h1 class="page-header">Login to the Developer Dashboard</h1>
+
+      <input class="password-input" type="password" autofocus placeholder="Password" autocomplete="off"></input>
+      <a href="#" class="login-button">Login</a>
+
+      <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+    </body>
+</html>
