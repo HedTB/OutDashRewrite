@@ -22,7 +22,7 @@ from uuid import uuid4
 # FILES
 from utils import config, functions, colors
 from utils.database_types import *
-from utils.classes import *
+from utils.data import *
 
 ## -- SETUP -- ##
 
@@ -34,37 +34,27 @@ load_dotenv()
 mongo_token = os.environ.get("MONGO_LOGIN")
 api_key = os.environ.get("API_KEY")
 
-bot_token = os.environ.get(
-    "BOT_TOKEN" if config.IS_SERVER else "TEST_BOT_TOKEN")
+bot_token = os.environ.get("BOT_TOKEN" if config.IS_SERVER else "TEST_BOT_TOKEN")
 bot_id = os.environ.get("BOT_ID" if config.IS_SERVER else "TEST_BOT_ID")
-bot_secret = os.environ.get(
-    "BOT_SECRET" if config.IS_SERVER else "TEST_BOT_SECRET")
+bot_secret = os.environ.get("BOT_SECRET" if config.IS_SERVER else "TEST_BOT_SECRET")
 
 # APP VARIABLES
 app = Flask(__name__)
-cors = CORS(app, resources={r"/*": {"origins": "*"}},
-            send_wildcard=True, origins="*")
+cors = CORS(app, resources={r"/*": {"origins": "*"}}, send_wildcard=True, origins="*")
 
 # APP CONFIG
 app.config["CORS_HEADERS"] = "Content-Type"
 
 # OTHER VARIABLES
-limiter = Limiter(app=app, key_func=get_remote_address,
-                  default_limits=["1/second"])
+limiter = Limiter(app=app, key_func=get_remote_address, default_limits=["1/second"])
 
 logger = logging.getLogger("OutDash")
 bot = BotObject()
 
 # CONSTANTS
-SERVER_URL = (
-    "http://127.0.0.1:8080"
-    if not config.IS_SERVER
-    else "https://outdash-beta2.herokuapp.com"
-)
+SERVER_URL = "http://127.0.0.1:8080" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com"
 REDIRECT_URI = (
-    "http://127.0.0.1:8080/callback"
-    if not config.IS_SERVER
-    else "https://outdash-beta2.herokuapp.com/callback"
+    "http://127.0.0.1:8080/callback" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com/callback"
 )
 
 # DATABASE VARIABLES
@@ -76,7 +66,6 @@ api_data_col = db["api_data"]
 access_codes_col = db["access_codes"]
 
 guild_setting_names = [
-    "prefix",
     "message_delete_logs_webhook",
     "message_edit_logs_webhook",
     "message_bulk_delete_logs_webhook",
@@ -253,15 +242,12 @@ def save_guild_settings():
 
         updated_settings[argument] = value
 
-    guild_data_col.update_one({"guild_id": guild_id}, {
-                              "$set": updated_settings})
+    guild_data_col.update_one({"guild_id": guild_id}, {"$set": updated_settings})
 
     if len(updated_settings) == 0:
         return {"message": "No settings were updated."}, 200
     else:
-        return {
-            "changed_settings": argument for argument in list(updated_settings.keys())
-        }, 200
+        return {"changed_settings": argument for argument in list(updated_settings.keys())}, 200
 
 
 @app.route("/api/get-bot-guilds", methods=["GET", "OPTIONS"])
@@ -340,10 +326,7 @@ def authorize():
         access_codes_col.delete_many({"access_token": access_token})
 
         auth_info = identify_user(access_token)
-        access_codes_col.insert_one(
-            user_api_data(access_token, refresh_token,
-                          access_code, auth_info["user"])
-        )
+        access_codes_col.insert_one(user_api_data(access_token, refresh_token, access_code, auth_info["user"]))
 
         return {"message": "You have been authorized", "access_code": access_code}, 200
 
@@ -361,9 +344,7 @@ def callback():
     params = request.args
 
     code = params.get("code")
-    response = requests.post(
-        url=f"{SERVER_URL}/api/authorize", headers={"oauth-code": code}
-    )
+    response = requests.post(url=f"{SERVER_URL}/api/authorize", headers={"oauth-code": code})
 
     return response.json(), response.status_code
 
@@ -418,9 +399,7 @@ def page_not_found(error):
 
 @app.errorhandler(500)
 def internal_server_error(error):
-    return {
-        "message": "Something went wrong while trying to process your request."
-    }, 500
+    return {"message": "Something went wrong while trying to process your request."}, 500
 
 
 ## -- START -- ##

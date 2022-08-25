@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # FILES
 from utils import config, functions, colors
 from utils.checks import *
-from utils.classes import *
+from utils.data import *
 from utils.emojis import *
 
 ## -- VARIABLES -- ##
@@ -53,7 +53,6 @@ argument_descriptions = {
     "editwelcome_content": {
         "content": "what the welcome message content should be set to"
     },
-    "setprefix": {"prefix": "the new prefix"},
     # LEVELING
     "leveling_message_deletion": {"delay": "the levelup message deletion delay"},
     "leveling_message_content": {
@@ -69,10 +68,6 @@ argument_descriptions = {
         "levels": "how many levels to remove",
     },
 }
-
-typing.TYPE_CHECKING = True
-if typing.TYPE_CHECKING:
-    AnyContext = typing.Union[commands.Context, disnake.Interaction]
 
 ## -- COG -- ##
 
@@ -109,15 +104,9 @@ class Errors(commands.Cog):
         return re.sub(ERROR_TITLE_REGEX, r" \1", error)
 
     @staticmethod
-    def get_partial_command(ctx: AnyContext) -> typing.Optional[tuple[str, str]]:
-        invoked_command = None
-        partial_command_name = None
+    def get_partial_command(inter: disnake.Interaction) -> typing.Optional[tuple[str, str]]:
+        invoked_command = inter.data.name
         command_type = None
-
-        if isinstance(ctx, disnake.ApplicationCommandInteraction):
-            invoked_command = ctx.data.name
-        elif isinstance(ctx, commands.Context):
-            invoked_command = ctx.invoked_with
 
         if not invoked_command:
             return None
@@ -138,42 +127,19 @@ class Errors(commands.Cog):
         return command_name, command_type
 
     @staticmethod
-    def _reset_command_cooldown(ctx: AnyContext):
-        if return_value := isinstance(ctx, commands.Context):
-            ctx.command.reset_cooldown(ctx)
+    def reset_command_cooldown(inter: disnake.Interaction):
+        if return_value := isinstance(inter, commands.Context):
+            inter.command.reset_cooldown(inter)
         return return_value
 
-    async def handle_user_input_error(
-        self,
-        ctx: AnyContext,
-        error: commands.UserInputError,
-        reset_cooldown: bool = True,
-    ) -> disnake.Embed:
-        if reset_cooldown:
-            self._reset_command_cooldown(ctx)
-
-        sub_str = " is a required argument that is missing."
-
-        command_name = self.get_command_name(ctx.command)
-        missing_argument = str(error).replace(sub_str, "")
-
-        missing_argument_description = self.get_argument_description(
-            command_name, missing_argument
-        )
-        description = f"Please specify {missing_argument_description}."
-
-        if isinstance(error, commands.BadUnionArgument):
-            description = self.get_title_from_name(str(error))
-
-        return self.error_embed(description)
-
     async def handle_bot_missing_perms(
-        self, ctx: AnyContext, error: commands.BotMissingPermissions
+        self, inter: disnake.Interaction, error: commands.BotMissingPermissions
     ) -> disnake.Embed:
-        bot_permissions = ctx.channel.permissions_for(ctx.me)
+        bot_permissions = inter.channel.permissions_for(inter.me)
 
-        if ctx.invoked_with != None:
-            partial_command_name, command_type = self.get_partial_command(ctx)
+        if inter.invoked_with != None:
+            partial_command_name, command_type = self.get_partial_command(
+                inter)
 
             if command_type == "member":
                 embed = self.error_embed(
@@ -187,34 +153,29 @@ class Errors(commands.Cog):
         if bot_permissions >= disnake.Permissions(
             send_messages=True, embed_links=True, external_emojis=True
         ):
-            await ctx.send(embed=embed)
+            await inter.send(embed=embed)
 
         elif bot_permissions >= disnake.Permissions(send_messages=True):
-            await ctx.send(
+            await inter.send(
                 f"{no} Please give me the `Embed Links` permission, otherwise I won't work properly."
             )
 
             logger.warning(
-                f"Missing partial required permissions for {ctx.channel.id}. "
+                f"Missing partial required permissions for {inter.channel.id}. "
                 "I am able to send messages, but not embeds."
             )
         else:
-            logger.error(f"Unable to send messages to {ctx.channel}.")
+            logger.error(f"Unable to send messages to {inter.channel}.")
 
     async def handle_check_failure(
-        self, ctx: AnyContext, error: commands.CheckFailure
+        self, inter: disnake.Interaction, error: commands.CheckFailure
     ) -> typing.Optional[disnake.Embed]:
         description = ""
 
         if isinstance(error, commands.CheckAnyFailure):
             description = self.get_title_from_name(error.checks[-1])
-        elif isinstance(error, commands.PrivateMessageOnly):
-            description = "This command can only be run in DMs."
-
-        elif isinstance(error, commands.NoPrivateMessage):
-            description = "This command can only be run in servers."
         elif isinstance(error, commands.BotMissingPermissions):
-            await self.handle_bot_missing_perms(ctx, error)
+            await self.handle_bot_missing_perms(inter, error)
             return None
 
         elif isinstance(error, commands.MissingPermissions):
@@ -235,48 +196,38 @@ class Errors(commands.Cog):
 
         elif isinstance(error, SettingsLocked):
             description = "The server's settings are locked."
+        elif isinstance(error, (NotModerator, NotAdministrator)):
+            description = "You don't have permission to do that."
         else:
             description = str(error)
 
         return self.error_embed(description)
 
     async def on_command_error(
-        self, ctx: AnyContext, error: commands.CommandError
+        self, inter: disnake.Interaction, error: commands.CommandError
     ) -> None:
         if getattr(error, "handled", False):
-            logging.debug(
-                f"Command {ctx.command} had its error handled locally, ignoring."
+            return logging.debug(
+                f"Command {inter.command} had its error handled locally, ignoring."
             )
-            return
-
-        if isinstance(error, IGNORED_ERRORS):
+        elif isinstance(error, IGNORED_ERRORS):
             return
 
         embed: typing.Optional[disnake.Embed] = None
         should_respond = True
 
-        if isinstance(error, commands.UserInputError):
-            embed = await self.handle_user_input_error(ctx, error)
-        elif isinstance(error, commands.CheckFailure):
-            embed = await self.handle_check_failure(ctx, error)
+        if isinstance(error, commands.CheckFailure):
+            embed = await self.handle_check_failure(inter, error)
             if embed is None:
                 should_respond = False
 
         elif isinstance(error, commands.ConversionError):
             error = error.original
-        elif isinstance(error, commands.DisabledCommand):
-            if ctx.command.hidden:
-                should_respond = False
-            else:
-                msg = f"Command `{ctx.invoked_with}` is disabled."
-                if reason := ctx.command.extras.get("disabled_reason", None):
-                    msg += f"\nReason: {reason}"
-                embed = self.error_embed(msg)
 
         elif isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, disnake.Forbidden):
-                logger.warn(f"Permissions error occurred in {ctx.command}.")
-                await self.handle_bot_missing_perms(ctx, error.original)
+                logger.warn(f"Permissions error occurred in {inter.command}.")
+                await self.handle_bot_missing_perms(inter, error.original)
                 should_respond = False
             else:
                 logger.error(
@@ -296,51 +247,49 @@ class Errors(commands.Cog):
                 )
 
         if not should_respond:
-            logger.debug(
+            return logger.debug(
                 "Not responding to error since should_respond is falsey because either "
                 "the embed has already been sent or belongs to a hidden command and thus should be hidden."
             )
-            return
 
         if embed is None:
             embed = self.error_embed(
-                self.get_title_from_name(error), str(error))
+                self.get_title_from_name(error),
+                str(error)
+            )
 
-        if isinstance(ctx, commands.Context):
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send(embed=embed, ephemeral=True)
+        print(inter.response.is_done())
 
-    @commands.Cog.listener(name="on_command_error")
+        if isinstance(inter, disnake.Interaction) and not inter.response.is_done():
+            await inter.send(embed=embed, ephemeral=True)
+
     @commands.Cog.listener(name="on_slash_command_error")
     @commands.Cog.listener(name="on_message_command_error")
-    async def on_error(self, ctx: AnyContext, error: Exception) -> None:
-        if isinstance(ctx, commands.Context):
-            ctx.send = functools.partial(ctx.send)
-
-        elif isinstance(ctx, disnake.Interaction):
-            if ctx.response.is_done():
-                ctx.send = functools.partial(ctx.followup.send, ephemeral=True)
+    async def on_error(self, inter: disnake.Interaction, error: Exception) -> None:
+        if isinstance(inter, disnake.Interaction):
+            if inter.response.is_done():
+                inter.send = functools.partial(
+                    inter.followup.send, ephemeral=True)
             else:
-                ctx.send = functools.partial(ctx.send, ephemeral=True)
+                inter.send = functools.partial(inter.send, ephemeral=True)
 
             if isinstance(
-                ctx,
+                inter,
                 (
-                    disnake.ApplicationCommandInteraction,
+                    disnake.Interaction,
                     disnake.MessageCommandInteraction,
                     disnake.UserCommandInteraction,
                 ),
             ):
-                ctx.command = ctx.application_command
+                inter.command = inter.application_command
             elif isinstance(
-                ctx, (disnake.MessageInteraction, disnake.ModalInteraction)
+                inter, (disnake.MessageInteraction, disnake.ModalInteraction)
             ):
-                ctx.command = ctx.message
+                inter.command = inter.message
             else:
-                ctx.command = ctx
+                inter.command = inter
         try:
-            await self.on_command_error(ctx, error)
+            await self.on_command_error(inter, error)
         except Exception as e:
             logger.exception("Error occurred in error handler", exc_info=e)
 

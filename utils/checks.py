@@ -1,3 +1,5 @@
+from utils.data import *
+from utils import config, functions, colors
 import time
 import disnake
 import os
@@ -11,14 +13,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # FILES
-from utils import config, functions, colors
 
-from utils.classes import *
 
 ## -- VARIABLES -- ##
 
-mongo_login = os.environ.get("MONGO_LOGIN")
-client = MongoClient(mongo_login, tlsCAFile=certifi.where())
+MONGO_LOGIN = os.environ.get("MONGO_LOGIN")
+client = MongoClient(MONGO_LOGIN, tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
 guild_data_col = db["guild_data"]
@@ -45,21 +45,35 @@ class SettingsLocked(commands.CheckFailure):
     pass
 
 
+class NotModerator(commands.CheckFailure):
+    """Raised if the user isn't a moderator in the guild"""
+
+    pass
+
+
+class NotAdministrator(commands.CheckFailure):
+    """Raised if the user isn't an administrator in the guild"""
+
+    pass
+
+
 ## -- FUNCTIONS -- ##
 
 
-def is_moderator(**perms):
+def is_staff(*, type: str = "moderator", **perms):
     async def predicate(ctx: commands.Context):
         data_obj = GuildData(ctx.guild)
         data = data_obj.get_data()
 
-        moderators = data.get("moderators")
+        if not data.get("staff_members"):
+            print(data)
 
-        if data and moderators:
-            moderators = moderators
+        staff_members = data.get("staff_members")
+        moderators_type = staff_members.get(type)
 
-            for moderator in moderators:
-                if int(moderators[moderator]["id"]) == ctx.author.id:
+        if data and moderators_type:
+            for moderator in moderators_type:
+                if int(moderators_type[moderator]["id"]) == ctx.author.id:
                     return True
 
         if perms:
@@ -69,7 +83,10 @@ def is_moderator(**perms):
             if result:
                 return True
 
-        raise commands.MissingPermissions(perms)
+        if type == "default":
+            raise NotModerator()
+        else:
+            raise NotAdministrator()
 
     return commands.check(predicate)
 

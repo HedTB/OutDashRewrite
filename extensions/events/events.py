@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 # FILES
 from utils import config, functions, colors
-from utils.classes import *
+from utils.data import *
 from utils.emojis import *
 
 from .. import leveling
@@ -27,8 +27,8 @@ from . import errors
 
 load_dotenv()
 
-rapid_api_key = os.environ.get("RAPID_API_KEY")
-randomstuff_key = os.environ.get("RANDOMSTUFF_KEY")
+RAPID_API_KEY = os.environ.get("RAPID_API_KEY")
+RANDOMSTUFF_KEY = os.environ.get("RANDOMSTUFF_KEY")
 
 logger = logging.getLogger("OutDash")
 
@@ -267,25 +267,19 @@ class Events(commands.Cog):
     async def on_message(self, message:	disnake.Message):
         if message.author == self.bot.user or message.author.bot or not message.guild:
             return
-
-        data_obj = GuildData(message.guild)
-        guild_data = data_obj.get_data()
-
-        if message.id in self.bot.moderated_messages:
+        elif message.id in self.bot.moderated_messages:
             return
 
         if (
             message.content == f"<@{self.bot.user.id}>"
             or message.content == f"<@!{self.bot.user.id}>"
         ):
-            prefix = guild_data.get("prefix")
-            embed = disnake.Embed(
-                description=f"{info} The prefix	for	this server	is `{prefix}`.",
-                color=colors.embed_color,
-            )
 
             try:
-                await message.channel.send(embed=embed)
+                await message.channel.send(embed=disnake.Embed(
+                    description=f"{info} The prefix	for	this server	is `/`.",
+                    color=colors.embed_color,
+                ))
             except disnake.errors.Forbidden as error:
                 await errors.Errors.handle_bot_missing_perms(
                     self=errors.Errors,
@@ -298,6 +292,15 @@ class Events(commands.Cog):
     async def chatbot_responder(self, message: disnake.Message):
         if message.author == self.bot.user or message.author.bot or not message.guild:
             return
+        elif not self.bot.chatbot_status:
+            return await message.channel.send(embed=disnake.Embed(
+                description=f"{no} The API we're using to fetch	responses is currently down. Please	try	again later.",
+                color=colors.error_embed_color,
+                timestamp=datetime.datetime.utcnow(),
+            ).set_footer(
+                text=f"Requested by {message.author}",
+                icon_url=message.author.avatar or config.DEFAULT_AVATAR_URL,
+            ))
 
         data_obj = GuildData(message.guild)
         guild_data = data_obj.get_data()
@@ -310,32 +313,18 @@ class Events(commands.Cog):
         if chat_bot_channel and message.content:
             channel = self.bot.get_channel(int(chat_bot_channel))
 
-            if message.content.startswith(guild_data.get("prefix")):
+            if not channel or message.channel != channel:
                 return
-            elif not channel or message.channel != channel:
-                return
-
-            embed = disnake.Embed(
-                description=f"{no} The API we're using to fetch	responses is currently down. Please	try	again later.",
-                color=colors.error_embed_color,
-                timestamp=datetime.datetime.utcnow(),
-            )
-
-            embed.set_footer(
-                text=f"Requested by {message.author}",
-                icon_url=message.author.avatar or config.DEFAULT_AVATAR_URL,
-            )
-            await message.channel.send(embed=embed)
-
-            return
 
             try:
+                print("Sending message to chat bot")
+
                 response = requests.get(
                     url="https://random-stuff-api.p.rapidapi.com/ai",
                     headers={
-                        "authorization": randomstuff_key,
+                        "authorization": RANDOMSTUFF_KEY,
                         "x-rapidapi-host": "random-stuff-api.p.rapidapi.com",
-                        "x-rapidapi-key": rapid_api_key,
+                        "x-rapidapi-key": RAPID_API_KEY,
                     },
                     params={
                         "msg": message.content,
@@ -350,14 +339,14 @@ class Events(commands.Cog):
                     },
                 ).json()
 
-                print(response)
-
                 await message.reply(response.get("AIResponse"))
             except Exception as error:
                 logging.warn(
                     "Error occurred	while getting/sending chatbot response | "
                     + str(error)
                 )
+                self.bot.chatbot_status = False
+
                 pass
 
     @commands.Cog.listener("on_message")
@@ -372,42 +361,36 @@ class Events(commands.Cog):
             return
         elif not data["leveling_toggle"]:
             return
-        elif message.content.startswith(data["prefix"]):
-            return
 
         try:
-            last_xp_award = self.bot.leveling_awards[message.guild.id][
-                message.author.id
-            ]
+            last_award = self.bot.leveling_awards[message.guild.id][message.author.id]
         except:
-            last_xp_award = None
+            last_award = None
 
         if (
-            not last_xp_award
-            or last_xp_award
-            and time.time() - last_xp_award["awarded_at"]
-            > last_xp_award["COOLDOWN_TIME"]
+            not last_award
+            or last_award
+            and time.time() - last_award["awarded_at"]
+            > last_award["COOLDOWN_TIME"]
         ):
             xp_amount = random.randint(17, 27)
 
-            result,	potential_level = leveling.add_xp(
+            level_up, new_level = leveling.add_xp(
                 message.author,	xp_amount if config.IS_SERVER else xp_amount * 5
             )
-            if result == "level_up":
+            if level_up == True:
                 try:
                     member_data_obj = MemberData(message.author)
                     member_data = member_data_obj.get_guild_data()
 
                     variables = get_variables(message.author, message.guild)
-                    variables.update(
-                        {
-                            "{new_level}": potential_level,
-                            "{previous_level}":	potential_level - 1,
-                            "{new_xp}":	member_data["xp"],
-                            "{previous_xp}": member_data["xp"] - xp_amount,
-                            "{total_xp}": member_data["total_xp"],
-                        }
-                    )
+                    variables.update({
+                        "{new_level}": new_level,
+                        "{previous_level}":	new_level - 1,
+                        "{new_xp}":	member_data["xp"],
+                        "{previous_xp}": member_data["xp"] - xp_amount,
+                        "{total_xp}": member_data["total_xp"],
+                    })
 
                     levelup_message = insert_variables(
                         data["leveling_message"]["content"],
@@ -420,19 +403,15 @@ class Events(commands.Cog):
                         delete_after=data["leveling_message"]["delete_after"],
                     )
 
-                except Exception as error:
-                    if isinstance(error, commands.MissingPermissions):
-                        return
-
-                    logger.warn(
-                        "Failed	sending	levelup	message	| " + str(error))
+                except Exception:
+                    pass
 
             if not self.bot.leveling_awards.get(message.guild.id):
                 self.bot.leveling_awards[message.guild.id] = {}
 
             self.bot.leveling_awards[message.guild.id][message.author.id] = {
                 "awarded_at": time.time(),
-                "COOLDOWN_TIME": 1 if not config.IS_SERVER else random.randint(55, 65),
+                "COOLDOWN_TIME": 5 if not config.IS_SERVER else random.randint(55, 65),
             }
 
     @commands.Cog.listener("on_message_delete")

@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from utils import config, functions, colors
 
 from utils.checks import *
-from utils.classes import *
+from utils.data import *
 
 ## -- VARIABLES -- ##
 

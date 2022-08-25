@@ -16,7 +16,7 @@ from typing import (
 # FILES
 from utils import config, functions, colors
 from utils.checks import *
-from utils.classes import *
+from utils.data import *
 from utils.emojis import *
 
 ## -- VARIABLES -- ##
@@ -102,7 +102,8 @@ class Automod(commands.Cog):
             return False
 
         search = re.match(
-            pattern=r"^.*(?:{}).*$".format("|".join(automod_filters["wildcard"])),
+            pattern=r"^.*(?:{}).*$".format(
+                "|".join(automod_filters["wildcard"])),
             string=ctx.message.content,
             flags=re.IGNORECASE,
         )
@@ -146,7 +147,7 @@ class Automod(commands.Cog):
 
     @commands.Cog.listener("on_message_edit")
     async def automod_edit_trigger(
-        self, before: disnake.Message, after: disnake.Message
+        self, _: disnake.Message, after: disnake.Message
     ):
         await self.automod_trigger(after)
 

@@ -25,8 +25,8 @@ load_dotenv()
 
 ## -- VARIABLES -- ##
 
-mongo_login = os.environ.get("MONGO_LOGIN")
-client = MongoClient(mongo_login, tlsCAFile=certifi.where())
+MONGO_LOGIN = os.environ.get("MONGO_LOGIN")
+client = MongoClient(MONGO_LOGIN, tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
 guild_data_col = db["guild_data"]
@@ -44,15 +44,15 @@ class ModeratorsSlash(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(name="moderators")
-    @is_moderator(manage_guild=True)
-    async def slash_moderators(self, inter):
+    @is_staff(manage_guild=True)
+    async def moderators(self, inter):
         pass
 
-    @slash_moderators.sub_command(
+    @moderators.sub_command(
         name="add", description="Add a moderator to your server."
     )
-    @is_moderator(manage_guild=True)
-    async def slash_moderatorsadd(
+    @is_staff(manage_guild=True)
+    async def moderatorsadd(
         self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member
     ):
         """Add a moderator to your server.
@@ -130,20 +130,20 @@ class ModeratorsSlash(commands.Cog):
         )
         await inter.send(embed=embed)
 
-    @slash_moderators.sub_command(
+    @moderators.sub_command(
         name="remove", description="Remove a moderator from the server."
     )
-    @is_moderator(manage_guild=True)
-    async def slash_moderatorsremove(
+    @is_staff(manage_guild=True)
+    async def moderatorsremove(
         self, inter: disnake.ApplicationCommandInteraction, member: disnake.Member
     ):
         pass
 
-    @slash_moderators.sub_command(
+    @moderators.sub_command(
         name="view", description="View all current moderators."
     )
-    @is_moderator(manage_guild=True)
-    async def slash_moderatorsview(self, inter: disnake.ApplicationCommandInteraction):
+    @is_staff(manage_guild=True)
+    async def moderatorsview(self, inter: disnake.ApplicationCommandInteraction):
         """ "View all current moderators."""
 
         data = functions.get_db_data(inter.guild.id)
@@ -184,8 +184,8 @@ class ModeratorsSlash(commands.Cog):
         )
         await inter.send(embed=embed)
 
-    @slash_moderators.error
-    async def slash_moderators_error(
+    @moderators.error
+    async def moderators_error(
         self, inter: disnake.ApplicationCommandInteraction, error
     ):
         if isinstance(error, commands.MissingPermissions):

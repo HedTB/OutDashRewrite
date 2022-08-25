@@ -12,15 +12,15 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 
 from utils import config, functions, colors
-from utils.classes import *
+from utils.data import *
 
 ## -- VARIABLES -- ##
 
 load_dotenv()
 
-mongo_login = os.environ.get("MONGO_LOGIN")
+MONGO_LOGIN = os.environ.get("MONGO_LOGIN")
 
-client = MongoClient(mongo_login, tlsCAFile=certifi.where())
+client = MongoClient(MONGO_LOGIN, tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
 guild_data_col = db["guild_data"]
@@ -30,10 +30,7 @@ guild_data_col = db["guild_data"]
 
 def generate_captcha(length: int = 8) -> str:
     image = ImageCaptcha(width=300, height=90)
-    captcha_text = "".join(
-        random.SystemRandom().choice(string.ascii_uppercase + string.digits)
-        for _ in range(length)
-    )
+    captcha_text = "".join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(length))
 
     image.generate(captcha_text)
     image.write(captcha_text, f"{captcha_text}.png")
@@ -111,25 +108,21 @@ def seconds_to_text(secs, max_amount: int = 6) -> str:
     if len(units) == 0:
         string = "0 seconds"
     else:
-        string = ", ".join(
-            [
-                f'{units[i]} {i[:-1] if units[i] == 1 and i[-1] == "s" else i}'
-                for i in units
-            ]
-        )
+        string = ", ".join([f'{units[i]} {i[:-1] if units[i] == 1 and i[-1] == "s" else i}' for i in units])
 
         split_string = string.split(", ")
         for i in split_string[:]:
             amount += 1
             if amount > max_amount:
                 split_string.remove(i)
-        string2 = ", ".join(split_string)
+
+        string = ", ".join(split_string)
 
         if len(units) > 1:  # replace last , with and
-            index = string2.rfind(",")
-            string2 = string2[:index] + " and" + string2[index + 1 :]
+            index = string.rfind(",")
+            string = string[:index] + " and" + string[index + 1 :]
 
-    return string2
+    return string
 
 
 def is_role_above_role(role1: disnake.Role, role2: disnake.Role) -> bool:

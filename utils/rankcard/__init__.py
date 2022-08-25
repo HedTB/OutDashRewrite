@@ -12,7 +12,7 @@ def _get_file_path(file_name: str):
     return os.path.join(os.path.dirname(__file__), "assets", file_name)
 
 
-card_background = _get_file_path("card.png")
+card_background = _get_file_path("out.jpg")
 statuses = {
     "online": _get_file_path("online.png"),
     "dnd": _get_file_path("dnd.png"),
@@ -61,12 +61,8 @@ def generate_card(
     mask_draw = ImageDraw.Draw(mask)
     mask_draw.ellipse((29, 29, 180, 180), fill=(255, 25, 255, 255))
 
-    source_sans_black = ImageFont.truetype(
-        _get_file_path("SourceSansPro-Black.ttf"), 1.34
-    )
-    source_sans_bold = ImageFont.truetype(
-        _get_file_path("SourceSansPro-Bold.ttf"), 0.93
-    )
+    source_sans_black = ImageFont.truetype(_get_file_path("SourceSansPro-Black.ttf"), 1.34)
+    source_sans_bold = ImageFont.truetype(_get_file_path("SourceSansPro-Bold.ttf"), 0.93)
     fredoka_one = ImageFont.truetype(_get_file_path("FredokaOne-Regular.ttf"), 0.8)
 
     draw = ImageDraw.Draw(card)

@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from utils import config, functions, colors
 
 from utils.checks import *
-from utils.classes import *
+from utils.data import *
 from utils.emojis import *
 
 ## -- VARIABLES -- ##
@@ -30,10 +30,11 @@ categories = {
     "members": {
         "member_join": "Member join",
         "member_remove": "Member leave",
-        "member_update": "Member update",
-        "user_update": "User update",
+        "member_kick": "Member kick",
         "member_ban": "Member ban",
         "member_unban": "Member unban",
+        "member_roles_update": "Member roles update",
+        "member_update": "Member update",
     },
     "channels": {
         "guild_channel_delete": "Channel deletion",
@@ -90,9 +91,11 @@ type_list = commands.option_enum(
         "Message edit": "message_edit",
         "Member join": "member_join",
         "Member leave": "member_remove",
-        "User update": "user_update",
+        "Member kick": "member_kick",
         "Member ban": "member_ban",
         "Member unban": "member_unban",
+        "Member roles update": "member_roles_update",
+        "Member update": "member_update",
         "Channel creation": "guild_channel_create",
         "Channel deletion": "guild_channel_delete",
         "Channel update": "guild_channel_update",
@@ -106,10 +109,12 @@ type_list = commands.option_enum(
 )
 category_list = commands.option_enum(
     {
-        "messages": "messages",
-        "members": "members",
-        "channels": "channels",
-        "server": "guild",
+        # "All": "all",
+        "Messages": "messages",
+        "Members": "members",
+        "Channels": "channels",
+        "Roles": "roles",
+        "Server": "guild",
     }
 )
 
@@ -137,15 +142,15 @@ def get_embed_update(current_embed: dict, embed_part: str, value: str):
     return current_embed
 
 
-async def get_update_dictionary(
-    bot, category_name: str, channel: disnake.TextChannel | None
-) -> dict:
+async def get_update_dictionary(bot, category_name: str, channel: disnake.TextChannel | None) -> dict:
     category = categories.get(category_name)
     dictionary = dict()
 
+    if channel:
+        webhook = await get_webhook(bot, channel)
+
     for log_type in category:
         if channel:
-            webhook = await get_webhook(bot, channel)
             dictionary.update({log_type: {"url": webhook.url, "toggle": True}})
         else:
             dictionary.update({log_type: {"url": None, "toggle": False}})
@@ -155,18 +160,16 @@ async def get_update_dictionary(
 
 async def get_webhook(
     bot: commands.Bot, channel: disnake.TextChannel, can_create: bool = True
-) -> disnake.Webhook:
+) -> disnake.Webhook | None:
     webhooks = await channel.webhooks()
+    webhook = disnake.utils.get(webhooks, name=f"{bot.user.name} Logging")
 
-    for webhook in webhooks:
-        if webhook.name == f"{bot.user.name} Logging":
-            return webhook
+    if webhook:
+        return webhook
+    elif can_create:
+        return await channel.create_webhook(name=f"{bot.user.name} Logging", avatar=bot.avatar)
 
-    if can_create:
-        return await channel.create_webhook(
-            name=f"{bot.user.name} Logging", avatar=bot.avatar
-        )
-    return
+    return None
 
 
 ## -- COG -- ##
@@ -180,417 +183,6 @@ class Settings(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    ## -- TEXT COMMANDS -- ##
-
-    """
-    ! SETTING LOCKING
-    
-    These commands locks/unlocks the settings for the server.
-    """
-
-    @commands.group(name="settings")
-    async def settings(self, ctx: commands.Context):
-        if ctx.invoked_subcommand == self.settings or None:
-            return
-
-    @settings.command()
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @commands.has_permissions(administrator=True)
-    async def lock(self, ctx: commands.Context):
-        """Locks the server's settings."""
-
-        data_obj = GuildData(ctx.guild)
-        data = data_obj.get_data()
-
-        if data["settings_locked"]:
-            embed = disnake.Embed(
-                description=f"{no} The server's settings are already locked!",
-                color=colors.error_embed_color,
-            )
-            return await ctx.send(embed=embed)
-
-        embed = disnake.Embed(
-            description=f"{yes} The server's settings are now locked.",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update_data({"settings_locked": "false"})
-        await ctx.send(embed=embed)
-
-    @settings.command()
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @commands.has_permissions(administrator=True)
-    async def unlock(self, ctx: commands.Context):
-        """Unlocks the server's settings."""
-
-        data_obj = GuildData(ctx.guild)
-        data = data_obj.get_data()
-
-        if not data["settings_locked"]:
-            embed = disnake.Embed(
-                description=f"{no} The server's settings aren't locked!",
-                color=colors.error_embed_color,
-            )
-            return await ctx.send(embed=embed)
-
-        embed = disnake.Embed(
-            description=f"{yes} The server's settings are now unlocked.",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update_data({"settings_locked": "true"})
-        await ctx.send(embed=embed)
-
-    """
-    ! SERVER SETTINGS
-    
-    These commands changes the way OutDash behaves in servers.
-    """
-
-    @commands.command(aliases=["changeprefix", "prefix"])
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def setprefix(self, ctx: commands.Context, new_prefix: str):
-        """Changes the server prefix."""
-
-        data_obj = GuildData(ctx.guild)
-        guild_data = data_obj.get_data()
-
-        if guild_data["prefix"] == new_prefix:
-            embed = disnake.Embed(
-                description=f"{no} The prefix is already set to `{new_prefix}`.",
-                color=colors.error_embed_color,
-            )
-            return await ctx.send(embed=embed)
-
-        embed = disnake.Embed(
-            description=f"{yes} Changed the prefix to `{new_prefix}` successfully.",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update_data({"prefix": new_prefix})
-        await ctx.send(embed=embed)
-
-    """
-    ! WELCOME/GOODBYE SETTINGS
-    
-    These commands manages the welcome/goodbye features
-    """
-
-    @commands.group(name="editwelcome")
-    async def editwelcome(self, ctx: commands.Context):
-        if ctx.invoked_subcommand == self.editwelcome or None:
-            return
-
-    @editwelcome.command(name="toggle")
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editwelcome_toggle(self, ctx: commands.Context, toggle: str):
-        """Toggles if welcome messages should be sent."""
-
-        data_obj = GuildData(ctx.guild)
-
-        if toggle.lower() == "on" or toggle.lower() == "true":
-            update = {"welcome_toggle": "true"}
-            embed = disnake.Embed(
-                description=f"{yes} Welcome messages have been enabled.",
-                color=colors.success_embed_color,
-            )
-
-        elif toggle.lower() == "off" or toggle.lower() == "false":
-            update = {"welcome_toggle": "false"}
-            embed = disnake.Embed(
-                description=f"{yes} Welcome messages have been disabled.",
-                color=colors.success_embed_color,
-            )
-        else:
-            embed = disnake.Embed(
-                description=f"{no} Please give a valid toggle value!\nToggles:\n```on, true - welcome messages enabled\noff, false - welcome messages disabled```",
-                color=colors.error_embed_color,
-            )
-
-        data_obj.update_data(update)
-        await ctx.send(embed=embed)
-
-    @editwelcome.command(name="content")
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editwelcome_content(self, ctx: commands.Context, *, content: str):
-        """Edit the welcome message content."""
-
-        data_obj = GuildData(ctx.guild)
-        data = data_obj.get_data()
-
-        welcome_message = data["welcome_message"]
-        welcome_message["content"] = content
-
-        embed = disnake.Embed(
-            description=f"{yes} The welcome message content has been set to:\n`{content}`",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update_data({"welcome_message": welcome_message})
-        await ctx.send(embed=embed)
-
-    @editwelcome.command(name="embed")
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editwelcome_embed(
-        self, ctx: commands.Context, embed_part: str, *, value: str
-    ):
-        """Edit the welcome message embed."""
-
-        embed_part = embed_part.lower()
-        data_obj = GuildData(ctx.guild)
-        data = data_obj.get_data()
-
-        embed_update = get_embed_update(
-            current_embed=data["welcome_message"]["embed"],
-            embed_part=embed_part,
-            value=value,
-        )
-        data["welcome_message"]["embed"] = embed_update
-
-        if not embed_part in embed_values:
-            embed = disnake.Embed(
-                description=f"{no} Please specify a valid part of the embed!\nEmbed parts:\n```{', '.join(e for e in embed_values)}```",
-                color=colors.error_embed_color,
-            )
-            return await ctx.send(embed=embed)
-
-        embed = disnake.Embed(description=f"{yes} ", color=colors.success_embed_color)
-
-        if embed_part.startswith("author") or embed_part.startswith("footer"):
-            top_part = embed_part[0:6]
-            sub_part = embed_part[:7]
-
-            embed.description += (
-                f"The {top_part} {sub_part} has been changed to `{value}`"
-            )
-        else:
-            embed.description += f"The {embed_part} has been changed to `{value}`"
-
-        data_obj.update_data({"welcome_message": data})
-        await ctx.send(embed=embed)
-
-    @editwelcome.command(name="channel")
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editwelcome_channel(
-        self, ctx: commands.Context, channel: disnake.TextChannel
-    ):
-        """Set the channel where welcome messages should be sent."""
-
-        data_obj = GuildData(ctx.guild)
-        embed_part = embed_part.lower()
-
-        embed = disnake.Embed(
-            description=f"{yes} Welcome messages will now be sent in <#{channel.id}>.",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update_data({"welcome_channel": channel.id, "welcome_toggle": True})
-        await ctx.send(embed=embed)
-
-    @editwelcome.command(name="trigger")
-    @commands.cooldown(1, 10, commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    async def editwelcome_trigger(self, ctx: commands.Context):
-        """Trigger the welcome message for testing."""
-
-        data_obj = GuildData(ctx.guild)
-        data = data_obj.get_data()
-
-        if not data["welcome_toggle"]:
-            embed = disnake.Embed(
-                description=f"{no} Welcome messages have been disabled for this guild.",
-                color=colors.error_embed_color,
-            )
-            return await ctx.send(embed=embed)
-
-        await self.bot.dispatch(
-            "welcome_member", ctx.author, kwargs={"channel": ctx.channel}
-        )
-
-    """
-    ! LOGS SETTINGS
-    
-    These commands changes how OutDash logs events in servers.
-    """
-
-    @commands.group(name="editlogs", aliases=["editlogging"])
-    async def editlogs(self, ctx: commands.Context):
-        if not ctx.invoked_subcommand:
-            return
-
-    @editlogs.command(name="channel")
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editlogs_channel(
-        self, ctx: commands.Context, log_type: str, channel: disnake.TextChannel = None
-    ):
-        """Edit the log channels, AKA where the logs will be sent."""
-
-        data_obj = GuildData(ctx.guild)
-        log_type, log_description = find_log_type(type.lower())
-
-        webhook = await get_webhook(self.bot, channel)
-        embed = disnake.Embed(
-            description=f"{yes} {log_description} logs will now be sent in {channel.mention}.",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update_data({str(log_type): str(webhook.url)})
-        await ctx.send(embed=embed)
-
-    @editlogs.command(name="category")
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def editlogs_category(
-        self, ctx: commands.Context, category: str, channel: disnake.TextChannel = None
-    ):
-        """Edit log categories, changing channel for each log type in the category."""
-
-        data_obj = GuildData(ctx.guild)
-
-        if not categories[category.lower()]:
-            embed = disnake.Embed(
-                description=f"{no} Please provide a valid category!\nCategories:\n```messages, members, channels, roles, guild```",
-                color=colors.error_embed_color,
-            )
-            await ctx.send(embed=embed)
-        if not channel:
-            update_dict = await get_update_dictionary(category, "None")
-            embed = disnake.Embed(
-                description=f"{yes} All {category.lower()[:-1]} logs have been disabled",
-                color=colors.success_embed_color,
-            )
-
-        update_dict = await get_update_dictionary(category, str(channel.id))
-        embed = disnake.Embed(
-            description=f"{yes} All {category.lower()[:-1]} logs will now be sent in {channel.mention}.",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update_data(update_dict)
-        await ctx.send(embed=embed)
-
-    """
-    ! CHATBOT SETTINGS
-    
-    These settings manages the chatbot feature.
-    """
-
-    @commands.group(name="chatbot")
-    async def chatbot(self, ctx: commands.Context):
-        if ctx.invoked_subcommand == self.chatbot or None:
-            return
-
-    @chatbot.command(name="channel")
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def chatbot_channel(
-        self, ctx: commands.Context, channel: disnake.TextChannel
-    ):
-        """Set where the chat bot should respond to messages."""
-
-        data_obj = GuildData(ctx.guild)
-        embed = disnake.Embed(
-            description=f"{yes} The chat bot will now respond to messages in {channel.mention}.",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update_data({"chat_bot_channel": channel.id, "chat_bot_toggle": True})
-        await ctx.send(embed=embed)
-
-    @chatbot.command(name="enable")
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def chatbot_enable(self, ctx: commands.Context):
-        """Enable the chat bot feature."""
-
-        data_obj = GuildData(ctx.guild)
-        data = data_obj.get_data()
-
-        embed = disnake.Embed(
-            description=f"{yes} The chat bot feature has been enabled.",
-            color=colors.success_embed_color,
-        )
-
-        if data["chat_bot_toggle"] == True:
-            embed = disnake.Embed(
-                description=f"{no} The chat bot feature is already enabled!",
-                color=colors.error_embed_color,
-            )
-        else:
-            data_obj.update_data({"chat_bot_toggle": True})
-
-        await ctx.send(embed=embed)
-
-    @chatbot.command(name="disable")
-    @commands.cooldown(1, config.COOLDOWN_TIME, commands.BucketType.member)
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def chatbot_disable(self, ctx: commands.Context):
-        """Disable the chat bot feature."""
-
-        data_obj = GuildData(ctx.guild)
-        data = data_obj.get_data()
-
-        embed = disnake.Embed(
-            description=f"{yes} The chat bot feature has been disabled.",
-            color=colors.success_embed_color,
-        )
-
-        if data["chat_bot_toggle"] == False:
-            embed = disnake.Embed(
-                description=f"{no} The chat bot feature is already disabled!",
-                color=colors.error_embed_color,
-            )
-        else:
-            data_obj.update_data({"chat_bot_toggle": False})
-
-        await ctx.send(embed=embed)
-
-    """
-    ! USER SETTINGS
-    
-    These settings manages user's settings.
-    """
-
-    @commands.group(name="privacy")
-    async def privacy(self, inter):
-        """Manage your privacy settings."""
-        pass
-
-    @privacy.command(name="messages")
-    async def privacy_messages(self, ctx: commands.Context, type: str, toggle: bool):
-        """Edit your message privacy settings."""
-
-        if not type in message_settings_description:
-            embed = disnake.Embed(
-                description=f"{no} Please provide a valid privacy setting."
-                f"\nTo view all privacy settings, run `{self.bot.get_bot_prefix(ctx.guild)}privacy settings`.",
-                color=colors.error_embed_color,
-            )
-            return await ctx.send(embed=embed)
-
-        data_obj = UserData(ctx.author)
-        embed = disnake.Embed(
-            description=f"{yes} The {message_settings_description[type]} privacy setting has been {'enabled' if toggle else 'disabled'}.",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update({"message_content_privacy": str(toggle).lower()})
-        await ctx.send(embed=embed)
-
     ## -- SLASH COMMANDS -- ##
 
     """
@@ -601,11 +193,11 @@ class Settings(commands.Cog):
 
     @commands.slash_command(name="settings")
     @commands.has_permissions(administrator=True)
-    async def slash_settings(self, inter):
+    async def settings(self, inter):
         pass
 
-    @slash_settings.sub_command(name="lock", description="Locks the server's settings.")
-    async def slash_settings_lock(self, inter: disnake.ApplicationCommandInteraction):
+    @settings.sub_command(name="lock", description="Locks the server's settings.")
+    async def settings_lock(self, inter: disnake.ApplicationCommandInteraction):
         """Locks the server's settings."""
 
         data_obj = GuildData(inter.guild)
@@ -626,10 +218,8 @@ class Settings(commands.Cog):
         data_obj.update_data({"settings_locked": True})
         await inter.send(embed=embed)
 
-    @slash_settings.sub_command(
-        name="unlock", description="Unlocks the server's settings."
-    )
-    async def slash_settings_unlock(self, inter: disnake.ApplicationCommandInteraction):
+    @settings.sub_command(name="unlock", description="Unlocks the server's settings.")
+    async def settings_unlock(self, inter: disnake.ApplicationCommandInteraction):
         """Unlocks the server's settings."""
 
         data_obj = GuildData(inter.guild)
@@ -656,38 +246,6 @@ class Settings(commands.Cog):
     These commands changes the way OutDash behaves in servers.
     """
 
-    @commands.slash_command(
-        name="setprefix", description="Change the prefix for text commands."
-    )
-    @is_moderator(manage_guild=True)
-    @server_setting()
-    async def slash_setprefix(
-        self, inter: disnake.ApplicationCommandInteraction, new_prefix: str
-    ):
-        """Change the prefix for text commands.
-        Parameters
-        ----------
-        new_prefix: What you want your new prefix to be.
-        """
-
-        data_obj = GuildData(inter.guild)
-        guild_data = data_obj.get_data()
-
-        if guild_data.get("prefix") == new_prefix:
-            embed = disnake.Embed(
-                description=f"{no} The prefix is already set to `{new_prefix}`.",
-                color=colors.error_embed_color,
-            )
-            return await inter.send(embed=embed, ephemeral=True)
-
-        embed = disnake.Embed(
-            description=f"{yes} Changed the prefix to `{new_prefix}` successfully.",
-            color=colors.success_embed_color,
-        )
-
-        data_obj.update_data({"prefix": new_prefix})
-        await inter.send(embed=embed)
-
     """
     ! LOGS SETTINGS
     
@@ -695,20 +253,20 @@ class Settings(commands.Cog):
     """
 
     @commands.slash_command(name="logs")
-    async def slash_logs(self, inter):
+    async def logs(self, inter):
         pass
 
-    @slash_logs.sub_command_group(name="edit")
-    async def slash_logs_edit(self, inter):
+    @logs.sub_command_group(name="edit")
+    async def logs_edit(self, inter):
         pass
 
-    @slash_logs_edit.sub_command(
+    @logs_edit.sub_command(
         name="category",
         description="Edit log categories, changing channel for each log type in the category.",
     )
-    @is_moderator(manage_guild=True)
+    @is_staff(manage_guild=True)
     @server_setting()
-    async def slash_edit_logs_category(
+    async def edit_logs_category(
         self,
         inter: disnake.ApplicationCommandInteraction,
         category: category_list,
@@ -722,28 +280,24 @@ class Settings(commands.Cog):
         """
 
         data_obj = GuildData(inter.guild)
+        embed = disnake.Embed(
+            description=f"{yes} All {category.lower()[:-1]} logs have been disabled",
+            color=colors.success_embed_color,
+        )
+
         if not channel:
             update = await get_update_dictionary(self.bot, category, None)
-            embed = disnake.Embed(
-                description=f"{yes} All {category.lower()[:-1]} logs have been disabled",
-                color=colors.success_embed_color,
-            )
         else:
-            update = await get_update_dictionary(self.bot, category, str(channel.id))
-            embed = disnake.Embed(
-                description=f"{yes} All {category.lower()[:-1]} logs will now be sent in {channel.mention}.",
-                color=colors.success_embed_color,
-            )
+            update = await get_update_dictionary(self.bot, category, channel)
+            embed.description = f"{yes} All {category.lower()[:-1]} logs will now be sent in {channel.mention}."
 
         data_obj.update_log_webhooks(update)
         await inter.send(embed=embed)
 
-    @slash_logs_edit.sub_command(
-        name="channel", description="Change where a log type should be sent."
-    )
-    @is_moderator(manage_guild=True)
+    @logs_edit.sub_command(name="channel", description="Change where a log type should be sent.")
+    @is_staff(manage_guild=True)
     @server_setting()
-    async def slash_edit_logs_channel(
+    async def edit_logs_channel(
         self,
         inter: disnake.ApplicationCommandInteraction,
         type: type_list,
@@ -784,15 +338,13 @@ class Settings(commands.Cog):
     """
 
     @commands.slash_command(name="editwelcome")
-    async def slash_editwelcome(self, inter: disnake.ApplicationCommandInteraction):
+    async def editwelcome(self, inter: disnake.ApplicationCommandInteraction):
         pass
 
-    @slash_editwelcome.sub_command(name="toggle")
-    @is_moderator(manage_guild=True)
+    @editwelcome.sub_command(name="toggle")
+    @is_staff(manage_guild=True)
     @server_setting()
-    async def slash_editwelcome_toggle(
-        self, inter: disnake.ApplicationCommandInteraction, toggle: bool
-    ):
+    async def editwelcome_toggle(self, inter: disnake.ApplicationCommandInteraction, toggle: bool):
         """Toggles if welcome messages should be sent."""
 
         data_obj = GuildData(inter.guild)
@@ -804,12 +356,10 @@ class Settings(commands.Cog):
         data_obj.update_data({"welcome_toggle": toggle})
         await inter.send(embed=embed)
 
-    @slash_editwelcome.sub_command(name="content")
-    @is_moderator(manage_guild=True)
+    @editwelcome.sub_command(name="content")
+    @is_staff(manage_guild=True)
     @server_setting()
-    async def slash_editwelcome_content(
-        self, inter: disnake.ApplicationCommandInteraction, *, content: str
-    ):
+    async def editwelcome_content(self, inter: disnake.ApplicationCommandInteraction, *, content: str):
         """Edit the welcome message content."""
 
         data_obj = GuildData(inter.guild)
@@ -826,10 +376,10 @@ class Settings(commands.Cog):
         data_obj.update_data({"welcome_message": welcome_message})
         await inter.send(embed=embed)
 
-    @slash_editwelcome.sub_command(name="embed")
-    @is_moderator(manage_guild=True)
+    @editwelcome.sub_command(name="embed")
+    @is_staff(manage_guild=True)
     @server_setting()
-    async def slash_editwelcome_embed(
+    async def editwelcome_embed(
         self,
         inter: disnake.ApplicationCommandInteraction,
         embed_part: embed_parts_choices,
@@ -842,9 +392,7 @@ class Settings(commands.Cog):
         data_obj = GuildData(inter.guild)
         data = data_obj.get_data()
 
-        embed_update = get_embed_update(
-            data["welcome_message"]["embed"], embed_part, value
-        )
+        embed_update = get_embed_update(data["welcome_message"]["embed"], embed_part, value)
         data["welcome_message"]["embed"] = embed_update
 
         embed = disnake.Embed(description=f"{yes} ", color=colors.success_embed_color)
@@ -853,21 +401,17 @@ class Settings(commands.Cog):
             top_part = embed_part[0:6]
             sub_part = embed_part[:7]
 
-            embed.description += (
-                f"The {top_part} {sub_part} has been changed to `{value}`"
-            )
+            embed.description += f"The {top_part} {sub_part} has been changed to `{value}`"
         else:
             embed.description += f"The {embed_part} has been changed to `{value}`"
 
         data_obj.update_data({"welcome_message": data})
         await inter.send(embed=embed)
 
-    @slash_editwelcome.sub_command(name="channel")
-    @is_moderator(manage_guild=True)
+    @editwelcome.sub_command(name="channel")
+    @is_staff(manage_guild=True)
     @server_setting()
-    async def slash_editwelcome_channel(
-        self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel
-    ):
+    async def editwelcome_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel):
         """Set the channel where welcome messages should be sent."""
 
         data_obj = GuildData(inter.guild)
@@ -878,15 +422,11 @@ class Settings(commands.Cog):
             color=colors.success_embed_color,
         )
 
-        data_obj.update_data(
-            {"welcome_channel": str(channel.id), "welcome_toggle": True}
-        )
+        data_obj.update_data({"welcome_channel": str(channel.id), "welcome_toggle": True})
         await inter.send(embed=embed)
 
-    @slash_editwelcome.sub_command(
-        name="trigger", description="Trigger the welcome message for testing."
-    )
-    @is_moderator(manage_guild=True)
+    @editwelcome.sub_command(name="trigger", description="Trigger the welcome message for testing.")
+    @is_staff(manage_guild=True)
     async def editwelcome_trigger(self, inter: disnake.ApplicationCommandInteraction):
         """Trigger the welcome message for testing."""
 
@@ -900,9 +440,7 @@ class Settings(commands.Cog):
             )
             return await inter.send(embed=embed)
 
-        await self.bot.dispatch(
-            "welcome_member", inter.author, kwargs={"channel": inter.channel}
-        )
+        await self.bot.dispatch("welcome_member", inter.author, kwargs={"channel": inter.channel})
         await inter.send("The welcome message has been triggered.", ephemeral=True)
 
     """
@@ -912,17 +450,13 @@ class Settings(commands.Cog):
     """
 
     @commands.slash_command(name="chatbot")
-    async def slash_chatbot(self, inter):
+    async def chatbot(self, inter):
         pass
 
-    @slash_chatbot.sub_command(
-        name="channel", description="Set where the chat bot should respond to messages."
-    )
-    @is_moderator(manage_guild=True)
+    @chatbot.sub_command(name="channel", description="Set where the chat bot should respond to messages.")
+    @is_staff(manage_guild=True)
     @server_setting()
-    async def slash_chatbot_channel(
-        self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel
-    ):
+    async def chatbot_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel):
         """Set where the chat bot should respond to messages.
         Parameters
         ----------
@@ -935,18 +469,14 @@ class Settings(commands.Cog):
             description=f"{yes} The chat bot will now respond to messages in {channel.mention}.",
             color=colors.success_embed_color,
         )
-        
+
         data_obj.update_data({"chat_bot_channel": channel.id, "chat_bot_toggle": True})
         await inter.send(embed=embed)
 
-    @slash_chatbot.sub_command(
-        name="toggle", description="Toggle the chat bot feature."
-    )
-    @is_moderator(manage_guild=True)
+    @chatbot.sub_command(name="toggle", description="Toggle the chat bot feature.")
+    @is_staff(manage_guild=True)
     @server_setting()
-    async def slash_chatbot_toggle(
-        self, inter: disnake.ApplicationCommandInteraction, toggle: bool
-    ):
+    async def chatbot_toggle(self, inter: disnake.ApplicationCommandInteraction, toggle: bool):
         """Toggle the chat bot feature.
         Parameters
         ----------
@@ -957,17 +487,13 @@ class Settings(commands.Cog):
         data = data_obj.get_data()
 
         embed = disnake.Embed(
-            description=f"{yes} The chat bot feature has been " + "enabled"
-            if toggle
-            else "disabled" + ".",
+            description=f"{yes} The chat bot feature has been " + "enabled" if toggle else "disabled" + ".",
             color=colors.success_embed_color,
         )
 
         if data["chat_bot_toggle"] == toggle:
             embed = disnake.Embed(
-                description=f"{no} The chat bot feature is already " + "enabled"
-                if toggle
-                else "disabled" + "!",
+                description=f"{no} The chat bot feature is already " + "enabled" if toggle else "disabled" + "!",
                 color=colors.error_embed_color,
             )
         else:
@@ -982,14 +508,12 @@ class Settings(commands.Cog):
     """
 
     @commands.slash_command(name="privacy", description="Manage your privacy settings.")
-    async def slash_privacy(self, inter):
+    async def privacy(self, inter):
         """Manage your privacy settings."""
         pass
 
-    @slash_privacy.sub_command(
-        name="messages", description="Edit you message privacy settings."
-    )
-    async def slash_privacymessages(
+    @privacy.sub_command(name="messages", description="Edit you message privacy settings.")
+    async def privacymessages(
         self,
         inter: disnake.ApplicationCommandInteraction,
         type: message_settings_types,

@@ -15,10 +15,11 @@ log_types = [
     # members
     "member_join",
     "member_remove",
-    "member_update",
+    "member_kick",
     "member_ban",
     "member_unban",
-    "user_update",
+    "member_roles_update",
+    "member_update",
     # channels
     "guild_channel_create",
     "guild_channel_delete",
@@ -42,13 +43,19 @@ log_types = [
 def guild_data(guild_id: int):
     data = {
         "guild_id": guild_id,
-        "prefix": "?",
         "settings_locked": False,
         "chat_bot_channel": None,
         "chat_bot_toggle": False,
+
+        "staff_members": {
+            "moderator": [],
+            "administator": [],
+        },
+
         "webhooks": {},
         "captcha_verification": False,
         "captcha_verification_length": 8,
+
         "welcome_channel": None,
         "welcome_toggle": False,
         "welcome_message": {
@@ -72,11 +79,13 @@ def guild_data(guild_id: int):
             },
             "content": "{member_mention}",
         },
+
         "leveling_toggle": True,
         "leveling_message": {
             "delete_after": None,
             "content": "{member_mention} is now level **{new_level}!** :tada:",
         },
+
         "automod_toggle": {
             "global": False,
             "banned_words": True,
@@ -128,13 +137,13 @@ def guild_data(guild_id: int):
         "automod_warning_rules": {
             "banned_words": {"warnings": 3, "action": "mute", "duration": "30m"},
             "all_caps": {"warnings": 3, "action": "mute", "duration": "30m"},
-            "text_flood": {"warnings": 3, "action": "mute", "duratiom": "30m"},
-            "fast_spam": {"warnings": 3, "action": "mute", "duratiom": "2h"},
-            "discord_invites": {"warnings": 3, "action": "mute", "duratiom": "30m"},
-            "links": {"warnings": 3, "action": "mute", "duratiom": "30m"},
-            "mass_mention": {"warnings": 3, "action": "mute", "duratiom": "30m"},
-            "link_cooldown": {"warnings": 3, "action": "mute", "duratiom": "30m"},
-            "image_spam": {"warnings": 3, "action": "mute", "duratiom": "1h"},
+            "text_flood": {"warnings": 3, "action": "mute", "duration": "30m"},
+            "fast_spam": {"warnings": 3, "action": "mute", "duration": "2h"},
+            "discord_invites": {"warnings": 3, "action": "mute", "duration": "30m"},
+            "links": {"warnings": 3, "action": "mute", "duration": "30m"},
+            "mass_mention": {"warnings": 3, "action": "mute", "duration": "30m"},
+            "link_cooldown": {"warnings": 3, "action": "mute", "duration": "30m"},
+            "image_spam": {"warnings": 3, "action": "mute", "duration": "1h"},
         },
         # "automod_rules": {
         #     ""
@@ -171,7 +180,22 @@ def member_data(member_id: int, guild_id: int):
         "user_id": member_id,
         "timezone": "Europe/Belfast",
         "message_content_privacy": False,
+
         str(guild_id): json.dumps({"level": 0, "xp": 0, "total_xp": 0}),
+    }
+
+
+def youtube_channels_data(guild_id: int):
+    return {
+        "guild_id": guild_id,
+        "channels": [],
+    }
+
+
+def youtube_channel_data(channel_id: str):
+    return {
+        "channel_id": channel_id,
+        "posted_videos": [],
     }
 
 

@@ -3,11 +3,9 @@
 # MODULES
 import disnake
 import os
-import certifi
 import requests
 
 from disnake.ext import commands, tasks
-from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
@@ -20,14 +18,10 @@ from utils.statcord import StatcordClient
 
 load_dotenv()
 
-mongo_login = os.environ.get("MONGO_LOGIN")
-google_api_key = os.environ.get("GOOGLE_API_KEY")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 statcord_api_key = os.environ.get("STATCORD_API_KEY")
 
-client = MongoClient(mongo_login, tlsCAFile=certifi.where())
-db = client[config.DATABASE_COLLECTION]
-
-youtube_uploads_col = db["youtube_uploads"]
+logger = logging.getLogger("OutDash")
 
 ## -- COG -- ##
 
@@ -36,8 +30,7 @@ class Loops(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.statcord_client = StatcordClient(
-            bot, statcord_api_key, self.custom_graph_1
-        )
+            bot, statcord_api_key, lambda: 1 + 2 + 3)
 
         self.presence_loop.start()
         self.youtube_upload_loop.start()
@@ -48,69 +41,65 @@ class Loops(commands.Cog):
         self.presence_loop.stop()
         self.youtube_upload_loop.stop()
 
-    async def custom_graph_1(self):
-        return 1 + 2 + 3
-
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=1)
     async def youtube_upload_loop(self):
-        for document in youtube_uploads_col.find():
-            channels = [document.get("channel1"), document.get("channel2")]
-            query = {"guild_id": document["guild_id"]}
+        await self.bot.wait_until_ready()
 
-            for channel_index, channel in enumerate(channels):
-                channel_index += 1
+        for document in get_all_documents("youtube_data"):
+            youtubeData = YouTubeData(document.get("guild_id"))
+            channels = youtubeData.get_youtube_channels()
 
-                if not channel:
-                    continue
+            for index, channel in enumerate(channels):
+                index += 1
 
-                published_videos = document.get(str(channel_index) + "_videos")
+                channel_id = channel.get("channel_id")
+                posted_videos: list = channel.get("posted_videos")
                 ping_channel = self.bot.get_channel(config.MESSAGES_CHANNEL)
 
-                str_list = channel.split("/")
-                channel_id = str_list[-1]
-
                 response = requests.get(
-                    f"https://youtube.googleapis.com/youtube/v3/channels?part=contentDetails&id={channel_id}&key={google_api_key}"
+                    f"https://youtube.googleapis.com/youtube/v3/channels?part=contentDetails&id={channel_id}&key={GOOGLE_API_KEY}"
                 ).json()
                 playlist_id = response.get("items")[0]["contentDetails"][
                     "relatedPlaylists"
                 ]["uploads"]
 
                 videos_response = requests.get(
-                    url=f"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=5000&playlistId={playlist_id}&key={google_api_key}"
+                    url=f"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults={config.MAX_VIDEOS_STORED}&playlistId={playlist_id}&key={GOOGLE_API_KEY}"
                 ).json()
+                videos = videos_response.get("items")
 
-                if published_videos:
-                    published_videos = published_videos.split("|")
-                    newest_video_url = (
-                        "https://youtube.com/watch?v="
-                        + videos_response.get("items")[0]["snippet"]["resourceId"][
-                            "videoId"
-                        ]
-                    )
+                if posted_videos and len(posted_videos) == len(videos) - 1:
+                    video_id = videos[0]["snippet"]["resourceId"]["videoId"]
+                    video_url = "https://youtube.com/watch?v=" + video_id
 
-                    if not newest_video_url in published_videos:
-                        await self.bot.get_channel(876162144092192808).send(newest_video_url)
+                    if not video_id in posted_videos:
+                        logger.info(
+                            "New video found for channel of ID {}".format(channel_id))
 
-                published_videos = []
+                        await ping_channel.send(video_url)
+                        posted_videos.append(video_id)
+                elif posted_videos == None:
+                    channel["posted_videos"] = []
+                else:
+                    logger.info(
+                        "No new video found for channel of ID {}".format(channel_id))
 
-                for video in videos_response.get("items"):
+                for video in videos:
                     video_id = video["snippet"]["resourceId"]["videoId"]
-                    url = "https://youtube.com/watch?v=" + video_id
 
-                    published_videos.append(url)
+                    if video_id in posted_videos:
+                        continue
 
-                str_list = "|".join(i for i in published_videos)
+                    posted_videos.append(video_id)
 
-                youtube_uploads_col.update_one(
-                    filter=query,
-                    update={"$set": {str(channel_index) + "_videos": str_list}},
-                )
+                while len(posted_videos) > config.MAX_VIDEOS_STORED:
+                    posted_videos.pop()
+
+                youtubeData.update_youtube_channel(channel_id, channel)
 
     @tasks.loop(seconds=30)
     async def presence_loop(self):
-        if not self.bot.is_ready():
-            await self.bot.wait_until_ready()
+        await self.bot.wait_until_ready()
 
         presence_list = [
             f"{len(self.bot.guilds)} servers | {config.DEFAULT_PREFIX}help",

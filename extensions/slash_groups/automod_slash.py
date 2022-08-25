@@ -25,8 +25,8 @@ load_dotenv()
 
 ## -- VARIABLES -- ##
 
-mongo_login = os.environ.get("MONGO_LOGIN")
-client = MongoClient(mongo_login, tlsCAFile=certifi.where())
+MONGO_LOGIN = os.environ.get("MONGO_LOGIN")
+client = MongoClient(MONGO_LOGIN, tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
 guild_data_col = db["guild_data"]
@@ -43,23 +43,23 @@ class AutomodSlash(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(name="automod")
-    @is_moderator(manage_guild=True)
-    async def slash_automod(self, inter):
+    @is_staff(manage_guild=True)
+    async def automod(self, inter):
         pass
 
-    @slash_automod.sub_command_group(name="filter")
-    @is_moderator(manage_guild=True)
-    async def slash_filter(self, inter):
+    @automod.sub_command_group(name="filter")
+    @is_staff(manage_guild=True)
+    async def filter(self, inter):
         pass
 
-    @slash_filter.sub_command(name="add")
-    async def slash_filteradd(
+    @filter.sub_command(name="add")
+    async def filteradd(
         self, inter: disnake.ApplicationCommandInteraction, type: type_list, word: str
     ):
         await inter.send("wip")
 
-    @slash_automod.error
-    async def slash_automod_error(
+    @automod.error
+    async def automod_error(
         self, inter: disnake.ApplicationCommandInteraction, error
     ):
         if isinstance(error, commands.MissingPermissions):

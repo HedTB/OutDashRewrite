@@ -59,9 +59,9 @@ class DeveloperCommands(commands.Cog):
 
     ## -- COMMANDS -- ##
 
-    @commands.command(hidden=True)
-    async def exec(self, ctx: commands.Context, *, code: str):
-        if ctx.author.id not in config.OWNERS:
+    @commands.slash_command()
+    async def exec(self, inter: disnake.ApplicationCommandInteraction, *, code: str):
+        if inter.author.id not in config.OWNERS:
             return
 
         code_to_run = code[code.find("```py") + len("```py") : code.rfind("```")]
@@ -72,45 +72,45 @@ class DeveloperCommands(commands.Cog):
                 color=colors.error_embed_color,
             )
 
-            await ctx.send(embed=embed)
+            await inter.send(embed=embed)
             return
 
         await aexec(
             code_to_run,
             {
-                "ctx": ctx,
+                "inter": inter,
                 "bot": self.bot,
             },
         )
 
-    @commands.command(hidden=True)
-    async def generatecaptcha(self, ctx: commands.Context):
-        if ctx.author.id not in config.OWNERS:
+    @commands.slash_command()
+    async def generatecaptcha(self, inter: disnake.ApplicationCommandInteraction):
+        if inter.author.id not in config.OWNERS:
             return
 
         captcha = functions.generate_captcha()
 
-        await ctx.send(file=disnake.File(f"{captcha}.png"))
+        await inter.send(file=disnake.File(f"{captcha}.png"))
         os.remove(f"{captcha}.png")
 
         def check(message2):
             return (
-                message2.author == ctx.message.author
+                message2.author == inter.message.author
                 and message2.content.upper() == captcha
             )
 
         try:
             await self.bot.wait_for("message", timeout=15.0, check=check)
         except asyncio.TimeoutError:
-            await ctx.send(f"{no} the captcha was: `" + captcha + "`")
+            await inter.send(f"{no} the captcha was: `" + captcha + "`")
         else:
-            await ctx.send(yes)
+            await inter.send(yes)
 
-    @commands.command(hidden=True)
+    @commands.slash_command()
     async def getguilddata(
-        self, ctx: commands.Context, guild_id: int = 836495137651294258
+        self, inter: disnake.ApplicationCommandInteraction, guild_id: int = 836495137651294258
     ):
-        if ctx.author.id not in config.OWNERS:
+        if inter.author.id not in config.OWNERS:
             return
 
         guild = self.bot.get_guild(guild_id)
@@ -119,11 +119,11 @@ class DeveloperCommands(commands.Cog):
         embed.set_thumbnail(guild.icon or config.DEFAULT_AVATAR_URL)
         embed.add_field("Member Count", len(guild.members))
 
-        await ctx.send(embed=embed)
+        await inter.send(embed=embed)
 
-    @commands.command(hidden=True)
-    async def getbotguilds(self, ctx: commands.Context):
-        if ctx.author.id not in config.OWNERS:
+    @commands.slash_command()
+    async def getbotguilds(self, inter: disnake.ApplicationCommandInteraction):
+        if inter.author.id not in config.OWNERS:
             return
 
         guilds = self.bot.guilds
@@ -132,12 +132,12 @@ class DeveloperCommands(commands.Cog):
         for guild in guilds:
             message += f"**{guild.name}**\n`{guild.id}`\n\n"
 
-        await ctx.send(message)
+        await inter.send(message)
 
     ## -- COMMAND HANDLERS -- ##
 
     @exec.error
-    async def exec_error(self, ctx: commands.Context, error: commands.CommandError):
+    async def exec_error(self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError):
         if isinstance(error, commands.MissingRequiredArgument):
             return
 
