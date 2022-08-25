@@ -46,7 +46,7 @@ client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
 logger = logging.getLogger("Database")
-logger.level = logging.DEBUG
+logger.level = logging.DEBUG if not config.IS_SERVER else logging.INFO
 
 guild_data_col = db["guild_data"]
 warns_col = db["warns"]
@@ -197,7 +197,11 @@ class DatabaseObjectBase:
             raise TypeError("Data must be a dict")
 
         data = data or self.data
-        self.data.update({[key]: data} if key else data)
+        
+        if key:
+            self.data[key] = data
+        else:
+            self.data.update(data)
 
         result = self._collection.replace_one(self._query, self.data, True)
         self._last_use = time.time()
