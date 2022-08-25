@@ -292,15 +292,6 @@ class Events(commands.Cog):
     async def chatbot_responder(self, message: disnake.Message):
         if message.author == self.bot.user or message.author.bot or not message.guild:
             return
-        elif not self.bot.chatbot_status:
-            return await message.channel.send(embed=disnake.Embed(
-                description=f"{no} The API we're using to fetch	responses is currently down. Please	try	again later.",
-                color=colors.error_embed_color,
-                timestamp=datetime.datetime.utcnow(),
-            ).set_footer(
-                text=f"Requested by {message.author}",
-                icon_url=message.author.avatar or config.DEFAULT_AVATAR_URL,
-            ))
 
         data_obj = GuildData(message.guild)
         guild_data = data_obj.get_data()
@@ -315,6 +306,15 @@ class Events(commands.Cog):
 
             if not channel or message.channel != channel:
                 return
+            elif not self.bot.chatbot_status:
+                return await message.channel.send(embed=disnake.Embed(
+                    description=f"{no} The API we're using to fetch	responses is currently down. Please	try	again later.",
+                    color=colors.error_embed_color,
+                    timestamp=datetime.datetime.utcnow(),
+                ).set_footer(
+                    text=f"Requested by {message.author}",
+                    icon_url=message.author.avatar or config.DEFAULT_AVATAR_URL,
+                ))
 
             try:
                 print("Sending message to chat bot")
