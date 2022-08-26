@@ -28,7 +28,7 @@ DataType = typing.Union[str, int, dict, list, bool, None]
 Data = typing.Dict[str, DataType]
 
 # CONSTANTS
-BASE_DISCORD_URL = "https://discordapp.com/api/v9{}"
+BASE_DISCORD_URL = "https://discordapp.com/api/v10{}"
 DATA_REFRESH_DELAY = 180
 
 LIFETIME = 10
