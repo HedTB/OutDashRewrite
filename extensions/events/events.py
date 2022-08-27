@@ -363,6 +363,7 @@ class Events(commands.Cog):
             member_data = member_data_obj.get_guild_data()
 
             xp_amount = random.randint(17, 27)
+            level_up, new_level = leveling.add_xp(message.author, xp_amount if config.IS_SERVER else xp_amount * 5)
 
             variables = get_variables(message.author, message.guild)
             variables.update(
@@ -381,7 +382,6 @@ class Events(commands.Cog):
                 member=message.author,
             )
 
-            level_up, new_level = leveling.add_xp(message.author, xp_amount if config.IS_SERVER else xp_amount * 5)
 
             if not level_up:
                 return
