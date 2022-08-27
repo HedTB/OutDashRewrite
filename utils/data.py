@@ -47,7 +47,7 @@ client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
 logger = logging.getLogger("Database")
-logger.level = logging.DEBUG
+logger.level = logging.DEBUG if not config.IS_SERVER else logging.INFO
 
 guild_data_col = db["guild_data"]
 warns_col = db["warns"]
