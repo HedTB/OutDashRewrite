@@ -16,3 +16,4 @@ psutil
 pillow
 disnake-ext-menus
 requests-async
+dictdiffer
