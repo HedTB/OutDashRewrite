@@ -31,8 +31,6 @@ class LoggingWebhook:
         toggle = webhook["toggle"]
 
         if not toggle or not url:
-            print("Webhook for {} is not set up, the URL is {} and the toggle is {}.".format(log_type, url, toggle))
-            print(webhook)
             raise InvalidWebhook
         elif toggle and not url:
             self._data_obj.update_log_webhook(

@@ -3,7 +3,6 @@ from platform import system
 # SERVER/LOCAL INFORMATION
 IS_SERVER = not system() == "Windows"
 DATABASE_COLLECTION = "db" if IS_SERVER else "db2"
-DEFAULT_PREFIX = "?" if IS_SERVER else "."
 
 DEFAULT_AVATAR_URL = "https://cdn.discordapp.com/embed/avatars/0.png"
 
@@ -28,7 +27,7 @@ MAX_VIDEOS_STORED = 5
 MAX_CHANNELS = 3
 
 # RESPONSE LISTS
-responses_8ball = [
+RESPONSES_8BALL = [
     "of course mate",
     "yes, why not?",
     "yes, obviously..",
@@ -41,14 +40,13 @@ responses_8ball = [
     "i have no idea, ask again later, *if you dare*",
     "how am i supposed to know??",
     "no",
-    "what kind of dumb question is that?? NO",
     "i doubt it buddy",
     "that sounds doubtful",
     "yeahhhh no",
     "seriously bro? no way",
 ]
 
-tips = [
+TIPS = [
     "Join our support server for support and bug reporting! https://bit.ly/OutDashSupport",
     "Upvote OutDash to help us grow! https://bit.ly/UpvoteOD1",
     "If you'd like to support us, you can do so here: https://bit.ly/SupportOutDash",

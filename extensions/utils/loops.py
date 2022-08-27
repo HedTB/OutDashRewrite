@@ -102,9 +102,9 @@ class Loops(commands.Cog):
         await self.bot.wait_until_ready()
 
         presence_list = [
-            f"{len(self.bot.guilds)} servers | {config.DEFAULT_PREFIX}help",
-            f"{len(self.bot.users)} users | {config.DEFAULT_PREFIX}help",
-            f"outdash.ga | {config.DEFAULT_PREFIX}help",
+            f"{len(self.bot.guilds)} servers | /help",
+            f"{len(self.bot.users)} users | /help",
+            f"you | /help",
         ]
 
         if self.bot.presence_index + 1 > len(presence_list) - 1:

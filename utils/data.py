@@ -8,6 +8,7 @@ import disnake
 import os
 import certifi
 import requests
+import dictdiffer
 
 from dotenv import load_dotenv
 from pymongo import MongoClient, collection
@@ -68,7 +69,6 @@ request_headers = {
 
 def reconcicle_dict(base: Data, current: Data) -> Data:
     if type(base) != dict or type(current) != dict:
-        print(type(base), type(current))
         raise TypeError("Both base and current must be dicts")
 
     data = {**base, **current}
@@ -77,16 +77,10 @@ def reconcicle_dict(base: Data, current: Data) -> Data:
         value = data[key]
         base_value = base.get(key)
 
-        try:
-            int(key)
-            continue
-        except:
-            pass
-
         if isinstance(key, str) and key.startswith("_"):
             continue
 
-        if key in base and type(value) != type(base_value):
+        if key in base and type(value) != type(base_value) and base_value != None:
             data[key] = base_value
         elif base_value is not None and isinstance(value, dict):
             data[key] = reconcicle_dict(base_value, value)
@@ -119,6 +113,13 @@ def clean_dict(base: Data, current: Data) -> typing.Dict[str, str]:
 
 def get_dict_difference(dict1: dict, dict2: dict):
     return {key: dict2[key] for key in set(dict2) - set(dict1)}
+
+
+def are_dicts_identical(dict1: dict, dict2: dict):
+    if type(dict1) != dict or type(dict2) != dict:
+        return False
+
+    return list(dictdiffer.diff(dict1, dict2)) == []
 
 
 def get_all_documents(collection_name: str) -> list:
@@ -161,45 +162,50 @@ class DatabaseObjectBase:
 
     _last_use: float
 
-    def fetch_data(self, *, can_insert=True, reconcicle=True) -> None:
+    def fetch_data(self, *, can_insert=True) -> Data:
         data = self._collection.find_one(self._query)
 
         if not data and can_insert:
             self.insert_data()
             return self.fetch_data(can_insert=False)
-        elif data and reconcicle:
-            self.data = clean_dict(self._insert_data, reconcicle_dict(self._insert_data, data))
-
-            if len(get_dict_difference(data, self.data)) > 0:
-                self.data = self.update_data(self.data)
         elif data:
-            self.data = data
+            cleaned_data = reconcicle_dict(self._insert_data, data)
+
+            if not are_dicts_identical(cleaned_data, data):
+                logger.debug("Updated database for object of type {} with cleaned data".format(self.__class__.__name__))
+                self.update_data(cleaned_data)
+            else:
+                data.pop("_id")
+                self.data = data
 
         self._last_use = time.time()
         return self.data
 
-    def get_data(self, *, can_insert=True, reconcicle=True) -> Data:
+    def get_data(self, *, can_insert=True) -> Data:
+        self._last_use = time.time()
+
         if not self.data:
-            self.fetch_data(can_insert=can_insert, reconcicle=reconcicle)
-
-        self._last_use = time.time()
-        return self.data
+            return self.fetch_data(can_insert=can_insert)
+        else:
+            return self.data
 
     def insert_data(self) -> Data:
         self._collection.insert_one(self._insert_data)
         self._last_use = time.time()
+        self.data = self._insert_data
 
-        self.fetch_data(can_insert=False, reconcicle=False)
-        return self._insert_data
+        if self.data.get("_id"):
+            self.data.pop("_id")
 
-    def update_data(self, data: dict, key: str | None = None) -> Data:
-        if not isinstance(data, dict):
-            raise TypeError("Data must be a dict")
+        return self.data
 
-        data = data or self.data
-        self.data.update({[key]: data} if key else data)
+    def update_data(self, data: Data) -> Data:
+        if not self.data:
+            self.insert_data()
 
-        result = self._collection.replace_one(self._query, self.data, True)
+        self.data.update(data)
+
+        result = self._collection.replace_one(self._query, self.data)
         self._last_use = time.time()
 
         if result.modified_count == 0:
@@ -209,15 +215,13 @@ class DatabaseObjectBase:
                 "Updated {} documents for data object of type {}".format(result.modified_count, self.__class__.__name__)
             )
 
-        self.fetch_data(can_insert=False, reconcicle=False)
-        return self.data
+        return self.fetch_data(can_insert=False)
 
-    def unset_data(self, data: dict):
-        if data.get("_id"):
-            data.pop("_id")
-
-        self._collection.update_one(self._query, {"$unset": data})
+    def delete_data(self):
+        self._collection.delete_one(self._query)
         self._last_use = time.time()
+
+        self.data = None
 
     def can_destroy(self) -> bool:
         return self._last_use + LIFETIME < time.time()
@@ -256,7 +260,7 @@ class Guild(DatabaseObjectBase):
         webhooks = self.get_log_webhooks()
         return webhooks[log_type]
 
-    def update_log_webhooks(self, data: dict):
+    def update_log_webhooks(self, data: Data):
         webhooks = self.get_log_webhooks()
 
         for log_type in data:
@@ -266,12 +270,11 @@ class Guild(DatabaseObjectBase):
             webhook = data[log_type]
             webhooks[log_type] = webhook
 
-        self.update_data(webhooks, "webhooks")
+        self.update_data({"webhooks": webhooks})
 
     def update_log_webhook(self, log_type: str, data: dict):
         if not log_type in log_types:
-            print(log_type + " is not a valid log type")
-            raise InvalidLogType
+            raise InvalidLogType(f"{log_type} is not a valid logging type")
 
         self.update_log_webhooks({log_type: data})
 
@@ -363,8 +366,8 @@ class Member(DatabaseObjectBase):
         self.__class__.__name__ = "member"
         OBJECTS["member"][member.id] = self
 
-    def get_guild_data(self, can_insert: bool = True, reconcicle: bool = True) -> dict:
-        data = self.get_data(can_insert=can_insert, reconcicle=reconcicle)
+    def get_guild_data(self, can_insert: bool = True) -> dict:
+        data = self.get_data(can_insert=can_insert)
 
         guild_id = str(self.guild.id)
         guild_data = data.get(guild_id)
@@ -373,18 +376,15 @@ class Member(DatabaseObjectBase):
             insert_data = member_data(self.user.id, guild_id)
 
             self.update_data({guild_id: insert_data.get(guild_id)})
-            return self.get_guild_data(can_insert, reconcicle)
+            return self.get_guild_data(can_insert)
 
-        if type(guild_data) == dict:
-            return guild_data
-        else:
-            return json.loads(guild_data)
+        return guild_data
 
     def update_guild_data(self, data: dict):
         guild_data = self.get_guild_data()
 
         guild_data.update(data)
-        self.update_data({str(str(self.guild.id)): json.dumps(guild_data)})
+        self.update_data({str(self.guild.id): guild_data})
 
 
 class YouTube(DatabaseObjectBase):
@@ -401,13 +401,13 @@ class YouTube(DatabaseObjectBase):
         self.__class__.__name__ = "youtube"
         OBJECTS["youtube"][guild_id] = self
 
-    def get_youtube_channels(self, can_insert: bool = True, reconcicle: bool = True) -> list:
-        data = self.get_data(can_insert=can_insert, reconcicle=reconcicle)
+    def get_youtube_channels(self, can_insert: bool = True) -> list:
+        data = self.get_data(can_insert=can_insert)
 
         return data.get("channels")
 
-    def get_youtube_channel(self, channel_id: str, can_insert: bool = True, reconcicle: bool = True) -> dict:
-        channels = self.get_youtube_channels(can_insert, reconcicle)
+    def get_youtube_channel(self, channel_id: str, can_insert: bool = True) -> dict:
+        channels = self.get_youtube_channels(can_insert)
         channel = next(filter(lambda x: x["channel_id"] == channel_id, channels), None)
 
         return channel
