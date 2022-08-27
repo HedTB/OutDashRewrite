@@ -35,14 +35,7 @@ info_message = """
 
 ## -- FUNCTIONS -- ##
 
-
-def get_commands_run():
-    with open("data/stats.json") as file:
-        return json.load(file).get("commands_run")
-
-
 ## -- COG -- ##
-
 
 class Miscellaneous(commands.Cog):
     name = f"{work} Miscellaneous"
@@ -75,54 +68,58 @@ class Miscellaneous(commands.Cog):
     async def info(self, inter: disnake.ApplicationCommandInteraction):
         """Get to know about OutDash!"""
 
-        await inter.send(embed=disnake.Embed(
-            title="Information",
-            description=info_message.format(
-                hedtb=self.bot.get_user(config.OWNERS[0]),
-                nox=self.bot.get_user(config.OWNERS[1]),
-                permissions=PERMISSIONS,
-            ),
-            timestamp=datetime.datetime.utcnow(),
-            color=colors.embed_color,
-        ).set_footer(
-            text=f"Requested by {inter.author}",
-            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
-        ))
+        await inter.send(
+            embed=disnake.Embed(
+                title="Information",
+                description=info_message.format(
+                    hedtb=self.bot.get_user(config.OWNERS[0]),
+                    nox=self.bot.get_user(config.OWNERS[1]),
+                    permissions=PERMISSIONS,
+                ),
+                timestamp=datetime.datetime.utcnow(),
+                color=colors.embed_color,
+            ).set_footer(
+                text=f"Requested by {inter.author}",
+                icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+            )
+        )
 
-    @commands.slash_command(
-        name="stats", description="Get to know how OutDash is doing!"
-    )
+    @commands.slash_command(name="stats", description="Get to know how OutDash is doing!")
     async def stats(self, inter: disnake.ApplicationCommandInteraction):
         """Get to know how OutDash is doing!"""
 
         start = time.time()
         hours, minutes, _ = self.get_uptime()
 
-        await inter.send(embed=disnake.Embed(
-            description="Getting all data...", color=colors.embed_color
-        ))
+        await inter.send(embed=disnake.Embed(description="Getting all data...", color=colors.embed_color))
 
-        await inter.edit_original_message(embed=disnake.Embed(
-            title="OutDash Stats",
-            description="A list of statistics for OutDash.",
-            timestamp=datetime.datetime.utcnow(),
-            color=colors.embed_color,
-        ).add_field(
-            name=":signal_strength: Connection",
-            value=f"Bot Latency: `{round(self.bot.latency * 1000)} ms`\nAPI Latency: `{round((time.time() - start) * 1000)} ms`\nUptime: `{hours} hrs {minutes} mins`",
-            inline=True,
-        ).add_field(
-            name=":chart_with_upwards_trend: Bot Values",
-            value=f"Server Count: `{len(self.bot.guilds)}`\nCommands Run: `{get_commands_run()}`\nUser Count: `{len(self.bot.users)}`",
-            inline=True,
-        ).add_field(
-            name=":bar_chart: Server Values",
-            value=f"Member Count: `{inter.guild.member_count}`",
-            inline=True,
-        ).set_footer(
-            text=f"Requested by {inter.author}",
-            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
-        ))
+        await inter.edit_original_message(
+            embed=disnake.Embed(
+                title="OutDash Stats",
+                description="A list of statistics for OutDash.",
+                timestamp=datetime.datetime.utcnow(),
+                color=colors.embed_color,
+            )
+            .add_field(
+                name=":signal_strength: Connection",
+                value=f"Bot Latency: `{round(self.bot.latency * 1000)} ms`\nAPI Latency: `{round((time.time() - start) * 1000)} ms`\nUptime: `{hours} hrs {minutes} mins`",
+                inline=True,
+            )
+            .add_field(
+                name=":chart_with_upwards_trend: Bot Values",
+                value=f"Server Count: `{len(self.bot.guilds)}`\nCommands Run: `{self.bot.commands_run}`\nUser Count: `{len(self.bot.users)}`",
+                inline=True,
+            )
+            .add_field(
+                name=":bar_chart: Server Values",
+                value=f"Member Count: `{inter.guild.member_count}`",
+                inline=True,
+            )
+            .set_footer(
+                text=f"Requested by {inter.author}",
+                icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+            )
+        )
 
     @commands.slash_command(name="ping", description="Gets the latency of the bot.")
     async def ping(self, inter: disnake.ApplicationCommandInteraction):
@@ -130,19 +127,18 @@ class Miscellaneous(commands.Cog):
 
         start = time.time()
 
-        await inter.send(embed=disnake.Embed(
-            description="Pinging...",
-            color=colors.embed_color
-        ))
+        await inter.send(embed=disnake.Embed(description="Pinging...", color=colors.embed_color))
 
-        await inter.edit_original_message(embed=disnake.Embed(
-            description=f":hourglass: Bot Latency - **{round(self.bot.latency * 1000)}** ms\n\n:stopwatch: API Latency - **{round((time.time() - start) * 1000)}** ms",
-            timestamp=datetime.datetime.utcnow(),
-            color=colors.embed_color,
-        ).set_footer(
-            text=f"Requested by {inter.author}",
-            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
-        ))
+        await inter.edit_original_message(
+            embed=disnake.Embed(
+                description=f":hourglass: WS Latency - **{round(self.bot.latency * 1000)}** ms\n\n:stopwatch: API Latency - **{round((time.time() - start) * 1000)}** ms",
+                timestamp=datetime.datetime.utcnow(),
+                color=colors.embed_color,
+            ).set_footer(
+                text=f"Requested by {inter.author}",
+                icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+            )
+        )
 
     """
     ! GUILD COMMANDS
@@ -150,9 +146,7 @@ class Miscellaneous(commands.Cog):
     Miscellaneous commands around guilds.
     """
 
-    @commands.slash_command(
-        name="membercount", description="Returns your current member count!"
-    )
+    @commands.slash_command(name="membercount", description="Returns your current member count!")
     async def membercount(self, inter: disnake.ApplicationCommandInteraction):
         """Returns your current member count!"""
 
@@ -160,17 +154,15 @@ class Miscellaneous(commands.Cog):
         humans = [not member.bot and member for member in inter.guild.members]
 
         online_members = sum(
-            member.status
-            == (disnake.Status.online or disnake.Status.dnd or disnake.Status.idle)
+            member.status == (disnake.Status.online or disnake.Status.dnd or disnake.Status.idle)
             for member in inter.guild.members
         )
-        offline_members = sum(
-            member.status == disnake.Status.offline for member in inter.guild.members
-        )
+        offline_members = sum(member.status == disnake.Status.offline for member in inter.guild.members)
 
-        await inter.send(embed=disnake.Embed(
-            title=f"Member Count",
-            description=f"""
+        await inter.send(
+            embed=disnake.Embed(
+                title=f"Member Count",
+                description=f"""
                 :white_check_mark: Total - {inter.guild.member_count}
                 :bust_in_silhouette: Humans - {len(humans)}
                 :robot: Bots - {len(bots)}"
@@ -179,12 +171,13 @@ class Miscellaneous(commands.Cog):
                 {online} Online - {online_members}
                 {offline} Offline - {offline_members}
                 """,
-            timestamp=datetime.datetime.utcnow(),
-            color=colors.embed_color,
-        ).set_footer(
-            text=f"Requested by {inter.author}",
-            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
-        ))
+                timestamp=datetime.datetime.utcnow(),
+                color=colors.embed_color,
+            ).set_footer(
+                text=f"Requested by {inter.author}",
+                icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+            )
+        )
 
 
 def setup(bot):

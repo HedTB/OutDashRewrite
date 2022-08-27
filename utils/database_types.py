@@ -49,7 +49,7 @@ def guild_data(guild_id: int):
 
         "staff_members": {
             "moderator": [],
-            "administator": [],
+            "administrator": [],
         },
 
         "webhooks": {},
@@ -181,7 +181,7 @@ def member_data(member_id: int, guild_id: int):
         "timezone": "Europe/Belfast",
         "message_content_privacy": False,
 
-        str(guild_id): json.dumps({"level": 0, "xp": 0, "total_xp": 0}),
+        str(guild_id): {"level": 0, "xp": 0, "total_xp": 0},
     }
 
 

@@ -526,18 +526,18 @@ class Moderation(commands.Cog):
     """
 
     @commands.slash_command(name="staff", description="View and manage the staff members of the server.")
-    @is_staff(type="administrator", administator=True)
+    @is_staff(type="administrator", administrator=True)
     async def staff(self, inter: disnake.ApplicationCommandInteraction):
         """View and manage the moderators of the server."""
         pass
 
     @staff.sub_command(name="view", description="View the staff members of the server.")
-    @is_staff(type="administrator", administator=True)
+    @is_staff(type="administrator", administrator=True)
     async def moderators_view(self, inter: disnake.ApplicationCommandInteraction):
         """View the moderators of the server."""
 
     @staff.sub_command(name="add", description="Add a staff member to the server.")
-    @is_staff(type="administrator", administator=True)
+    @is_staff(type="administrator", administrator=True)
     async def moderators_add(
         self, inter: disnake.ApplicationCommandInteraction,
         member: disnake.Member, type: commands.option_enum({"Moderator": "moderator", "Administrator": "administrator"}),
@@ -555,6 +555,10 @@ class Moderation(commands.Cog):
             ))
 
         author_rank = await self.bot.get_staff_rank(inter.author)
+        member_rank = await self.bot.get_staff_rank(member)
+        
+        print(author_rank)
+        print(member_rank)
         
         if member in inter.guild.moderators:
             return await inter.send(embed=disnake.Embed(

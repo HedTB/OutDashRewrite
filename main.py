@@ -110,6 +110,7 @@ class Bot(commands.InteractionBot):
         self.launch_time = datetime.datetime.utcnow()
         self.presence_index = 0
         self.started = False
+        self.commands_run = 0
 
         # automod data
         self.automod_warnings = {}
@@ -148,16 +149,13 @@ class Bot(commands.InteractionBot):
 
         print(
             f"""
-Singed in as {self.user}
+            Singed in as {self.user}
 
-\tServers: {len(self.guilds)}
-\tUsers: {len(self.users)}
-\tPing: {round(self.latency * 1000)} ms
+            \tServers: {len(self.guilds)}
+            \tUsers: {len(self.users)}
+            \tPing: {round(self.latency * 1000)} ms
         """
         )
-
-        with open("data/stats.json", "w") as file:
-            json.dump({"commands_run": 0}, file)
 
     async def get_staff_members(self, guild: disnake.Guild) -> typing.Dict[str, typing.Dict[str, disnake.Member]]:
         guild_data_obj = GuildData(guild)
@@ -167,7 +165,7 @@ Singed in as {self.user}
 
     async def get_staff_rank(self, member: disnake.Member):
         if member.id in config.OWNERS:
-            return True
+            return "Owner"
 
         staff_members = await self.get_staff_members(member.guild)
 

@@ -27,14 +27,9 @@ load_dotenv()
 
 Channel = disnake.TextChannel | disnake.VoiceChannel | disnake.NewsChannel | disnake.ForumChannel | disnake.StageChannel
 
-MONGO_LOGIN = os.environ.get("MONGO_LOGIN")
 RAPID_API_KEY = os.environ.get("RAPID_API_KEY")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 RANDOMSTUFF_KEY = os.environ.get("RANDOMSTUFF_KEY")
-
-client = MongoClient(MONGO_LOGIN, tlsCAFile=certifi.where())
-db = client["db2"]
-
 
 """
 perspective_client = discovery.build(
@@ -45,10 +40,6 @@ perspective_client = discovery.build(
     static_discovery=False,
 )
 """
-
-guild_data_col = db["guild_data"]
-user_data_col = db["user_data"]
-privacy_settings_col = db["privacy_settings"]
 
 
 ## -- FUNCTIONS -- ##
@@ -121,7 +112,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, messages[0].guild, "message_bulk_delete")
         except InvalidWebhook:
-            logger.warning(f"Invalid bulk message deletion webhook for {messages[0].guild.name}")
+            logger.debug(f"Invalid bulk message deletion webhook for {messages[0].guild.name}")
             return
 
         embed = disnake.Embed(
@@ -150,7 +141,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, before.guild, "message_edit")
         except InvalidWebhook:
-            logger.warning(f"Invalid message edit webhook for {before.guild.name}")
+            logger.debug(f"Invalid message edit webhook for {before.guild.name}")
             return
 
         user_data_obj = UserData(before.author)
@@ -214,7 +205,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, message.guild, "message_delete")
         except InvalidWebhook:
-            logger.warning(f"Invalid message deletion webhook for {message.guild.name}")
+            logger.debug(f"Invalid message deletion webhook for {message.guild.name}")
             return
 
         message_content_privacy = user_data["message_content_privacy"]
@@ -251,7 +242,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, member.guild, "member_join")
         except InvalidWebhook:
-            logger.warning(f"Invalid member join webhook for {member.guild.name}")
+            logger.debug(f"Invalid member join webhook for {member.guild.name}")
             return
 
         self.bot.dispatch("welcome_member", member)
@@ -285,7 +276,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, member.guild, "member_remove")
         except InvalidWebhook:
-            logger.warning(f"Invalid member remove webhook for {member.guild.name}")
+            logger.debug(f"Invalid member remove webhook for {member.guild.name}")
             return
 
         member_roles = " ".join([role.mention for role in member.roles if role.name != "@everyone"])
@@ -325,7 +316,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, member.guild, "member_kick")
         except InvalidWebhook:
-            logger.warning(f"Invalid member kick webhook for {member.guild.name}")
+            logger.debug(f"Invalid member kick webhook for {member.guild.name}")
             return
 
         embed = (
@@ -360,7 +351,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, guild, "member_ban")
         except InvalidWebhook:
-            logger.warning(f"Invalid member ban webhook for {guild.name}")
+            logger.debug(f"Invalid member ban webhook for {guild.name}")
             return
 
         audit_log = await self.bot.get_audit_log(disnake.AuditLogAction.ban, guild, user)
@@ -397,7 +388,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, guild, "member_unban")
         except InvalidWebhook:
-            logger.warning(f"Invalid member unban webhook for {guild.name}")
+            logger.debug(f"Invalid member unban webhook for {guild.name}")
             return
 
         audit_log = await self.bot.get_audit_log(disnake.AuditLogAction.unban, guild, user)
@@ -434,7 +425,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, before.guild, "member_roles_update")
         except InvalidWebhook:
-            logger.warning(f"Invalid member roles update webhook for {before.guild.name}")
+            logger.debug(f"Invalid member roles update webhook for {before.guild.name}")
             return
 
         added_roles = list(filter(lambda r: r not in before.roles, after.roles))
@@ -528,7 +519,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, before.guild, "member_update")
         except InvalidWebhook:
-            logger.warning(f"Invalid member update webhook for {before.guild.name}")
+            logger.debug(f"Invalid member update webhook for {before.guild.name}")
             return
 
         webhook.add_embeds(embeds)
@@ -553,7 +544,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, role.guild, "guild_role_create")
         except InvalidWebhook:
-            logger.warning(f"Invalid role create webhook for {role.guild.name}")
+            logger.debug(f"Invalid role create webhook for {role.guild.name}")
             return
 
         embed = (
@@ -577,7 +568,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, role.guild, "guild_role_delete")
         except InvalidWebhook:
-            logger.warning(f"Invalid role deletion webhook for {role.guild.name}")
+            logger.debug(f"Invalid role deletion webhook for {role.guild.name}")
             return
 
         embed = (
@@ -601,7 +592,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, after.guild, "guild_role_update")
         except:
-            logger.warning(f"Invalid role update webhook for {after.guild.name}")
+            logger.debug(f"Invalid role update webhook for {after.guild.name}")
             return
 
         embeds = []
@@ -676,7 +667,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, channel.guild, "guild_channel_create")
         except:
-            logger.warning(f"Invalid channel creation webhook in {channel.guild.name}")
+            logger.debug(f"Invalid channel creation webhook in {channel.guild.name}")
             return
 
         embed = (
@@ -700,7 +691,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, channel.guild, "guild_channel_delete")
         except:
-            logger.warning(f"Invalid channel deletion webhook in {channel.guild.name}")
+            logger.debug(f"Invalid channel deletion webhook in {channel.guild.name}")
             return
 
         embed = (
@@ -724,7 +715,7 @@ class LoggingEvents(commands.Cog):
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, after.guild, "guild_channel_update")
         except:
-            logger.warning(f"Invalid channel creation webhook in {after.guild.name}")
+            logger.debug(f"Invalid channel creation webhook in {after.guild.name}")
             return
 
         embeds = []
