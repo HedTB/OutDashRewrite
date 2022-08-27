@@ -134,7 +134,7 @@ def add_xp(member: disnake.Member, amount: int) -> tuple[bool, int | None]:
     if xp_for_levelup <= 0:
         return True, level + 1
     else:
-        return False, None
+        return False, level
 
 
 def remove_xp(member: disnake.Member, amount: int) -> tuple[bool, int | None]:
