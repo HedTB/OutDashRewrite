@@ -46,26 +46,25 @@ class Fun(commands.Cog):
         description="Generates a random meme from the r/memes subreddit!",
         guild_ids=[config.BOT_SERVER],
     )
-    async def meme(self, inter):
+    async def meme(self, inter: disnake.ApplicationCommandInteraction):
         await inter.response.defer()
 
         memes_submissions = reddit.subreddit("memes").hot()
         post_to_pick = random.randint(1, 100)
-        for i in range(0, post_to_pick):
+
+        for _ in range(0, post_to_pick):
             submission = next(x for x in memes_submissions if not x.stickied)
 
-        embed = disnake.Embed(
-            description=f"**{submission.title}**", color=colors.embed_color
+        await inter.send(
+            embed=disnake.Embed(
+                description=f"**{submission.title}**", color=colors.embed_color, timestamp=datetime.datetime.utcnow()
+            )
+            .set_footer(
+                icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+                text=f"Requested by {inter.author}",
+            )
+            .set_image(url=submission.url)
         )
-
-        embed.set_footer(
-            icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
-            text=f"Requested by {inter.author}",
-        )
-        embed.timestamp = datetime.datetime.utcnow()
-        embed.set_image(url=submission.url)
-
-        await inter.send(embed=embed)
 
 
 def setup(bot):

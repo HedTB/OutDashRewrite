@@ -1,17 +1,12 @@
 ## -- IMPORTING -- ##
 
 # MODULE
-import asyncio
-import atexit
 import os
 import datetime
-import certifi
 import disnake
-import json
 import logging
 
 from disnake.ext import commands
-from pymongo import MongoClient
 from dotenv import load_dotenv
 from threading import Thread
 
