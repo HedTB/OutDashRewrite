@@ -339,7 +339,7 @@ class CommandHelpView(disnake.ui.View):
 class Help(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.commands = [slash_command.qualified_name for slash_command in bot.slash_commands]
+        self.commands = [slash_command.qualified_name for slash_command in bot.slash_commands if slash_command.auto_sync]
 
     ## -- SLASH COMMANDS -- ##
 
