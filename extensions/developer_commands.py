@@ -3,16 +3,9 @@
 # MODULES
 import disnake
 import os
-import random
 import asyncio
-import datetime
-import certifi
-import string
 
 from disnake.ext import commands
-from disnake.errors import Forbidden, HTTPException
-from disnake.ext.commands import errors
-from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
@@ -71,21 +64,10 @@ class CodeInput(disnake.ui.Modal):
         )
 
     async def callback(self, inter: disnake.ModalInteraction, /) -> None:
-        code = inter.text_values.get("code-text-input")
-        code_to_run = code[code.find("```py") + len("```py") : code.rfind("```")]
-
-        if not code_to_run:
-            return await inter.send(
-                embed=disnake.Embed(
-                    description=f"{no} There's no code I can run!",
-                    color=colors.error_embed_color,
-                ),
-                ephemeral=True,
-            )
-
         await inter.send("Executing code..", ephemeral=True)
+
         await aexec(
-            code_to_run,
+            inter.text_values.get("code-text-input"),
             {
                 "inter": inter,
                 "bot": inter.bot,
@@ -101,63 +83,110 @@ class DeveloperCommands(commands.Cog):
 
     ## -- COMMANDS -- ##
 
-    @commands.slash_command(name="execute", auto_sync=False, guild_ids=[config.BOT_SERVER])
+    @commands.slash_command(
+        name="execute",
+        auto_sync=False,
+        guild_ids=[config.BOT_SERVER],
+        default_member_permissions=disnake.Permissions.advanced(),
+    )
     async def execute(self, inter: disnake.ApplicationCommandInteraction):
         if inter.author.id not in config.OWNERS:
             return await inter.send(
                 embed=disnake.Embed(
-                    description=f"{no} You can't run this command!",
+                    description=f"{no} You don't have permission to run this command.",
                     color=colors.error_embed_color,
-                )
+                ),
+                ephemeral=True,
             )
 
         await inter.response.send_modal(CodeInput())
 
-    # @commands.slash_command()
-    # async def generatecaptcha(self, inter: disnake.ApplicationCommandInteraction):
-    #     if inter.author.id not in config.OWNERS:
-    #         return
+    @commands.slash_command(
+        name="generate_captcha",
+        auto_sync=False,
+        guild_ids=[config.BOT_SERVER],
+        default_member_permissions=disnake.Permissions.advanced(),
+    )
+    async def generate_captcha(self, inter: disnake.ApplicationCommandInteraction):
+        if inter.author.id not in config.OWNERS:
+            return await inter.send(
+                embed=disnake.Embed(
+                    description=f"{no} You don't have permission to run this command.",
+                    color=colors.error_embed_color,
+                ),
+                ephemeral=True,
+            )
 
-    #     captcha = functions.generate_captcha()
+        captcha = functions.generate_captcha()
 
-    #     await inter.send(file=disnake.File(f"{captcha}.png"))
-    #     os.remove(f"{captcha}.png")
+        await inter.send(file=disnake.File(f"{captcha}.png"), ephemeral=True)
+        os.remove(f"{captcha}.png")
 
-    #     def check(message2):
-    #         return message2.author == inter.message.author and message2.content.upper() == captcha
+        try:
+            message = await self.bot.wait_for(
+                "message",
+                timeout=15.0,
+                check=lambda message: message.author == inter.author
+                and message.channel == inter.channel
+                and message.content.upper() == captcha,
+            )
 
-    #     try:
-    #         await self.bot.wait_for("message", timeout=15.0, check=check)
-    #     except asyncio.TimeoutError:
-    #         await inter.send(f"{no} the captcha was: `" + captcha + "`")
-    #     else:
-    #         await inter.send(yes)
+            try:
+                await message.delete()
+            except:
+                pass
+        except asyncio.TimeoutError:
+            await inter.edit_original_message(f"{no} the captcha was: `" + captcha + "`")
+        else:
+            await inter.edit_original_message(yes)
 
-    # @commands.slash_command()
-    # async def getguilddata(self, inter: disnake.ApplicationCommandInteraction, guild_id: int = 836495137651294258):
-    #     if inter.author.id not in config.OWNERS:
-    #         return
+    @commands.slash_command(
+        name="get_guild_data",
+        auto_sync=False,
+        guild_ids=[config.BOT_SERVER],
+        default_member_permissions=disnake.Permissions.advanced(),
+    )
+    async def get_guild_data(self, inter: disnake.ApplicationCommandInteraction, guild_id: int = config.BOT_SERVER):
+        if inter.author.id not in config.OWNERS:
+            return await inter.send(
+                embed=disnake.Embed(
+                    description=f"{no} You don't have permission to run this command.",
+                    color=colors.error_embed_color,
+                ),
+                ephemeral=True,
+            )
 
-    #     guild = self.bot.get_guild(guild_id)
-    #     embed = disnake.Embed(title=guild.name, description="")
+        guild = self.bot.get_guild(guild_id)
+        embed = disnake.Embed(title=guild.name, description="")
 
-    #     embed.set_thumbnail(guild.icon or config.DEFAULT_AVATAR_URL)
-    #     embed.add_field("Member Count", len(guild.members))
+        embed.set_thumbnail(guild.icon or config.DEFAULT_AVATAR_URL)
+        embed.add_field("Member Count", len(guild.members))
 
-    #     await inter.send(embed=embed)
+        await inter.send(embed=embed, ephemeral=True)
 
-    # @commands.slash_command()
-    # async def getbotguilds(self, inter: disnake.ApplicationCommandInteraction):
-    #     if inter.author.id not in config.OWNERS:
-    #         return
+    @commands.slash_command(
+        name="get_bot_guilds",
+        auto_sync=False,
+        guild_ids=[config.BOT_SERVER],
+        default_member_permissions=disnake.Permissions.advanced(),
+    )
+    async def get_bot_guilds(self, inter: disnake.ApplicationCommandInteraction):
+        if inter.author.id not in config.OWNERS:
+            return await inter.send(
+                embed=disnake.Embed(
+                    description=f"{no} You don't have permission to run this command.",
+                    color=colors.error_embed_color,
+                ),
+                ephemeral=True,
+            )
 
-    #     guilds = self.bot.guilds
-    #     message = ""
+        guilds = self.bot.guilds
+        message = ""
 
-    #     for guild in guilds:
-    #         message += f"**{guild.name}**\n`{guild.id}`\n\n"
+        for guild in guilds:
+            message += f"**{guild.name}**\n`{guild.id}`\n\n"
 
-    #     await inter.send(message)
+        await inter.send(message, ephemeral=True)
 
 
 def setup(bot):

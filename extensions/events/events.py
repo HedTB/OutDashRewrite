@@ -86,8 +86,6 @@ def insert_variables(message: dict | str, **kwargs):
     variables = variables or get_variables(member, guild)
 
     if isinstance(message, dict):
-        to_pop = {}
-
         for key in message:
             value = message[key]
 
@@ -98,45 +96,8 @@ def insert_variables(message: dict | str, **kwargs):
             elif isinstance(value, str):
                 message[key] = format_variables(value, variables)
                 continue
-
     elif isinstance(message, str):
         message = format_variables(message, variables)
-
-    # to_pop = {}
-    # for key in embed:
-    # 	  value	= embed[key]
-
-    # 	  if isinstance(value, dict):
-    # 		  for key2 in value:
-    # 			  value2 = value[key2]
-
-    # 			  if value2	== None:
-    # 				  to_pop[key] =	[]
-    # 				  to_pop[key].append(key2)
-    # 				  continue
-    # 			  elif type(value2)	!= str:
-    # 				  continue
-
-    # 			  embed[key][key2] = format_variables(value2, variables)
-    # 		  continue
-
-    # 	  elif value == None:
-    # 		  to_pop["all"]	= []
-    # 		  to_pop["all"].append(key)
-    # 		  continue
-    # 	  elif type(value) != str:
-    # 		  continue
-
-    # 	  embed[key] = format_variables(value, variables)
-
-    # for key in to_pop:
-    # 	  value	= to_pop[key]
-
-    # 	  for key2 in value:
-    # 		  if key == "all":
-    # 			  embed.pop(key2)
-    # 		  else:
-    # 			  embed[key].pop(key2)
 
     return message
 
@@ -363,13 +324,13 @@ class Events(commands.Cog):
             member_data = member_data_obj.get_guild_data()
 
             xp_amount = random.randint(17, 27)
-            level_up, new_level = leveling.add_xp(message.author, xp_amount if config.IS_SERVER else xp_amount * 5)
+            level_up, current_level = leveling.add_xp(message.author, xp_amount if config.IS_SERVER else xp_amount * 5)
 
             variables = get_variables(message.author, message.guild)
             variables.update(
                 {
-                    "{new_level}": new_level,
-                    "{previous_level}": new_level - 1,
+                    "{new_level}": current_level,
+                    "{previous_level}": current_level - 1,
                     "{new_xp}": member_data["xp"],
                     "{previous_xp}": member_data["xp"] - xp_amount,
                     "{total_xp}": member_data["total_xp"],

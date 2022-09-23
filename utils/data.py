@@ -373,10 +373,8 @@ class Member(DatabaseObjectBase):
         guild_data = data.get(guild_id)
 
         if not guild_data and can_insert:
-            insert_data = member_data(self.user.id, guild_id)
-
-            self.update_data({guild_id: insert_data.get(guild_id)})
-            return self.get_guild_data(can_insert)
+            self.update_data({guild_id: self._insert_data.get(guild_id)})
+            return self.get_guild_data(can_insert=False)
 
         return guild_data
 

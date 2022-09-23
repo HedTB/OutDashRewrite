@@ -256,10 +256,10 @@ async def reload_extension(inter: disnake.ApplicationCommandInteraction, extensi
 
     try:
         bot.reload_extension(f"extensions.{extension}")
+        await inter.edit_original_message(content=f"`{extension}` has been reloaded")
     except Exception as error:
-        logger.warning(f"Failed to reload extension {extension} | {error}")
-
-    await inter.edit_original_message(content=f"`{extension}` has been reloaded (?)")
+        logger.warning(f"Failed to load extension {extension} | {error}")
+        await inter.edit_original_message(content=f"Failed to lreoad extension `{extension}`")
 
 
 ## -- RUNNING BOT -- ##

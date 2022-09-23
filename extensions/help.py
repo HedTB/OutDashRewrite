@@ -82,9 +82,16 @@ def get_extension_commands(extension: commands.Cog):
 def get_slash_command_signature(
     command: commands.InvokableSlashCommand, *, options: list[disnake.Option] | None = None
 ):
+    if not options:
+        options = (
+            command.option.options
+            if isinstance(command, (commands.SubCommand, commands.SubCommandGroup))
+            else command.options
+        )
+
     parameters = ""
 
-    for option in options or command.options:
+    for option in options:
         bracket1 = "<" if option.required else "["
         bracket2 = ">" if option.required else "]"
 
@@ -257,6 +264,7 @@ class CommandHelpView(disnake.ui.View):
     def __init__(
         self,
         *,
+        command: str,
         has_sub_commands: bool = False,
         sub_commands: typing.Dict[
             str,
@@ -273,6 +281,8 @@ class CommandHelpView(disnake.ui.View):
                 row=2,
             )
         )
+        self.command = command
+        self.sub_commands = sub_commands
 
         select_menu = self.children[1]
 
@@ -295,42 +305,72 @@ class CommandHelpView(disnake.ui.View):
     @disnake.ui.select(placeholder="Select a sub-command", row=1)
     async def sub_command_selector(self, select_menu: disnake.SelectMenu, inter: disnake.MessageInteraction):
         sub_command_name = inter.values[0]
-        sub_command = inter.bot.get_slash_command(sub_command_name)
+        command = inter.bot.get_slash_command(sub_command_name)
 
         await inter.response.defer()
 
-        if not sub_command:
+        if not command:
             return
 
-        embed = (
-            disnake.Embed(
-                title=sub_command.qualified_name.title(),
-                description="`<>` means that the argument is required.\n`[]` means that the argument is optional.",
-                color=colors.embed_color,
-                timestamp=datetime.datetime.utcnow(),
-            )
-            .add_field(
-                name="Usage",
-                value=f"`{get_slash_command_signature(sub_command, options=sub_command.option.options)}`",
-                inline=False,
-            )
-            .add_field(name="Description", value=sub_command.description or "N/A", inline=False)
-            .set_footer(
-                text=f"Requested by {inter.author}",
-                icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
-            )
+        select_menu.options = [
+            disnake.SelectOption(label=f"/{temp_sub_command.qualified_name}", value=temp_sub_command.qualified_name)
+            for temp_sub_command in self.sub_commands.values()
+            if temp_sub_command.qualified_name != sub_command_name
+        ]
+
+        command_options = (
+            command.option.options
+            if isinstance(command, (commands.SubCommand, commands.SubCommandGroup))
+            else command.options
         )
 
-        if len(sub_command.option.options) > 0:
-            embed.add_field(
-                name="Parameters",
-                value="\n".join(
-                    f"`{parameter.name}`: {parameter.description}" for parameter in sub_command.option.options
-                ),
-                inline=False,
+        if isinstance(command, (commands.SubCommand, commands.SubCommandGroup)):
+            embed = (
+                disnake.Embed(
+                    title=command.qualified_name.title(),
+                    description="`<>` means that the argument is required.\n`[]` means that the argument is optional.",
+                    color=colors.embed_color,
+                    timestamp=datetime.datetime.utcnow(),
+                )
+                .add_field(
+                    name="Usage",
+                    value=f"`{get_slash_command_signature(command, options=command_options)}`",
+                    inline=False,
+                )
+                .add_field(name="Description", value=command.description or "N/A", inline=False)
+                .set_footer(
+                    text=f"Requested by {inter.author}",
+                    icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+                )
             )
 
-        await inter.edit_original_message(embed=embed)
+            if len(command_options) > 0:
+                embed.add_field(
+                    name="Parameters",
+                    value="\n".join(f"`{parameter.name}`: {parameter.description}" for parameter in command_options),
+                    inline=False,
+                )
+
+            select_menu.options.insert(0, disnake.SelectOption(label=f"/{self.command}", value=self.command))
+        else:
+            embed = (
+                disnake.Embed(
+                    title=command.qualified_name.title(),
+                    description="This is a command group, meaning you can only run its sub-commands.",
+                    color=colors.embed_color,
+                    timestamp=datetime.datetime.utcnow(),
+                )
+                .add_field(
+                    name="Sub Commands",
+                    value=", ".join([f"`{sub_command.qualified_name}`" for sub_command in self.sub_commands.values()]),
+                )
+                .set_footer(
+                    text=f"Requested by {inter.author}",
+                    icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+                )
+            )
+
+        await inter.edit_original_message(embed=embed, view=self)
 
 
 ## -- COG -- ##
@@ -339,7 +379,9 @@ class CommandHelpView(disnake.ui.View):
 class Help(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.commands = [slash_command.qualified_name for slash_command in bot.slash_commands if slash_command.auto_sync]
+        self.commands = [
+            slash_command.qualified_name for slash_command in bot.slash_commands if slash_command.auto_sync
+        ]
 
     ## -- SLASH COMMANDS -- ##
 
@@ -394,7 +436,7 @@ class Help(commands.Cog):
                     text=f"Requested by {inter.author}",
                     icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
                 ),
-                view=CommandHelpView(has_sub_commands=True, sub_commands=sub_commands),
+                view=CommandHelpView(command=command, has_sub_commands=True, sub_commands=sub_commands),
             )
 
         embed = (
@@ -425,7 +467,7 @@ class Help(commands.Cog):
 
         await inter.send(
             embed=embed,
-            view=CommandHelpView(has_sub_commands=False),
+            view=CommandHelpView(command=command, has_sub_commands=False),
         )
 
     @help_command.autocomplete("command")
