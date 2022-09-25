@@ -146,7 +146,7 @@ class DeveloperCommands(commands.Cog):
         guild_ids=[config.BOT_SERVER],
         default_member_permissions=disnake.Permissions.advanced(),
     )
-    async def get_guild_data(self, inter: disnake.ApplicationCommandInteraction, guild_id: int = config.BOT_SERVER):
+    async def get_guild_data(self, inter: disnake.ApplicationCommandInteraction, guild_id: float = config.BOT_SERVER):
         if inter.author.id not in config.OWNERS:
             return await inter.send(
                 embed=disnake.Embed(
