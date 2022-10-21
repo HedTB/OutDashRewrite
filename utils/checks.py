@@ -1,5 +1,5 @@
 from utils.data import *
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 import time
 import disnake
 import os
@@ -62,7 +62,7 @@ class NotAdministrator(commands.CheckFailure):
 
 def is_staff(*, type: str = "moderator", **perms):
     async def predicate(ctx: commands.Context):
-        data_obj = GuildData(ctx.guild)
+        data_obj = GuildData(ctx.guild.id)
         data = data_obj.get_data()
 
         if not data.get("staff_members"):
@@ -117,7 +117,7 @@ def is_voter():
 
 def server_setting():
     async def predicate(ctx: commands.Context):
-        data_obj = GuildData(ctx.guild)
+        data_obj = GuildData(ctx.guild.id)
         data = data_obj.get_data()
 
         if data.get("settings_locked") == True:

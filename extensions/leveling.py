@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from typing import *
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 
 from utils.checks import *
 from utils.data import *
@@ -104,7 +104,7 @@ def total_xp_for_level(lvl: int, current_total_xp: int = 0) -> int:
 
 
 def add_xp(member: disnake.Member, amount: int) -> tuple[bool, int | None]:
-    member_data_obj = MemberData(member)
+    member_data_obj = MemberData(member.id, member.guild.id)
     member_data = member_data_obj.get_guild_data()
 
     level = member_data["level"]
@@ -134,7 +134,7 @@ def add_xp(member: disnake.Member, amount: int) -> tuple[bool, int | None]:
 
 
 def remove_xp(member: disnake.Member, amount: int) -> tuple[bool, int | None]:
-    member_data_obj = MemberData(member)
+    member_data_obj = MemberData(member.id, member.guild.id)
     member_data = member_data_obj.get_guild_data()
 
     level = member_data["level"]
@@ -178,8 +178,8 @@ class Leveling(commands.Cog):
 
     @staticmethod
     def get_levelup_message(ctx: AnyContext, **kwargs):
-        data_obj = GuildData(ctx.guild)
-        member_data_obj = MemberData(ctx.author)
+        data_obj = GuildData(ctx.guild.id)
+        member_data_obj = MemberData(ctx.author.id, ctx.guild.id)
 
         data = data_obj.get_data()
         member_data = member_data_obj.get_guild_data()
@@ -225,7 +225,7 @@ class Leveling(commands.Cog):
         if not member:
             member = inter.author
 
-        member_data_obj = MemberData(member)
+        member_data_obj = MemberData(member.id, member.guild.id)
         member_data = member_data_obj.get_guild_data()
 
         level = member_data.get("level")
@@ -271,7 +271,7 @@ class Leveling(commands.Cog):
         level: The level the member should be.
         """
 
-        data_obj = MemberData(member)
+        data_obj = MemberData(member.id, member.guild.id)
 
         if level > config.MAX_MANUAL_LEVEL:
             return await inter.send(
@@ -314,7 +314,7 @@ class Leveling(commands.Cog):
         levels: How many levels to add.
         """
 
-        data_obj = MemberData(member)
+        data_obj = MemberData(member.id, member.guild.id)
         data = data_obj.get_guild_data()
 
         if data["level"] + levels > config.MAX_MANUAL_LEVEL:
@@ -353,7 +353,7 @@ class Leveling(commands.Cog):
         levels: How many levels to remove.
         """
 
-        data_obj = MemberData(member)
+        data_obj = MemberData(member.id, member.guild.id)
         data = data_obj.get_guild_data()
 
         if data["level"] - levels < 0:
@@ -488,7 +488,7 @@ class Leveling(commands.Cog):
         toggle: Whether to enable or disable the leveling system.
         """
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
 
         data_obj.update_data({"leveling_toggle": toggle})
         await inter.send(
@@ -524,7 +524,7 @@ class Leveling(commands.Cog):
         delay: The levelup message deletion delay.
         """
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         data = data_obj.get_data()
 
         embed = disnake.Embed(
@@ -550,7 +550,7 @@ class Leveling(commands.Cog):
         content: What the levelup message content should be set to.
         """
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         data = data_obj.get_data()
 
         data["leveling_message"]["content"] = content

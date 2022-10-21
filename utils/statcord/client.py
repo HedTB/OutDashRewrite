@@ -107,7 +107,7 @@ class StatcordClient:
         self._active_users.add(ctx.author.id)
         self._popular_commands[ctx.command.name] += 1
 
-    # type: ignore
+    
     async def _disnake_slash_command_ran(
         self, inter: "disnake.ApplicationCommandInteraction"
     ) -> None:

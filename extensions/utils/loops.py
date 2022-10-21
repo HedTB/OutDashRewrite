@@ -9,7 +9,7 @@ from disnake.ext import commands, tasks
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 
 from utils.checks import *
 from utils.statcord import StatcordClient

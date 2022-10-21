@@ -9,7 +9,7 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 
 from utils.checks import *
 from utils.emojis import *
@@ -84,6 +84,19 @@ class DeveloperCommands(commands.Cog):
     ## -- COMMANDS -- ##
 
     @commands.slash_command(
+        name="format_time",
+        auto_sync=False,
+        guild_ids=[config.BOT_SERVER],
+        default_member_permissions=disnake.Permissions.advanced(),
+    )
+    async def convert_time(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        time: str = commands.Param("0s", converter=converters.convert_time),
+    ):
+        await inter.send(f"Formatted time: `{time}`")
+
+    @commands.slash_command(
         name="execute",
         auto_sync=False,
         guild_ids=[config.BOT_SERVER],
@@ -146,7 +159,7 @@ class DeveloperCommands(commands.Cog):
         guild_ids=[config.BOT_SERVER],
         default_member_permissions=disnake.Permissions.advanced(),
     )
-    async def get_guild_data(self, inter: disnake.ApplicationCommandInteraction, guild_id: int = config.BOT_SERVER):
+    async def get_guild_data(self, inter: disnake.ApplicationCommandInteraction, guild_id: float = config.BOT_SERVER):
         if inter.author.id not in config.OWNERS:
             return await inter.send(
                 embed=disnake.Embed(

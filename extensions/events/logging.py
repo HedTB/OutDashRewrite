@@ -14,7 +14,7 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 
 from utils.checks import *
 from utils.webhooks import *
@@ -144,7 +144,7 @@ class LoggingEvents(commands.Cog):
             logger.debug(f"Invalid message edit webhook for {before.guild.name}")
             return
 
-        user_data_obj = UserData(before.author)
+        user_data_obj = UserData(before.author.id)
 
         user_data = user_data_obj.get_data()
         message_content_privacy = user_data.get("message_content_privacy")
@@ -197,7 +197,7 @@ class LoggingEvents(commands.Cog):
         if message.author.bot:
             return
 
-        user_data_obj = UserData(message.author)
+        user_data_obj = UserData(message.author.id)
         user_data = user_data_obj.get_data()
 
         logger.debug(f"{message.author} deleted message {message.id} in {message.channel}")

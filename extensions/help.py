@@ -9,7 +9,7 @@ from disnake.ext import commands, menus
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 from utils.checks import *
 from utils.data import *
 from utils.emojis import *
@@ -55,26 +55,25 @@ help_description = """
 ## -- FUNCTIONS -- ##
 
 
-def get_group_commands(group: commands.Group, *, original_group: commands.Group = None) -> typing.List[str]:
-    group_commands = []
+def get_command_id(bot: commands.Bot, name: str) -> int | None:
+    command = disnake.utils.get(bot.global_slash_commands, name=name)
 
-    if group.name not in empty_group_bases:
-        group_commands.append(group.qualified_name)
+    if not command:
+        return None
 
-    for command in group.commands:
-        group_commands.append(command.qualified_name)
-
-    return group_commands
+    return command.id
 
 
-def get_extension_commands(extension: commands.Cog):
+def get_extension_commands(extension: commands.Cog) -> list[typing.Dict[str, str | int]]:
     commands_list = []
 
-    for command in extension.walk_commands(extension):
-        if isinstance(command, commands.Group) and command.name in empty_group_bases:
+    bot = extension.bot
+
+    for command in extension.walk_commands():
+        if isinstance(command, commands.SubCommandGroup) and command.name in empty_group_bases:
             continue
 
-        commands_list.append(command.qualified_name)
+        commands_list.append({"name": command.qualified_name, "id": get_command_id(bot, command.name) or 0})
 
     return commands_list
 
@@ -136,6 +135,14 @@ class HelpPageSource(menus.ListPageSource):
             embed.timestamp = datetime.datetime.utcnow()
 
         else:
+            commands_list = []
+
+            for command in get_extension_commands(entry):
+                command_name = command["name"]
+                command_id = command["id"]
+
+                commands_list.append(f"</{command_name}:{command_id}>")
+
             embed = (
                 disnake.Embed(
                     title=entry.name,
@@ -145,7 +152,7 @@ class HelpPageSource(menus.ListPageSource):
                 )
                 .add_field(
                     name="Commands",
-                    value=", ".join(f"`{command}`" for command in get_extension_commands(entry)),
+                    value=", ".join(commands_list),
                 )
                 .set_footer(
                     text=f"Requested by {inter.author}",
@@ -182,7 +189,7 @@ class HelpPaginator(disnake.ui.View, menus.MenuPages):
 
     @staticmethod
     def get_extension_embed(extension_index: int = 1):
-        extension: commands.Cog = pages[extension_index]
+        extension = pages[extension_index]
 
         return disnake.Embed(
             title=extension.name,
@@ -190,7 +197,7 @@ class HelpPaginator(disnake.ui.View, menus.MenuPages):
             color=colors.embed_color,
         ).add_field(
             name="Commands",
-            value=", ".join(f"`{command}`" for command in get_extension_commands(extension)),
+            value=", ".join(f"</{command.name}:{command.id}>" for command in get_extension_commands(extension)),
         )
 
     async def start(self, inter: disnake.ApplicationCommandInteraction):
@@ -337,7 +344,7 @@ class CommandHelpView(disnake.ui.View):
                     value=f"`{get_slash_command_signature(command, options=command_options)}`",
                     inline=False,
                 )
-                .add_field(name="Description", value=command.description or "N/A", inline=False)
+                .add_field(name="Description", value=getattr(command, "description", "N/A"), inline=False)
                 .set_footer(
                     text=f"Requested by {inter.author}",
                     icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
@@ -451,7 +458,7 @@ class Help(commands.Cog):
                 value=f"`{get_slash_command_signature(command_obj)}`",
                 inline=False,
             )
-            .add_field(name="Description", value=command_obj.description or "N/A", inline=False)
+            .add_field(name="Description", value=getattr(command_obj, "description", "N/A"), inline=False)
             .set_footer(
                 text=f"Requested by {inter.author}",
                 icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,

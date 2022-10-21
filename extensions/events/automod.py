@@ -14,7 +14,7 @@ from typing import (
 )
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 from utils.checks import *
 from utils.data import *
 from utils.emojis import *
@@ -40,7 +40,7 @@ class Automod(commands.Cog):
     ## -- FUNCTIONS -- ##
 
     async def log_automod(self, ctx: commands.Context, automod_type: str) -> None:
-        data_obj = GuildData(ctx.author.guild)
+        data_obj = GuildData(ctx.author.guild.id)
         data = data_obj.get_data()
 
         embed = disnake.Embed(
@@ -136,7 +136,7 @@ class Automod(commands.Cog):
 
         ctx = commands.Context(message=message, bot=self.bot, view=None)
 
-        data_obj = GuildData(ctx.guild)
+        data_obj = GuildData(ctx.guild.id)
         data = data_obj.get_data()
 
         if not data["automod_toggle"]["global"]:
@@ -157,7 +157,7 @@ class Automod(commands.Cog):
     async def automod_message_spam(self, message: disnake.Message):
         ctx = commands.Context(message=message, bot=self.bot, view=None)
 
-        data_obj = GuildData(ctx.guild)
+        data_obj = GuildData(ctx.guild.id)
         data = data_obj.get_data()
 
         if message.id in self.bot.moderated_messages:
@@ -172,7 +172,7 @@ class Automod(commands.Cog):
     async def automod_flood(self, message: disnake.Message):
         ctx = commands.Context(message=message, bot=self.bot, view=None)
 
-        data_obj = GuildData(ctx.guild)
+        data_obj = GuildData(ctx.guild.id)
         data = data_obj.get_data()
 
         if message.id in self.bot.moderated_messages:
@@ -187,7 +187,7 @@ class Automod(commands.Cog):
     async def automod_caps(self, message: disnake.Message):
         ctx = commands.Context(message=message, bot=self.bot, view=None)
 
-        data_obj = GuildData(ctx.guild)
+        data_obj = GuildData(ctx.guild.id)
         data = data_obj.get_data()
 
 

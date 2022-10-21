@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from utils.DiscordUtils import Music as MusicManager
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 
 from utils.checks import *
 from utils.data import *
