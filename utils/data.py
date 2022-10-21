@@ -184,7 +184,8 @@ class DatabaseObjectBase:
 
     _last_use: float = 0
 
-    def __init__(self) -> None:
+    def __init__(self, life_time: int = LIFETIME) -> None:
+        self.life_time = life_time
         self._last_use = time.time()
 
     def fetch_data(self, *, can_insert=True) -> Data:
@@ -257,7 +258,7 @@ class DatabaseObjectBase:
         self.data = None
 
     def can_destroy(self) -> bool:
-        return self._last_use + LIFETIME < time.time()
+        return self._last_use + self.life_time < time.time()
 
     def destroy(self) -> None:
         if not self.can_destroy():
@@ -370,7 +371,7 @@ class Warns(DatabaseObjectBase):
 
 
 class User(DatabaseObjectBase):
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: int, *, life_time: int):
         self.user_id = user_id
         self.query = user_id
 
@@ -381,7 +382,7 @@ class User(DatabaseObjectBase):
         self.__class__.__name__ = "user"
         OBJECTS["user"][user_id] = self
 
-        super().__init__()
+        super().__init__(life_time=life_time)
 
 
 class Member(DatabaseObjectBase):
@@ -506,31 +507,6 @@ class BotObject(DatabaseObjectBase):
 
         return guilds
 
-        # last_refresh = data.get("last_refresh")
-        # guilds_cache = data.get("guilds")
-
-        # if (
-        #     not (guilds_cache or last_refresh)
-        #     or len(guilds_cache) == 0
-        #     or time.time() - last_refresh > DATA_REFRESH_DELAY
-        # ):
-        #     logger.debug("Fetching bot guilds")
-
-        #     guilds = self.get("/users/@me/guilds")
-        #     guilds_list = guilds.json()
-
-        #     if guilds.status_code == 200:
-        #         for guild in guilds_list:
-        #             guild.pop("features")
-        #             guild.pop("owner")
-        #             guild.pop("permissions")
-
-        #         self.update_data({"last_refresh": time.time(), "guilds": guilds_list})
-
-        #     return guilds_list
-        # else:
-        #     return guilds_cache
-
     def get(self, endpoint, params=None, *, api_version: str = "v10") -> requests.Response:
         return requests.get(
             url=BASE_DISCORD_URL.format(api_version, endpoint),
@@ -567,9 +543,10 @@ class ApiUser(User):
         refresh_token: str | None = None,
         expires_at: float,
     ):
-        super().__init__(user_id)
+        super().__init__(user_id, life_time=60)
 
         self._bot_object = BotObject()
+        self._insert_data = user_data(user_id)
 
         self._oauth_code = oauth_code
         self._user_token = user_token
@@ -577,33 +554,6 @@ class ApiUser(User):
         self._refresh_token = refresh_token
         self._expires_at = expires_at
 
-        self._insert_data = user_data(
-            user_id=self.user_id,
-            oauth_code=self._oauth_code,
-            user_token=self._user_token,
-            access_token=self._access_token,
-            refresh_token=self._refresh_token,
-        )
-
-        data = self.get_oauth_data(update_variables=False)
-
-        self._insert_data = user_data(user_id, oauth_code, user_token, access_token, refresh_token)
-        self._expires_at = expires_at or data["expires_at"]
-
-        # self._access_token = access_token or data["access_token"]
-        # self._refresh_token = refresh_token or data["refresh_token"]
-
-        self._oauth_code = oauth_code or data["code"]
-        self._user_token = user_token or data["user_token"]
-
-        # print(f"User ID: {self.user_id}")
-        # print(f"OAuth code: {self._oauth_code}")
-        # print(f"User token: {self._user_token}")
-        # print(f"Access token: {self._access_token}")
-        # print(f"Refresh token: {self._refresh_token}")
-        # print(f"Expires at: {self._expires_at}")
-
-        self.update_oauth_data()
         self.__class__.__name__ = "api_user"
 
         OBJECTS["user"].pop(user_id, None)
@@ -614,7 +564,6 @@ class ApiUser(User):
         @wraps(method)
         def decorator(self, *args, **kwargs):
             if time.time() > self._expires_at:
-                # self.refresh_token()
                 return {"message": "Your token has expired, please re-login.", "error": "token_expired"}, 401
 
             return method(self, *args, **kwargs)
@@ -722,46 +671,6 @@ class ApiUser(User):
         self.user = user
 
         return data
-
-    def get_oauth_data(self, *, can_insert: bool = True, update_variables: bool = True) -> OauthData | None:
-        data = self.get_data(can_insert=can_insert)
-
-        if not data:
-            return None
-
-        oauth_data = data["oauth"]
-
-        if update_variables:
-            self._oauth_code = oauth_data["code"]
-            self._user_token = oauth_data["user_token"]
-            # self._access_token = oauth_data["access_token"]
-            # self._refresh_token = oauth_data["refresh_token"]
-            self._expires_at = oauth_data["expires_at"]
-
-        return oauth_data
-
-    def update_oauth_data(self, oauth_data: OauthData | None = None):
-        if oauth_data:
-            self._oauth_code = oauth_data["code"] or self._oauth_code
-            self._user_token = oauth_data["user_token"] or self._user_token
-            # self._access_token = oauth_data["access_token"] or self._access_token
-            # self._refresh_token = oauth_data["refresh_token"] or self._refresh_token
-            self._expires_at = oauth_data["expires_at"] or self._expires_at
-
-        self.update_data(
-            {
-                "oauth": {
-                    "code": self._oauth_code,
-                    "user_token": self._user_token,
-                    # "access_token": self._access_token,
-                    # "refresh_token": self._refresh_token,
-                    "expires_at": self._expires_at,
-                }
-            }
-        )
-
-        if oauth_data:
-            self.get_oauth_data()
 
     def get_guilds(self) -> dict:
         guilds = None

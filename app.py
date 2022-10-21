@@ -207,7 +207,7 @@ def callback():
         recipient=key,
     )
 
-    user_token = jwe_token.serialize(compact=True).encode()
+    user_token = jwe_token.serialize(compact=True)
     user_data_obj._oauth_code = code
 
     return {"message": "You have been authorized", "token": user_token, "redirect": state}, 200

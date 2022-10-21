@@ -161,24 +161,11 @@ def warns_data(guild_id: int):
     return {"guild_id": guild_id}
 
 
-def user_data(
-    user_id: int,
-    oauth_code: str | None = None,
-    user_token: str | None = None,
-    access_token: str | None = None,
-    refresh_token: str | None = None,
-):
+def user_data(user_id: int):
     return {
         "user_id": user_id,
         "timezone": "Europe/Belfast",
         "message_content_privacy": False,
-        # "oauth": {
-        #     "code": oauth_code,
-        #     "user_token": user_token,
-        #     "access_token": access_token,
-        #     "refresh_token": refresh_token,
-        #     "expires_at": 0.0,
-        # },
     }
 
 
