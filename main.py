@@ -152,23 +152,23 @@ class Bot(commands.InteractionBot):
         """
         )
 
-    async def get_staff_members(self, guild: disnake.Guild) -> typing.Dict[str, typing.Dict[str, disnake.Member]]:
+    def get_staff_members(self, guild: disnake.Guild) -> typing.Dict[str, typing.Dict[str, disnake.Member]]:
         guild_data_obj = GuildData(guild.id)
         guild_data = guild_data_obj.get_data()
 
         return guild_data["staff_members"]
 
-    async def get_staff_rank(self, member: disnake.Member):
+    def get_staff_rank(self, member: disnake.Member):
         if member.id in config.OWNERS:
             return "Owner"
 
-        staff_members = await self.get_staff_members(member.guild)
+        staff_members = self.get_staff_members(member.guild)
 
         for staff_rank, members in staff_members.items():
             if member.id in members:
                 return staff_rank
 
-    async def is_booster(self, user: disnake.User):
+    def is_booster(self, user: disnake.User):
         if user.id in config.OWNERS:
             return True
 
