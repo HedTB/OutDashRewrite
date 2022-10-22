@@ -146,7 +146,7 @@ def create_api_user(oauth_code: str) -> ApiUser | None:
 @app.route("/login", methods=["GET"])
 @limiter.exempt
 def login():
-    user_token = request.headers.get("x-access-tokens")
+    user_token = request.cookies.get("token")
     status_code, _, _ = validate_user_token(user_token)
 
     if status_code == 200:
@@ -155,17 +155,6 @@ def login():
     return redirect(
         f"https://discord.com/api/oauth2/authorize?response_type=code&client_id={bot_id}&scope=identify&prompt=none&redirect_uri={REDIRECT_URI}&state={request.args.get('redirect', SERVER_URL)}"
     )
-
-
-@app.route("/logout", methods=["POST"])
-@limiter.exempt
-@user_endpoint
-def logout(user_data_obj: ApiUser):
-    user_data_obj.update_oauth_data(
-        {"code": None, "user_token": None, "access_token": None, "refresh_token": None, "expires_at": 0.0}
-    )
-
-    return {"message": "You have been logged out"}, 200
 
 
 @app.route("/callback", methods=["GET"])

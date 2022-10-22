@@ -84,7 +84,7 @@ def user_endpoint(method: typing.Callable):
         if method == "OPTIONS":
             return preflight_response()
 
-        user_token = request.headers.get("x-access-tokens")
+        user_token = request.cookies.get("token", request.headers.get("x-access-tokens"))
 
         if user_token is None:
             return {"message": "User token is missing", "error": "invalid_input"}, 400
@@ -103,12 +103,11 @@ def user_endpoint(method: typing.Callable):
 
 def guild_endpoint(method: typing.Callable):
     @wraps(method)
+    # @user_endpoint
     def decorated_function(*args, **kwargs):
-        if method == "OPTIONS":
-            return preflight_response()
-
         guild_id = kwargs.get("guild_id")
-        user_token = request.headers.get("x-access-tokens")
+
+        user_token = request.cookies.get("token", request.headers.get("x-access-tokens"))
         status_code, _, user_data_obj = validate_user_token(user_token)
 
         if guild_id is None:
