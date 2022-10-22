@@ -10,39 +10,50 @@ import certifi
 import requests
 import dictdiffer
 
+from functools import wraps
 from dotenv import load_dotenv
 from pymongo import MongoClient, collection
 from uuid import uuid4
 from threading import Thread
+from pprint import pprint
 
 from utils.webhooks import *
 from utils.database_types import *
 
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
+from web.utils.exceptions import *
 
 ## -- VARIABLES -- ##
 
 load_dotenv()
 
 # TYPES
-DataType = typing.Union[str, int, dict, list, bool, None]
+DataType = typing.Union[str, int, float, dict, list, bool, None]
 Data = typing.Dict[str, DataType]
 
 # CONSTANTS
-BASE_DISCORD_URL = "https://discordapp.com/api/v10{}"
+BASE_DISCORD_URL = "https://discord.com/api/{}{}"
 DATA_REFRESH_DELAY = 180
 
-LIFETIME = 10
+SERVER_URL = "http://127.0.0.1:8080" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com"
+REDIRECT_URI = SERVER_URL + "/callback"
+
+LIFETIME = 30
 
 OBJECTS = {
     "guild": {},
     "warns": {},
     "user": {},
+    "api_user": {},
     "member": {},
     "youtube": {},
 }
 
 # VARIABLES
+bot_token = os.environ.get("BOT_TOKEN" if config.IS_SERVER else "TEST_BOT_TOKEN")
+bot_id = os.environ.get("BOT_ID" if config.IS_SERVER else "TEST_BOT_ID")
+bot_secret = os.environ.get("BOT_SECRET" if config.IS_SERVER else "TEST_BOT_SECRET")
+
 client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
@@ -128,6 +139,17 @@ def get_all_documents(collection_name: str) -> list:
 
 ## -- CLASSES -- ##
 
+# TYPES
+
+
+class OauthData(typing.TypedDict):
+    code: str | None
+    user_token: str | None
+    access_token: str | None
+    refresh_token: str | None
+    expires_at: float
+
+
 # EXCEPTIONS
 
 
@@ -154,21 +176,25 @@ class RequestFailed(Exception):
 
 class DatabaseObjectBase:
     query: str | int
-    data: Data
+    data: Data = None
 
-    _query: typing.Dict[str, typing.Union[str, int]]
-    _insert_data: Data
-    _collection: collection.Collection
+    _query: typing.Dict[str, typing.Union[str, int]] = None
+    _insert_data: Data = None
+    _collection: collection.Collection = None
 
-    _last_use: float
+    _last_use: float = 0
+
+    def __init__(self, life_time: int = LIFETIME) -> None:
+        self.life_time = life_time
+        self._last_use = time.time()
 
     def fetch_data(self, *, can_insert=True) -> Data:
         data = self._collection.find_one(self._query)
 
-        if not data and can_insert:
+        if not data and can_insert is True:
             self.insert_data()
             return self.fetch_data(can_insert=False)
-        elif data:
+        elif data and self._insert_data:
             cleaned_data = reconcicle_dict(self._insert_data, data)
 
             if not are_dicts_identical(cleaned_data, data):
@@ -177,6 +203,8 @@ class DatabaseObjectBase:
             else:
                 data.pop("_id")
                 self.data = data
+        else:
+            self.data = data
 
         self._last_use = time.time()
         return self.data
@@ -197,6 +225,7 @@ class DatabaseObjectBase:
         if self.data.get("_id"):
             self.data.pop("_id")
 
+        logger.debug(f"Inserted data for data object of type {self.__class__.__name__}")
         return self.data
 
     def update_data(self, data: Data) -> Data:
@@ -204,12 +233,17 @@ class DatabaseObjectBase:
             self.insert_data()
 
         self.data.update(data)
-
-        result = self._collection.replace_one(self._query, self.data)
         self._last_use = time.time()
 
+        # result = self._collection.update_one(self._query, {"$set": data})
+        result = self._collection.replace_one(self._query, self.data)
+
         if result.modified_count == 0:
-            logger.critical("No documents were updated, result: {}".format(result.raw_result))
+            logger.critical(
+                "No documents were updated for data object of type {}, result: {}".format(
+                    self.__class__.__name__, result.raw_result
+                )
+            )
         else:
             logger.debug(
                 "Updated {} documents for data object of type {}".format(result.modified_count, self.__class__.__name__)
@@ -224,7 +258,7 @@ class DatabaseObjectBase:
         self.data = None
 
     def can_destroy(self) -> bool:
-        return self._last_use + LIFETIME < time.time()
+        return self._last_use + self.life_time < time.time()
 
     def destroy(self) -> None:
         if not self.can_destroy():
@@ -234,21 +268,23 @@ class DatabaseObjectBase:
 
 
 class Guild(DatabaseObjectBase):
-    def __init__(self, guild: disnake.Guild):
-        self.guild = guild
-        self.query = guild.id
-        self.data = None
+    def __init__(self, guild_id: int):
 
-        self._query = {"guild_id": guild.id}
-        self._insert_data = guild_data(guild.id)
+        self.guild_id = guild_id
+        self.query = guild_id
+
+        self._query = {"guild_id": guild_id}
+        self._insert_data = guild_data(guild_id)
         self._collection = guild_data_col
 
         self._last_use = time.time()
 
         self.__class__.__name__ = "guild"
-        OBJECTS["guild"][guild.id] = self
+        OBJECTS["guild"][guild_id] = self
 
-    def get_log_webhooks(self):
+        super().__init__()
+
+    def get_log_webhooks(self) -> typing.Dict[str, DataType]:
         data = self.get_data()
 
         return data["webhooks"]
@@ -257,8 +293,7 @@ class Guild(DatabaseObjectBase):
         if not log_type in log_types:
             raise InvalidLogType
 
-        webhooks = self.get_log_webhooks()
-        return webhooks[log_type]
+        return self.get_log_webhooks()[log_type]
 
     def update_log_webhooks(self, data: Data):
         webhooks = self.get_log_webhooks()
@@ -280,19 +315,20 @@ class Guild(DatabaseObjectBase):
 
 
 class Warns(DatabaseObjectBase):
-    def __init__(self, guild: disnake.Guild):
-        self.guild = guild
-        self.query = guild.id
-        self.data = None
+    def __init__(self, guild_id: int):
+        super().__init__()
 
-        self._query = {"guild_id": guild.id}
-        self._insert_data = warns_data(guild.id)
+        self.guild_id = guild_id
+        self.query = guild_id
+
+        self._query = {"guild_id": guild_id}
+        self._insert_data = warns_data(guild_id)
         self._collection = warns_col
 
         self._last_use = time.time()
 
         self.__class__.__name__ = "warns"
-        OBJECTS["warns"][guild.id] = self
+        OBJECTS["warns"][guild_id] = self
 
     def update_warnings(self, member: disnake.Member, data: dict):
         self.update_data({str(member.id): data})
@@ -335,41 +371,41 @@ class Warns(DatabaseObjectBase):
 
 
 class User(DatabaseObjectBase):
-    def __init__(self, user: disnake.User):
-        self.user = user
-        self.query = user.id
-        self.data = None
+    def __init__(self, user_id: int, *, life_time: int):
+        self.user_id = user_id
+        self.query = user_id
 
-        self._query = {"user_id": user.id}
-        self._insert_data = user_data(user.id)
+        self._query = {"user_id": user_id}
+        self._insert_data = user_data(user_id)
         self._collection = user_data_col
 
-        self._last_use = time.time()
-
         self.__class__.__name__ = "user"
-        OBJECTS["user"][user.id] = self
+        OBJECTS["user"][user_id] = self
+
+        super().__init__(life_time=life_time)
 
 
 class Member(DatabaseObjectBase):
-    def __init__(self, member: disnake.Member):
-        self.user = member
-        self.guild = member.guild
-        self.query = member.id
-        self.data = None
+    def __init__(self, member_id: int, guild_id: int):
+        self.user_id = member_id
+        self.guild_id = guild_id
+        self.query = member_id
 
-        self._query = {"user_id": member.id}
-        self._insert_data = member_data(self.user.id, self.guild.id)
+        self._query = {"user_id": member_id}
+        self._insert_data = member_data(self.user_id, self.guild_id)
         self._collection = user_data_col
 
         self._last_use = time.time()
 
         self.__class__.__name__ = "member"
-        OBJECTS["member"][member.id] = self
+        OBJECTS["member"][member_id] = self
+
+        super().__init__()
 
     def get_guild_data(self, can_insert: bool = True) -> dict:
         data = self.get_data(can_insert=can_insert)
 
-        guild_id = str(self.guild.id)
+        guild_id = str(self.guild_id)
         guild_data = data.get(guild_id)
 
         if not guild_data and can_insert:
@@ -382,13 +418,12 @@ class Member(DatabaseObjectBase):
         guild_data = self.get_guild_data()
 
         guild_data.update(data)
-        self.update_data({str(self.guild.id): guild_data})
+        self.update_data({str(self.guild_id): guild_data})
 
 
 class YouTube(DatabaseObjectBase):
     def __init__(self, guild_id: int):
         self.query = guild_id
-        self.data = None
 
         self._query = {"guild_id": guild_id}
         self._insert_data = youtube_channels_data(guild_id)
@@ -398,6 +433,8 @@ class YouTube(DatabaseObjectBase):
 
         self.__class__.__name__ = "youtube"
         OBJECTS["youtube"][guild_id] = self
+
+        super().__init__()
 
     def get_youtube_channels(self, can_insert: bool = True) -> list:
         data = self.get_data(can_insert=can_insert)
@@ -457,130 +494,227 @@ class BotObject(DatabaseObjectBase):
         self._collection = api_data_col
         self._insert_data = bot_api_data()
 
-    def get_guilds(self) -> dict:
-        data = self.get_data()
+        super().__init__()
 
-        last_refresh = data.get("last_refresh")
-        guilds_cache = data.get("guilds")
+    def get_guild_count(self) -> int:
+        return len(list(guild_data_col.find({})))
 
-        if (
-            not (guilds_cache or last_refresh)
-            or len(guilds_cache) == 0
-            or time.time() - last_refresh > DATA_REFRESH_DELAY
-        ):
-            guilds = self.request("/users/@me/guilds")
-            guilds_dict = guilds.json()
+    def get_guilds(self) -> DataType:
+        guilds = []
 
-            if guilds.status_code == 200:
-                data["last_refresh"] = time.time()
-                data["guilds"] = guilds_dict
+        for document in guild_data_col.find({}):
+            guilds.append({"id": document["guild_id"]})
 
-                for guild in guilds_dict:
-                    guild.pop("features")
+        return guilds
 
-            return guilds_dict
-        else:
-            return guilds_cache
-
-    def request(self, endpoint, params=None) -> requests.Response:
+    def get(self, endpoint, params=None, *, api_version: str = "v10") -> requests.Response:
         return requests.get(
-            url=BASE_DISCORD_URL.format(endpoint),
+            url=BASE_DISCORD_URL.format(api_version, endpoint),
             headers=request_headers,
             params=params,
         )
 
-    def get_token_from_code(self, access_code: str):
-        access_codes = list(access_codes_col.find({}))
+    def get_token_from_code(self, oauth_code: str) -> str | None:
+        user_data = user_data_col.find_one({"oauth.code": oauth_code})
 
-        for authorization in access_codes:
-            for key in authorization:
-                value = authorization[key]
+        if not user_data:
+            return None
+        else:
+            return user_data["oauth"]["user_token"]
 
-                if value.startswith("{") and value.endswith("}") or value.startswith("[") and value.endswith("]"):
-                    try:
-                        authorization[key] = json.loads(value)
-                    except:
-                        continue
-
-            auth_access_code = authorization["access_code"]
-            if auth_access_code == access_code:
-                return authorization["access_token"]
-
-        return None
-
-    def get_guild(self, guild_id) -> dict | None:
+    def get_guild(self, guild_id: int) -> dict | None:
         guilds = self.get_guilds()
 
         for guild in guilds:
-            if guild.get("id") == guild_id:
+            if guild["id"] == guild_id:
                 return guild
 
         return None
 
 
-class UserObject(DatabaseObjectBase):
-    def __init__(self, access_code: str) -> None:
-        self._access_code = access_code
+class ApiUser(User):
+    def __init__(
+        self,
+        user_id: int,
+        *,
+        oauth_code: str,
+        user_token: str | None = None,
+        access_token: str | None = None,
+        refresh_token: str | None = None,
+        expires_at: float,
+    ):
+        super().__init__(user_id, life_time=60)
+
         self._bot_object = BotObject()
+        self._insert_data = user_data(user_id)
 
-        self._query = {"access_code": self._access_code}
-        self._collection = access_codes_col
+        self._oauth_code = oauth_code
+        self._user_token = user_token
+        self._access_token = access_token
+        self._refresh_token = refresh_token
+        self._expires_at = expires_at
 
-        result = access_codes_col.find_one(self._query)
-        if not result:
-            raise InvalidAccessCode
+        self.__class__.__name__ = "api_user"
 
-        access_token, refresh_token = result["access_token"], result["refresh_token"]
-        user = json.loads(result["user"])
+        OBJECTS["user"].pop(user_id, None)
+        OBJECTS["api_user"][user_id] = self
 
-        self._insert_data = user_api_data(access_token, refresh_token, self._access_code, user)
+    @staticmethod
+    def requires_access_token(method: typing.Callable):
+        @wraps(method)
+        def decorator(self, *args, **kwargs):
+            if time.time() > self._expires_at:
+                return {"message": "Your token has expired, please re-login.", "error": "token_expired"}, 401
 
-    def request(self, endpoint, params=None) -> requests.Response:
-        access_token = self._bot_object.get_token_from_code(self._access_code)
+            return method(self, *args, **kwargs)
 
-        return requests.get(
-            url=BASE_DISCORD_URL.format(endpoint),
-            headers={
-                "Authorization": "Bearer " + access_token,
-                "Content-Type": "application/json",
-            },
-            params=params,
+        return decorator
+
+    def request(
+        self, method: str, endpoint: str, *, api_version: str = "v10", headers: typing.Dict[str, any] = {}, **kwargs
+    ) -> requests.Response:
+        return requests.request(
+            method=method,
+            url=BASE_DISCORD_URL.format(api_version, endpoint),
+            headers={"Content-Type": "application/json", **headers},
+            **kwargs,
         )
 
+    @requires_access_token
+    def token_request(
+        self,
+        method: str,
+        endpoint: str,
+        *,
+        api_version: str = "v10",
+        headers: typing.Dict[str, any] = {},
+        **kwargs,
+    ) -> requests.Response:
+        return requests.request(
+            method=method,
+            url=BASE_DISCORD_URL.format(api_version, endpoint),
+            headers={"Authorization": "Bearer " + self._access_token, "Content-Type": "application/json", **headers},
+            **kwargs,
+        )
+
+    def exchange_code(self, code: str | None = None):
+        if not self._oauth_code and not code:
+            raise AttributeError("Missing oauth code")
+
+        logger.debug("Exchanging oauth code")
+
+        response = self.request(
+            "post",
+            "/oauth2/token",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "client_id": bot_id,
+                "client_secret": bot_secret,
+                "grant_type": "authorization_code",
+                "code": self._oauth_code,
+                "redirect_uri": REDIRECT_URI,
+            },
+        )
+
+        if response.status_code == 400:
+            raise InvalidOauthCode
+        elif response.status_code != 200:
+            raise requests.HTTPError
+
+        data = functions.convert_strings(response.json())
+
+        self._access_token = data["access_token"]
+        self._refresh_token = data["refresh_token"]
+        self._expires_at = time.time() + float(data["expires_in"])
+
+    def refresh_token(self):
+        logger.debug("Refreshing token for user")
+
+        response = self.request(
+            "post",
+            "/oauth2/token",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "client_id": bot_id,
+                "client_secret": bot_secret,
+                "grant_type": "refresh_token",
+                "refresh_token": self._refresh_token,
+            },
+        )
+
+        if response.status_code == 400:
+            raise InvalidAccessToken
+        elif response.status_code != 200:
+            return response.raise_for_status()
+
+        data = functions.convert_strings(response.json())
+
+        self._expires_at = time.time() + data["expires_in"]
+        self._access_token = data["access_token"]
+        self._refresh_token = data["refresh_token"]
+
+        self.update_oauth_data()
+
+    def identify(self):
+        logger.debug("Identifying user")
+        response = self.token_request("get", "/oauth2/@me")
+
+        if response.status_code == 400:
+            raise InvalidAccessToken
+        elif response.status_code != 200:
+            return response.raise_for_status()
+
+        data = functions.convert_strings(response.json())
+        user = data["user"]
+
+        self.user_id = user["id"]
+        self.user = user
+
+        return data
+
     def get_guilds(self) -> dict:
-        data = self.get_data()
+        guilds = None
 
-        guilds_cache = data.get("guilds")
-        last_refresh = data.get("last_refresh")
+        with open("data/users.json", "r") as file:
+            data = json.load(file)
+            user = data.get(str(self.user_id), {})
 
-        if (
-            not guilds_cache
-            or not last_refresh
-            or len(guilds_cache) == 0
-            or time.time() - last_refresh > DATA_REFRESH_DELAY
-        ):
-            user_result = self.request("/users/@me/guilds")
-            user_guilds = user_result.json()
+        if user:
+            guilds = user.get("guilds")
+            last_refresh = user.get("last_refresh")
 
-            if user_result.status_code == 401:
-                raise RequestFailed
+        if guilds is None or len(guilds) == 0 or time.time() - last_refresh > DATA_REFRESH_DELAY:
+            logger.debug("Fetching user guilds")
 
-            for guild in user_guilds:
+            response = self.token_request("get", "/users/@me/guilds")
+            guilds = response.json()
+
+            if response.status_code == 401:
+                raise InvalidAccessToken
+            elif response.status_code != 200:
+                raise
+
+            for guild in guilds:
                 guild.pop("features")
 
-            data["last_refresh"] = time.time()
-            data["guilds"] = user_guilds
-            guilds_cache = user_guilds
+                guild["id"] = int(guild["id"])
+                guild["permissions"] = int(guild["permissions"])
 
-            self.update_data(data)
+            user["last_refresh"] = time.time()
+            user["guilds"] = guilds
 
-        return guilds_cache
+            data[self.user_id] = user
 
-    def get_guild(self, guild_id) -> dict | None:
+        with open("data/users.json", "w") as file:
+            json.dump(data, file)
+
+        return guilds
+
+    def get_api_guild(self, guild_id: int) -> dict | None:
         guilds = self.get_guilds()
 
         for guild in guilds:
-            if guild.get("id") == guild_id:
+            if guild["id"] == guild_id:
                 return guild
 
         return None
@@ -589,20 +723,87 @@ class UserObject(DatabaseObjectBase):
 # -- COLLECTIONS -- #
 
 
-def GuildData(guild: disnake.Guild) -> Guild:
-    return OBJECTS["guild"].get(guild.id) or Guild(guild)
+def GuildData(guild_id: int) -> Guild:
+    return OBJECTS["guild"].get(guild_id, Guild(guild_id))
 
 
-def WarnsData(guild: disnake.Guild) -> Warns:
-    return OBJECTS["warns"].get(guild.id) or Warns(guild)
+def WarnsData(guild_id: int) -> Warns:
+    return OBJECTS["warns"].get(guild_id, Warns(guild_id))
 
 
-def UserData(user: disnake.User) -> User:
-    return OBJECTS["user"].get(user.id) or User(user)
+def UserData(user_id: int) -> User:
+    return OBJECTS["user"].get(user_id, User(user_id))
 
 
-def MemberData(member: disnake.Member) -> Member:
-    return OBJECTS["member"].get(member.id) or Member(member)
+def ApiUserData(
+    *,
+    user_id: int | None = None,
+    oauth_code: str | None = None,
+    user_token: str | None = None,
+    access_token: str | None = None,
+    refresh_token: str | None = None,
+    expires_at: float | None = None,
+) -> ApiUser:
+    if not user_id and not oauth_code and not access_token:
+        raise AttributeError("Either the user ID or at least one token needs to be specified")
+
+    if not user_id and oauth_code and not access_token:
+        response = requests.post(
+            url=BASE_DISCORD_URL.format("v10", "/oauth2/token"),
+            data={
+                "client_id": bot_id,
+                "client_secret": bot_secret,
+                "grant_type": "authorization_code",
+                "code": oauth_code,
+                "redirect_uri": REDIRECT_URI,
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+
+        if response.status_code == 400:
+            raise InvalidOauthCode
+        elif response.status_code != 200:
+            raise requests.HTTPError
+
+        data = functions.convert_strings(response.json())
+        access_token = data["access_token"]
+        refresh_token = data["refresh_token"]
+        expires_at = time.time() + data["expires_in"]
+
+    if not user_id and access_token:
+        response = requests.get(
+            url=BASE_DISCORD_URL.format("v10", "/oauth2/@me"),
+            headers={
+                "Authorization": "Bearer " + access_token,
+                "Content-Type": "application/json",
+            },
+        )
+
+        if response.status_code == 400:
+            raise InvalidAccessToken
+        elif response.status_code != 200:
+            raise requests.HTTPError
+
+        data = functions.convert_strings(response.json())
+        user_id = data["user"]["id"]
+
+    user_id = int(user_id)
+
+    return OBJECTS["api_user"].get(
+        user_id,
+        ApiUser(
+            user_id=user_id,
+            oauth_code=oauth_code,
+            user_token=user_token,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_at=expires_at,
+        ),
+    )
+
+
+def MemberData(member_id: int, guild_id: int) -> Member:
+    return OBJECTS["member"].get(member_id) or Member(member_id, guild_id)
 
 
 def YouTubeData(guild_id: int) -> YouTube:
@@ -610,11 +811,10 @@ def YouTubeData(guild_id: int) -> YouTube:
 
 
 async def update_loop():
+    last_cache_clear = 0
+
     while True:
         await asyncio.sleep(1)
-
-        if len(OBJECTS) == 0:
-            continue
 
         for objects in OBJECTS.values():
             if len(objects) == 0:
@@ -629,13 +829,30 @@ async def update_loop():
             for id in destroyed:
                 objects[id].destroy()
 
+        if time.time() - last_cache_clear >= 10:
+            last_cache_clear = time.time()
 
-def threaded_function():
+            with open("data/users.json", "r") as file:
+                data = json.load(file)
+                to_pop = []
+
+                for user_id, user in data.items():
+                    if time.time() - user["last_refresh"] > 180:
+                        to_pop.append(user_id)
+
+                for user_id in to_pop:
+                    data.pop(user_id)
+
+            with open("data/users.json", "w") as file:
+                json.dump(data, file)
+
+
+def threaded_function(method: typing.Callable):
     loop = asyncio.new_event_loop()
 
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(update_loop())
+    loop.run_until_complete(method())
     loop.close()
 
 
-Thread(target=threaded_function).start()
+Thread(target=threaded_function, args=[update_loop]).start()
