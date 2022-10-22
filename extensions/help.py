@@ -9,7 +9,7 @@ from disnake.ext import commands, menus
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 from utils.checks import *
 from utils.data import *
 from utils.emojis import *
@@ -20,8 +20,7 @@ from . import fun, leveling, miscellaneous, moderation, music, settings
 
 load_dotenv()
 
-AnyContext = typing.Union[commands.Context,
-                          disnake.ApplicationCommandInteraction]
+disnake.ApplicationCommandInteraction = typing.Union[commands.Context, disnake.ApplicationCommandInteraction]
 
 pages = [
     1,
@@ -56,30 +55,48 @@ help_description = """
 ## -- FUNCTIONS -- ##
 
 
-def get_group_commands(
-    group: commands.Group, *, original_group: commands.Group = None
-) -> typing.List[str]:
-    group_commands = []
+def get_command_id(bot: commands.Bot, name: str) -> int | None:
+    command = disnake.utils.get(bot.global_slash_commands, name=name)
 
-    if group.name not in empty_group_bases:
-        group_commands.append(group.qualified_name)
+    if not command:
+        return None
 
-    for command in group.commands:
-        group_commands.append(command.qualified_name)
-
-    return group_commands
+    return command.id
 
 
-def get_extension_commands(extension: commands.Cog):
+def get_extension_commands(extension: commands.Cog) -> list[typing.Dict[str, str | int]]:
     commands_list = []
 
-    for command in extension.walk_commands(extension):
-        if isinstance(command, commands.Group) and command.name in empty_group_bases:
+    bot = extension.bot
+
+    for command in extension.walk_commands():
+        if isinstance(command, commands.SubCommandGroup) and command.name in empty_group_bases:
             continue
 
-        commands_list.append(command.qualified_name)
+        commands_list.append({"name": command.qualified_name, "id": get_command_id(bot, command.name) or 0})
 
     return commands_list
+
+
+def get_slash_command_signature(
+    command: commands.InvokableSlashCommand, *, options: list[disnake.Option] | None = None
+):
+    if not options:
+        options = (
+            command.option.options
+            if isinstance(command, (commands.SubCommand, commands.SubCommandGroup))
+            else command.options
+        )
+
+    parameters = ""
+
+    for option in options:
+        bracket1 = "<" if option.required else "["
+        bracket2 = ">" if option.required else "]"
+
+        parameters += f"{bracket1}{option.name}{bracket2} "
+
+    return f"/{command.qualified_name} {parameters}".rstrip()
 
 
 ## -- VIEWS -- ##
@@ -91,7 +108,7 @@ class HelpPageSource(menus.ListPageSource):
 
     @staticmethod
     def format_page(menu: menus.MenuPages, entry: int | commands.Cog) -> disnake.Embed:
-        ctx = menu.ctx
+        inter = menu.inter
 
         if isinstance(entry, int):
             embed = disnake.Embed(
@@ -106,38 +123,41 @@ class HelpPageSource(menus.ListPageSource):
                     continue
 
                 embed.add_field(
-                    name=getattr(extension, "name",
-                                 extension.__name__.title()),
-                    value=getattr(
-                        extension, "description", "No description has been provided."
-                    ),
+                    name=getattr(extension, "name", extension.__name__.title()),
+                    value=getattr(extension, "description", "No description has been provided."),
                     inline=True,
                 )
 
             embed.set_footer(
-                text=f"Requested by {ctx.author}",
-                icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL,
+                text=f"Requested by {inter.author}",
+                icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
             )
             embed.timestamp = datetime.datetime.utcnow()
 
         else:
-            embed = disnake.Embed(
-                title=entry.name,
-                description=entry.description,
-                color=colors.embed_color,
-                timestamp=datetime.datetime.utcnow(),
-            )
+            commands_list = []
 
-            embed.add_field(
-                name="Commands",
-                value=", ".join(
-                    f"`{command}`" for command in get_extension_commands(entry)
-                ),
-            )
+            for command in get_extension_commands(entry):
+                command_name = command["name"]
+                command_id = command["id"]
 
-            embed.set_footer(
-                text=f"Requested by {ctx.author}",
-                icon_url=ctx.author.avatar or config.DEFAULT_AVATAR_URL,
+                commands_list.append(f"</{command_name}:{command_id}>")
+
+            embed = (
+                disnake.Embed(
+                    title=entry.name,
+                    description=entry.description,
+                    color=colors.embed_color,
+                    timestamp=datetime.datetime.utcnow(),
+                )
+                .add_field(
+                    name="Commands",
+                    value=", ".join(commands_list),
+                )
+                .set_footer(
+                    text=f"Requested by {inter.author}",
+                    icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+                )
             )
 
         return embed
@@ -151,11 +171,11 @@ class HelpPaginator(disnake.ui.View, menus.MenuPages):
         delete_message_after: bool = False,
         message: disnake.Message | None = None,
     ):
-        super().__init__(timeout=60)
+        super().__init__(timeout=None)
 
         self._source = source
         self.current_page = 0
-        self.ctx = None
+        self.inter = None
         self.message = message
         self.delete_message_after = delete_message_after
 
@@ -169,94 +189,70 @@ class HelpPaginator(disnake.ui.View, menus.MenuPages):
 
     @staticmethod
     def get_extension_embed(extension_index: int = 1):
-        extension: commands.Cog = pages[extension_index]
+        extension = pages[extension_index]
 
-        embed = disnake.Embed(
+        return disnake.Embed(
             title=extension.name,
             description=extension.description,
             color=colors.embed_color,
-        )
-
-        embed.add_field(
+        ).add_field(
             name="Commands",
-            value=", ".join(
-                f"`{command}`" for command in get_extension_commands(extension)
-            ),
+            value=", ".join(f"</{command.name}:{command.id}>" for command in get_extension_commands(extension)),
         )
 
-        return embed
-
-    async def start(
-        self, ctx: AnyContext, *, channel: disnake.TextChannel | None = None
-    ):
-        self.ctx = ctx
+    async def start(self, inter: disnake.ApplicationCommandInteraction):
+        self.inter = inter
 
         await self._source._prepare_once()
-        await self.send_initial_message(ctx, channel or ctx.channel)
+        await self.send_initial_message(inter)
 
-    async def send_initial_message(self, ctx: AnyContext, channel: disnake.TextChannel):
+    async def send_initial_message(self, inter: disnake.ApplicationCommandInteraction):
         embed = HelpPageSource.format_page(self, 1)
 
         if self.message:
             self.current_page = 0
             await self.message.edit(embed=embed, view=self)
         else:
-            self.message = await ctx.send(embed=embed, view=self)
+            self.message = await inter.send(embed=embed, view=self)
+            self.message = await inter.original_message()
 
-            if isinstance(ctx, disnake.Interaction):
-                self.message = await ctx.original_message()
-
-    async def interaction_check(self, interaction: disnake.MessageInteraction) -> bool:
-        return interaction.user == self.ctx.author
+    async def interaction_check(self, inter: disnake.MessageInteraction) -> bool:
+        return inter.user == self.inter.author
 
     @disnake.ui.button(emoji="🏠", style=disnake.ButtonStyle.secondary, row=1)
-    async def home_button(
-        self, button: disnake.Button, interaction: disnake.MessageInteraction
-    ):
+    async def home_button(self, button: disnake.Button, inter: disnake.MessageInteraction):
         await self.show_page(0)
-        await interaction.response.defer()
+        await inter.response.defer()
 
     @disnake.ui.button(emoji=pages[1].emoji, style=disnake.ButtonStyle.secondary, row=1)
-    async def button_one(
-        self, button: disnake.Button, interaction: disnake.MessageInteraction
-    ):
+    async def button_one(self, button: disnake.Button, inter: disnake.MessageInteraction):
         await self.show_page(1)
-        await interaction.response.defer()
+        await inter.response.defer()
 
     @disnake.ui.button(emoji=pages[2].emoji, style=disnake.ButtonStyle.secondary, row=1)
-    async def button_two(
-        self, button: disnake.Button, interaction: disnake.MessageInteraction
-    ):
+    async def button_two(self, button: disnake.Button, inter: disnake.MessageInteraction):
         await self.show_page(2)
-        await interaction.response.defer()
+        await inter.response.defer()
 
     @disnake.ui.button(emoji=pages[3].emoji, style=disnake.ButtonStyle.secondary, row=1)
-    async def button_three(
-        self, button: disnake.Button, interaction: disnake.MessageInteraction
-    ):
+    async def button_three(self, button: disnake.Button, inter: disnake.MessageInteraction):
         await self.show_page(3)
-        await interaction.response.defer()
+        await inter.response.defer()
 
     @disnake.ui.button(emoji=pages[4].emoji, style=disnake.ButtonStyle.secondary, row=1)
-    async def button_four(
-        self, button: disnake.Button, interaction: disnake.MessageInteraction
-    ):
+    async def button_four(self, button: disnake.Button, inter: disnake.MessageInteraction):
         await self.show_page(4)
-        await interaction.response.defer()
+        await inter.response.defer()
 
     @disnake.ui.button(emoji=pages[5].emoji, style=disnake.ButtonStyle.secondary, row=2)
-    async def button_five(
-        self, button: disnake.Button, interaction: disnake.MessageInteraction
-    ):
+    async def button_five(self, button: disnake.Button, inter: disnake.MessageInteraction):
         await self.show_page(5)
-        await interaction.response.defer()
+        await inter.response.defer()
 
     @disnake.ui.button(emoji=pages[6].emoji, style=disnake.ButtonStyle.secondary, row=2)
-    async def button_six(
-        self, button: disnake.Button, interaction: disnake.MessageInteraction
-    ):
+    async def button_six(self, button: disnake.Button, inter: disnake.MessageInteraction):
         await self.show_page(6)
-        await interaction.response.defer()
+        await inter.response.defer()
 
 
 class HelpView(disnake.ui.View):
@@ -272,25 +268,117 @@ class HelpView(disnake.ui.View):
 
 
 class CommandHelpView(disnake.ui.View):
-    def __init__(self):
-        super().__init__(timeout=60)
+    def __init__(
+        self,
+        *,
+        command: str,
+        has_sub_commands: bool = False,
+        sub_commands: typing.Dict[
+            str,
+            commands.InvokableSlashCommand,
+        ]
+        | None = None,
+    ):
+        super().__init__(timeout=None)
 
         self.add_item(
             disnake.ui.Button(
                 label="Invite me!",
                 url=f"https://discord.com/api/oauth2/authorize?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands",
+                row=2,
             )
         )
+        self.command = command
+        self.sub_commands = sub_commands
 
-    @disnake.ui.button(emoji="🏠", style=disnake.ButtonStyle.secondary, row=1)
-    async def home_button(
-        self, button: disnake.Button, interaction: disnake.MessageInteraction
-    ):
+        select_menu = self.children[1]
+
+        if not has_sub_commands:
+            return self.remove_item(select_menu)
+
+        select_menu.options = [
+            disnake.SelectOption(label=f"/{sub_command.qualified_name}", value=sub_command.qualified_name)
+            for sub_command in sub_commands.values()
+        ]
+
+    @disnake.ui.button(emoji="🏠", style=disnake.ButtonStyle.secondary, row=3)
+    async def home_button(self, button: disnake.Button, inter: disnake.MessageInteraction):
         formatter = HelpPageSource(pages)
-        menu = HelpPaginator(formatter, message=interaction.message)
+        menu = HelpPaginator(formatter, message=inter.message)
 
-        await menu.start(interaction)
-        await interaction.response.defer()
+        await menu.start(inter)
+        await inter.response.defer()
+
+    @disnake.ui.select(placeholder="Select a sub-command", row=1)
+    async def sub_command_selector(self, select_menu: disnake.SelectMenu, inter: disnake.MessageInteraction):
+        sub_command_name = inter.values[0]
+        command = inter.bot.get_slash_command(sub_command_name)
+
+        await inter.response.defer()
+
+        if not command:
+            return
+
+        select_menu.options = [
+            disnake.SelectOption(label=f"/{temp_sub_command.qualified_name}", value=temp_sub_command.qualified_name)
+            for temp_sub_command in self.sub_commands.values()
+            if temp_sub_command.qualified_name != sub_command_name
+        ]
+
+        command_options = (
+            command.option.options
+            if isinstance(command, (commands.SubCommand, commands.SubCommandGroup))
+            else command.options
+        )
+
+        if isinstance(command, (commands.SubCommand, commands.SubCommandGroup)):
+            embed = (
+                disnake.Embed(
+                    title=command.qualified_name.title(),
+                    description="`<>` means that the argument is required.\n`[]` means that the argument is optional.",
+                    color=colors.embed_color,
+                    timestamp=datetime.datetime.utcnow(),
+                )
+                .add_field(
+                    name="Usage",
+                    value=f"`{get_slash_command_signature(command, options=command_options)}`",
+                    inline=False,
+                )
+                .add_field(name="Description", value=getattr(command, "description", "N/A"), inline=False)
+                .set_footer(
+                    text=f"Requested by {inter.author}",
+                    icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+                )
+            )
+
+            if len(command_options) > 0:
+                embed.add_field(
+                    name="Parameters",
+                    value="\n".join(f"`{parameter.name}`: {parameter.description}" for parameter in command_options),
+                    inline=False,
+                )
+
+            select_menu.options.insert(0, disnake.SelectOption(label=f"/{self.command}", value=self.command))
+        else:
+            embed = (
+                disnake.Embed(
+                    title=command.qualified_name.title(),
+                    description="This is a command group, meaning you can only run its sub-commands.",
+                    color=colors.embed_color,
+                    timestamp=datetime.datetime.utcnow(),
+                )
+                .add_field(
+                    name="Sub Commands",
+                    value=", ".join([f"`{sub_command.qualified_name}`" for sub_command in self.sub_commands.values()]),
+                )
+                .set_footer(
+                    text=f"Requested by {inter.author}",
+                    icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+                )
+            )
+
+        await inter.edit_original_message(embed=embed, view=self)
+
 
 ## -- COG -- ##
 
@@ -298,18 +386,9 @@ class CommandHelpView(disnake.ui.View):
 class Help(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    def get_slash_command_signature(self, command: commands.InvokableSlashCommand):
-        parameters = ""
-
-        for option in command.options:
-            bracket1 = "<" if option.required else "["
-            bracket2 = ">" if option.required else "]"
-
-            parameters += f"{bracket1}{option.name}{bracket2} "
-
-        parameters[:-1]
-        return "/%s %s" % (command.name, parameters)
+        self.commands = [
+            slash_command.qualified_name for slash_command in bot.slash_commands if slash_command.auto_sync
+        ]
 
     ## -- SLASH COMMANDS -- ##
 
@@ -325,12 +404,10 @@ class Help(commands.Cog):
         formatter = HelpPageSource(pages)
         menu = HelpPaginator(formatter)
 
-        await menu.start(inter, channel=inter.channel)
+        await menu.start(inter)
 
     @help.sub_command(name="command")
-    async def help_command(
-        self, inter: disnake.ApplicationCommandInteraction, command: str
-    ):
+    async def help_command(self, inter: disnake.ApplicationCommandInteraction, command: str):
         """Get information about a specific command.
         Parameters
         ----------
@@ -340,28 +417,69 @@ class Help(commands.Cog):
         command_obj = self.bot.get_slash_command(command)
 
         if not command_obj:
-            embed = disnake.Embed(
-                description=f"{no} There's no command called `{command}`.",
-                color=colors.error_embed_color,
+            return await inter.send(
+                embed=disnake.Embed(
+                    description=f"{no} There's no command called `{command}`.",
+                    color=colors.error_embed_color,
+                ),
+                ephemeral=True,
             )
-            return await inter.send(embed=embed, ephemeral=True)
 
-        embed = disnake.Embed(
-            title=command_obj.qualified_name.title(),
-            description="`<>` means that the argument is required.\n`[]` means that the argument is optional.",
-            color=colors.embed_color,
-            timestamp=datetime.datetime.utcnow(),
+        sub_commands = getattr(command_obj, "children")
+
+        if sub_commands and len(sub_commands) > 0:
+            return await inter.send(
+                embed=disnake.Embed(
+                    title=command_obj.qualified_name.title(),
+                    description="This is a command group, meaning you can only run its sub-commands.",
+                    color=colors.embed_color,
+                    timestamp=datetime.datetime.utcnow(),
+                )
+                .add_field(
+                    name="Sub Commands",
+                    value=", ".join([f"`{sub_command.qualified_name}`" for sub_command in sub_commands.values()]),
+                )
+                .set_footer(
+                    text=f"Requested by {inter.author}",
+                    icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+                ),
+                view=CommandHelpView(command=command, has_sub_commands=True, sub_commands=sub_commands),
+            )
+
+        embed = (
+            disnake.Embed(
+                title=command_obj.qualified_name.title(),
+                description="`<>` means that the argument is required.\n`[]` means that the argument is optional.",
+                color=colors.embed_color,
+                timestamp=datetime.datetime.utcnow(),
+            )
+            .add_field(
+                name="Usage",
+                value=f"`{get_slash_command_signature(command_obj)}`",
+                inline=False,
+            )
+            .add_field(name="Description", value=getattr(command_obj, "description", "N/A"), inline=False)
+            .set_footer(
+                text=f"Requested by {inter.author}",
+                icon_url=inter.author.avatar or config.DEFAULT_AVATAR_URL,
+            )
         )
 
-        embed.add_field(
-            name="Usage",
-            value=self.get_slash_command_signature(command_obj),
-            inline=False,
-        )
-        embed.add_field(name="Description",
-                        value=command_obj.description, inline=False)
+        if len(command_obj.options) > 0:
+            embed.add_field(
+                name="Parameters",
+                value="\n".join(f"`{parameter.name}`: {parameter.description}" for parameter in command_obj.options),
+                inline=False,
+            )
 
-        await inter.send(embed=embed, view=CommandHelpView())
+        await inter.send(
+            embed=embed,
+            view=CommandHelpView(command=command, has_sub_commands=False),
+        )
+
+    @help_command.autocomplete("command")
+    async def command_autocomplete(self, inter: disnake.ApplicationCommandInteraction, input: str):
+        return [command for command in self.commands if input.lower() in command.lower()][:25]
 
 
 def setup(bot):

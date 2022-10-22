@@ -1,31 +1,60 @@
 ## -- IMPORTS -- ##
 
+import re
 import disnake
-import os
 import string
 import random
-import certifi
-import json
 
 from captcha.image import ImageCaptcha
 from dotenv import load_dotenv
-from pymongo import MongoClient
+from disnake.ext import commands
 
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 from utils.data import *
 
 ## -- VARIABLES -- ##
 
 load_dotenv()
 
-MONGO_LOGIN = os.environ.get("MONGO_LOGIN")
-
-client = MongoClient(MONGO_LOGIN, tlsCAFile=certifi.where())
-db = client[config.DATABASE_COLLECTION]
-
-guild_data_col = db["guild_data"]
+decimal_filter = re.compile(r"^\d*[.,]\d*$")
 
 ## -- FUNCTIONS -- ##
+
+
+def convert_strings(iterable: dict | list):
+    if isinstance(iterable, dict):
+        for key, value in iterable.items():
+            if isinstance(value, (dict, list)):
+                iterable[key] = convert_strings(value)
+            elif isinstance(value, str):
+                iterable[key] = to_number(value, just_try=True)
+    elif isinstance(iterable, list):
+        for value in iterable:
+            if isinstance(value, (dict, list)):
+                iterable[iterable.index(value)] = convert_strings(value)
+            elif isinstance(value, str):
+                iterable[iterable.index(value)] = to_number(value, just_try=True)
+
+    return iterable
+
+
+def to_number(s: str, just_try=False):
+    if decimal_filter.match(s):
+        try:
+            return float(s)
+        except:
+            if just_try:
+                return s
+            else:
+                raise
+    else:
+        try:
+            return int(s)
+        except:
+            if just_try:
+                return s
+            else:
+                raise
 
 
 def generate_captcha(length: int = 8) -> str:
@@ -79,7 +108,6 @@ def seconds_to_text(secs, max_amount: int = 6) -> str:
     secs = int(secs)
 
     second = 60  # 1
-    minute = 60  # 1 * 60
     hour = 3600  # 1 * 60 * 60
     day = 86400  # 1 * 60 * 60 * 24
     month = 2629800  # 1 * 60 * 60 * 24 * 30
@@ -134,24 +162,27 @@ def is_role_above_role(role1: disnake.Role, role2: disnake.Role) -> bool:
         return False
 
 
-def log_moderation(
-    guild: disnake.Guild,
-    moderator: disnake.Member,
-    action: str,
-    reason: str = "No reason provided.",
-):
-    data_obj = GuildData(guild)
-    data = data_obj.get_data()
+async def get_or_make_invite(guild: disnake.Guild) -> str | None:
+    invite = guild.vanity_url_code
+
+    if invite:
+        return invite
 
     try:
-        json.loads(data.get("moderation_logs"))
+        for invite in await guild.invites():
+            if invite.max_age == 0 and invite.max_uses == 0:
+                return invite.url
     except:
-        return
+        pass
 
-    mod_logs = json.loads(data.get("moderation_logs"))
+    try:
+        channel = guild.text_channels[0]
+        invite_obj = await channel.create_invite(max_uses=1)
+        invite = invite_obj.url
+    except:
+        invite = None
 
-    mod_logs.append({moderator: moderator, action: action, reason: reason})
-    data_obj.update_data({"moderation_logs": mod_logs})
+    return invite
 
 
 def abbriviate_number(number: int):

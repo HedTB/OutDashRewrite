@@ -10,7 +10,7 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 
 from utils.checks import *
 from utils.data import *
@@ -200,7 +200,7 @@ class Settings(commands.Cog):
     async def settings_lock(self, inter: disnake.ApplicationCommandInteraction):
         """Locks the server's settings."""
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         guild_data = data_obj.get_data()
 
         if guild_data.get("settings_locked") == True:
@@ -222,7 +222,7 @@ class Settings(commands.Cog):
     async def settings_unlock(self, inter: disnake.ApplicationCommandInteraction):
         """Unlocks the server's settings."""
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         guild_data = data_obj.get_data()
 
         if guild_data.get("settings_locked") == False:
@@ -279,7 +279,7 @@ class Settings(commands.Cog):
         channel: The channel to send the logs to. If none, the log types will be disabled.
         """
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         embed = disnake.Embed(
             description=f"{yes} All {category.lower()[:-1]} logs have been disabled",
             color=colors.success_embed_color,
@@ -310,7 +310,7 @@ class Settings(commands.Cog):
         channel: Where the selected log type should be sent. If none, the log type will be disabled.
         """
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         log_type, log_description = find_log_type(type.lower())
 
         if not channel:
@@ -347,7 +347,7 @@ class Settings(commands.Cog):
     async def editwelcome_toggle(self, inter: disnake.ApplicationCommandInteraction, toggle: bool):
         """Toggles if welcome messages should be sent."""
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         embed = disnake.Embed(
             description=f"{yes} Welcome messages have been {'disabled' if not toggle else 'enabled'}.",
             color=colors.success_embed_color,
@@ -362,7 +362,7 @@ class Settings(commands.Cog):
     async def editwelcome_content(self, inter: disnake.ApplicationCommandInteraction, *, content: str):
         """Edit the welcome message content."""
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         data = data_obj.get_data()
 
         welcome_message = data["welcome_message"]
@@ -389,7 +389,7 @@ class Settings(commands.Cog):
         """Edit the welcome message embed."""
 
         embed_part = embed_part.lower()
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         data = data_obj.get_data()
 
         embed_update = get_embed_update(data["welcome_message"]["embed"], embed_part, value)
@@ -414,7 +414,7 @@ class Settings(commands.Cog):
     async def editwelcome_channel(self, inter: disnake.ApplicationCommandInteraction, channel: disnake.TextChannel):
         """Set the channel where welcome messages should be sent."""
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         embed_part = embed_part.lower()
 
         embed = disnake.Embed(
@@ -430,7 +430,7 @@ class Settings(commands.Cog):
     async def editwelcome_trigger(self, inter: disnake.ApplicationCommandInteraction):
         """Trigger the welcome message for testing."""
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         data = data_obj.get_data()
 
         if not data["welcome_toggle"]:
@@ -464,7 +464,7 @@ class Settings(commands.Cog):
         ----------
         """
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         embed = disnake.Embed(
             description=f"{yes} The chat bot will now respond to messages in {channel.mention}.",
             color=colors.success_embed_color,
@@ -483,7 +483,7 @@ class Settings(commands.Cog):
         toggle: Whether the chat bot should be enabled or not.
         """
 
-        data_obj = GuildData(inter.guild)
+        data_obj = GuildData(inter.guild.id)
         data = data_obj.get_data()
 
         embed = disnake.Embed(
@@ -526,7 +526,7 @@ class Settings(commands.Cog):
         toggle: Whether the privacy setting should be on or not.
         """
 
-        data_obj = UserData(inter.author)
+        data_obj = UserData(inter.author.id)
         embed = disnake.Embed(
             description=f"{yes} The {message_settings_description[type]} privacy setting has been {'enabled' if toggle else 'disabled'}.",
             color=colors.success_embed_color,

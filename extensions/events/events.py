@@ -17,7 +17,7 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 from utils.data import *
 from utils.emojis import *
 
@@ -86,8 +86,6 @@ def insert_variables(message: dict | str, **kwargs):
     variables = variables or get_variables(member, guild)
 
     if isinstance(message, dict):
-        to_pop = {}
-
         for key in message:
             value = message[key]
 
@@ -98,45 +96,8 @@ def insert_variables(message: dict | str, **kwargs):
             elif isinstance(value, str):
                 message[key] = format_variables(value, variables)
                 continue
-
     elif isinstance(message, str):
         message = format_variables(message, variables)
-
-    # to_pop = {}
-    # for key in embed:
-    # 	  value	= embed[key]
-
-    # 	  if isinstance(value, dict):
-    # 		  for key2 in value:
-    # 			  value2 = value[key2]
-
-    # 			  if value2	== None:
-    # 				  to_pop[key] =	[]
-    # 				  to_pop[key].append(key2)
-    # 				  continue
-    # 			  elif type(value2)	!= str:
-    # 				  continue
-
-    # 			  embed[key][key2] = format_variables(value2, variables)
-    # 		  continue
-
-    # 	  elif value == None:
-    # 		  to_pop["all"]	= []
-    # 		  to_pop["all"].append(key)
-    # 		  continue
-    # 	  elif type(value) != str:
-    # 		  continue
-
-    # 	  embed[key] = format_variables(value, variables)
-
-    # for key in to_pop:
-    # 	  value	= to_pop[key]
-
-    # 	  for key2 in value:
-    # 		  if key == "all":
-    # 			  embed.pop(key2)
-    # 		  else:
-    # 			  embed[key].pop(key2)
 
     return message
 
@@ -299,7 +260,7 @@ class Events(commands.Cog):
         if message.author == self.bot.user or message.author.bot or not message.guild:
             return
 
-        data_obj = GuildData(message.guild)
+        data_obj = GuildData(message.guild.id)
         guild_data = data_obj.get_data()
 
         if message.id in self.bot.moderated_messages:
@@ -345,7 +306,7 @@ class Events(commands.Cog):
         if message.author.bot:
             return
 
-        data_obj = GuildData(message.guild)
+        data_obj = GuildData(message.guild.id)
         data = data_obj.get_data()
 
         if message.id in self.bot.moderated_messages:
@@ -359,17 +320,17 @@ class Events(commands.Cog):
             last_award = None
 
         if not last_award or last_award and time.time() - last_award["awarded_at"] > last_award["cooldown_time"]:
-            member_data_obj = MemberData(message.author)
+            member_data_obj = MemberData(message.author.id, message.guild.id)
             member_data = member_data_obj.get_guild_data()
 
             xp_amount = random.randint(17, 27)
-            level_up, new_level = leveling.add_xp(message.author, xp_amount if config.IS_SERVER else xp_amount * 5)
+            level_up, current_level = leveling.add_xp(message.author, xp_amount if config.IS_SERVER else xp_amount * 5)
 
             variables = get_variables(message.author, message.guild)
             variables.update(
                 {
-                    "{new_level}": new_level,
-                    "{previous_level}": new_level - 1,
+                    "{new_level}": current_level,
+                    "{previous_level}": current_level - 1,
                     "{new_xp}": member_data["xp"],
                     "{previous_xp}": member_data["xp"] - xp_amount,
                     "{total_xp}": member_data["total_xp"],
@@ -422,7 +383,7 @@ class Events(commands.Cog):
     async def on_guild_join(self, guild: disnake.Guild):
         logger.info("OutDash has been added to {}, we're now in {} guilds".format(guild.name, len(self.bot.guilds)))
 
-        data_obj = GuildData(guild)
+        data_obj = GuildData(guild.id)
         data_obj.get_data()
 
         await self.bot.get_channel(config.MESSAGES_CHANNEL).send(
@@ -462,7 +423,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener("on_member_join")
     async def insert_member_data(self, member: disnake.Member):
-        member_data_obj = MemberData(member)
+        member_data_obj = MemberData(member.id, member.guild.id)
 
         member_data_obj.get_data()
         member_data_obj.get_guild_data()
@@ -471,7 +432,7 @@ class Events(commands.Cog):
     async def welcome_member(self, member: disnake.Member, **kwargs):
         guild = member.guild
 
-        data_obj = GuildData(guild)
+        data_obj = GuildData(guild.id)
         data = data_obj.get_data()
 
         toggle = data["welcome_toggle"]

@@ -1,23 +1,18 @@
 ## -- IMPORTING -- ##
 
 # MODULE
-import asyncio
-import atexit
 import os
 import datetime
-import certifi
 import disnake
-import json
 import logging
 
 from disnake.ext import commands
-from pymongo import MongoClient
 from dotenv import load_dotenv
 from threading import Thread
 
 # FILES
 
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 from utils.checks import *
 from utils.data import *
 
@@ -56,6 +51,7 @@ extension_files = [
     "help",
     "moderation",
     "music",
+    "forms"
 ]
 
 test_extensions = ["buttons"]
@@ -64,8 +60,6 @@ test_extensions = ["buttons"]
 
 
 async def load_extensions(bot: commands.Bot):
-    print(extension_files)
-
     for extension in extension_files:
         bot.load_extension(f"extensions.{extension}")
         logger.debug(f"Loaded extension {extension}.")
@@ -82,6 +76,7 @@ async def load_extensions(bot: commands.Bot):
 class Bot(commands.InteractionBot):
     def __init__(self, *args, **kwargs):
         super().__init__(
+            sync_commands=True,
             status=disnake.Status.idle,
             activity=disnake.Game(name="booting up.."),
             owner_id=config.OWNERS[0],
@@ -158,7 +153,7 @@ class Bot(commands.InteractionBot):
         )
 
     async def get_staff_members(self, guild: disnake.Guild) -> typing.Dict[str, typing.Dict[str, disnake.Member]]:
-        guild_data_obj = GuildData(guild)
+        guild_data_obj = GuildData(guild.id)
         guild_data = guild_data_obj.get_data()
 
         return guild_data["staff_members"]
@@ -203,16 +198,77 @@ class Bot(commands.InteractionBot):
 
         return None
 
+    def log_moderation(
+        self,
+        *,
+        moderator: disnake.Member,
+        offender: disnake.User | disnake.Member,
+        action: enums.Moderation,
+        reason: str = "No reason provided.",
+        **extras,
+    ):
+        assert moderator.guild, "The moderator has to be in a guild"
+
+        guild_data_obj = GuildData(moderator.guild.id)
+        moderator_data_obj = MemberData(moderator.id, moderator.guild.id)
+        offender_data_obj = MemberData(offender.id, moderator.guild.id)
+
+        guild_data = guild_data_obj.get_data()
+        moderator_data = moderator_data_obj.get_guild_data()
+        offender_data = offender_data_obj.get_guild_data()
+
+        cases = guild_data.get("cases", [])
+        moderation_action_logs = moderator_data.get("moderation_action_logs", [])
+        moderation_logs = offender_data.get("moderation_logs", [])
+
+        case_id = len(cases) + 1
+
+        cases.append(
+            {
+                "id": case_id,
+                "moderator": moderator.id,
+                "offender": offender.id,
+                "action": action.value,
+                "reason": reason,
+                "timestamp": datetime.datetime.utcnow(),
+                **extras,
+            }
+        )
+
+        moderation_action_logs.append(case_id)
+        moderation_logs.append(case_id)
+
+        guild_data_obj.update_data(guild_data)
+        moderator_data_obj.update_guild_data(moderator_data)
+        offender_data_obj.update_guild_data(offender_data)
+
+    def get_cases(self, guild: disnake.Guild) -> list[dict]:
+        guild_data_obj = GuildData(guild.id)
+        guild_data = guild_data_obj.get_data()
+
+        return guild_data["cases"]
+
+    def get_member_cases(self, member: disnake.Member):
+        member_data_obj = MemberData(member.id, member.guild.id)
+        member_data = member_data_obj.get_guild_data()
+
+        cases = self.get_cases(member.guild)
+        member_cases = []
+
+        for case_num in member_data.get("moderation_logs"):
+            try:
+                case = cases[case_num - 1]
+            except:
+                continue
+
+            member_cases.append(case)
+
+        return member_cases
+
 
 bot = Bot()
 
 ## -- EXTENSIONS -- ##
-
-extension_options = {}
-for extension in extension_files:
-    extension_options[extension] = extension
-
-extension_options = commands.option_enum(extension_options)
 
 
 @bot.slash_command(
@@ -226,7 +282,10 @@ async def extension(inter):
 
 
 @extension.sub_command(name="load", description="Load a specific extension.")
-async def load_extension(inter: disnake.ApplicationCommandInteraction, extension: extension_options):
+async def load_extension(
+    inter: disnake.ApplicationCommandInteraction,
+    extension: commands.option_enum({extension: extension for extension in extension_files}),
+):
     await inter.send("Loading extension...", ephemeral=True)
 
     try:
@@ -256,15 +315,18 @@ async def reload_extensions(inter: disnake.ApplicationCommandInteraction):
 
 
 @reload.sub_command(name="extension", description="Reload one specific extension.")
-async def reload_extension(inter: disnake.ApplicationCommandInteraction, extension: extension_options):
+async def reload_extension(
+    inter: disnake.ApplicationCommandInteraction,
+    extension: commands.option_enum({extension: extension for extension in extension_files}),
+):
     await inter.send("Reloading extension...", ephemeral=True)
 
     try:
         bot.reload_extension(f"extensions.{extension}")
+        await inter.edit_original_message(content=f"`{extension}` has been reloaded")
     except Exception as error:
-        logger.warning(f"Failed to reload extension {extension} | {error}")
-
-    await inter.edit_original_message(content=f"`{extension}` has been reloaded (?)")
+        logger.warning(f"Failed to load extension {extension} | {error}")
+        await inter.edit_original_message(content=f"Failed to lreoad extension `{extension}`")
 
 
 ## -- RUNNING BOT -- ##

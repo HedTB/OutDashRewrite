@@ -9,7 +9,7 @@ from utils.webhooks import *
 from utils.database_types import *
 from utils.data import *
 
-from utils import config, functions, colors
+from utils import config, functions, colors, enums, converters
 
 ## -- VARIABLES -- ##
 
@@ -20,7 +20,7 @@ load_dotenv()
 
 class LoggingWebhook:
     def __init__(self, avatar: disnake.Asset, guild: disnake.Guild, log_type: str):
-        self._data_obj = GuildData(guild)
+        self._data_obj = GuildData(guild.id)
 
         if not log_type in log_types:
             raise InvalidLogType
@@ -51,7 +51,7 @@ class LoggingWebhook:
         self._webhook.add_embed(embed)
 
     def post(self) -> requests.Response | None:
-        data_obj = GuildData(self._guild)
+        data_obj = GuildData(self._guild.id)
         data = data_obj.get_data()
 
         try:
