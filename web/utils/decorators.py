@@ -1,11 +1,9 @@
 ## -- IMPORTING -- ##
 
 import typing
-import jwt
 import os
 
 from jwcrypto import jwe, jwk
-from jose import jwe as jose_jew
 from functools import wraps
 from flask import request, make_response, current_app
 from werkzeug.security import check_password_hash
@@ -35,12 +33,6 @@ def preflight_response():
 
 def validate_user_token(user_token: str) -> typing.Tuple[int, dict | None, ApiUser | None]:
     try:
-        # data = jwt.decode(user_token, secret, algorithms=["HS256"])
-        # oauth_data = encrypted_string=data["oauth"].encode(), password=secret
-
-        # decrypted = jwe.decrypt(jwe_str=user_token, key=current_app.config["SECRET"])
-        # data = json.loads(decrypted)
-
         key = jwk.JWK.from_password(current_app.config["SECRET"])
         decrypted = jwe.JWE()
 

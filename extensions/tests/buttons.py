@@ -34,23 +34,17 @@ class Confirm(disnake.ui.View):
                 child.disabled = True
 
     @disnake.ui.button(label="Confirm", style=disnake.ButtonStyle.green)
-    async def confirm(
-        self, button: disnake.ui.Button, interaction: disnake.MessageInteraction
-    ):
+    async def confirm(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction):
         self.value = True
         self.disable_view()
 
         await interaction.edit_original_message("sus", view=self)
         await interaction.response.send_message("Confirmed!", ephemeral=True)
 
-        # await interaction.message.edit(view=self)
-        # await interaction.edit_original_message(view=self)
         self.stop()
 
     @disnake.ui.button(label="Cancel", style=disnake.ButtonStyle.red)
-    async def cancel(
-        self, button: disnake.ui.Button, interaction: disnake.MessageInteraction
-    ):
+    async def cancel(self, button: disnake.ui.Button, interaction: disnake.MessageInteraction):
         await interaction.response.send_message("Cancelled!", ephemeral=True)
 
         self.value = True
@@ -70,9 +64,7 @@ class Buttons(commands.Cog):
     @commands.slash_command(name="ask", guild_ids=[config.BOT_SERVER])
     async def ask(self, ctx):
         view = Confirm()
-        embed = disnake.Embed(
-            description="Do you want to continue?", color=colors.logs_embed_color
-        )
+        embed = disnake.Embed(description="Do you want to continue?", color=colors.logs_embed_color)
 
         await ctx.send(embed=embed, view=view, ephemeral=False)
         await view.wait()
