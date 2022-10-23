@@ -50,7 +50,7 @@ extension_files = [
     "miscellaneous",
     "help",
     "moderation",
-    "music",
+    #"music",
     "forms"
 ]
 
