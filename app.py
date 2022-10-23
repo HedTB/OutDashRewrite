@@ -10,7 +10,7 @@ import requests
 import time
 import secrets
 
-from jose import jwe as jose_jwe
+#from jose import jwe as jose_jwe
 from jwcrypto import jwe, jwk
 
 from dotenv import load_dotenv
