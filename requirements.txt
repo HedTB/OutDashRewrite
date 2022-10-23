@@ -17,3 +17,6 @@ pillow
 disnake-ext-menus
 requests-async
 dictdiffer
+jwt
+fastapi
+uvicorn
