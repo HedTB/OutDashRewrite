@@ -20,3 +20,5 @@ dictdiffer
 jwt
 fastapi
 uvicorn
+jose
+jwcrypto
