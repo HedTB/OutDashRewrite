@@ -22,7 +22,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.security import generate_password_hash
 
 # FILES
-from utils import config, functions, colors, enums, converters, security
+from utils import config, functions, colors, enums, converters
 from utils.data import *
 
 from web.utils.decorators import *
