@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Moderation(Enum):
+class Moderation(int, Enum):
     WARNING = 1
     KICK = 2
     BAN = 3

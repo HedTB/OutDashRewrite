@@ -3,7 +3,7 @@
 from flask import Blueprint, request
 
 from utils import config, enums
-from utils.data import *
+from utils.data import ApiUserData, GuildData, UserData, WarnsData, MemberData
 
 from web.utils.decorators import *
 from web.utils.exceptions import *

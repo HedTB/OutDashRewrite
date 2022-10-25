@@ -1,21 +1,27 @@
 ## -- IMPORTING -- ##
 
-import typing
+import json
+import logging
 import os
-
-from jwcrypto import jwe, jwk
+import typing
 from functools import wraps
-from flask import request, make_response, current_app
-from werkzeug.security import check_password_hash
 
-from utils.data import *
-from web.utils.responses import *
+import disnake
+import requests
+from flask import current_app, make_response, request
+from jwcrypto import jwe, jwk
 
-from .exceptions import *
+from utils.data import ApiUser, ApiUserData, BotObject, GuildData
+from web.utils.exceptions import InvalidAccessToken, InvalidOauthCode, InvalidUserToken
+from web.utils.responses import invalid_user_token
 
 ## -- VARIABLES -- ##
 
-secret = os.environ.get("SECRET")
+# CONSTANTS
+SECRET = os.environ.get("SECRET")
+
+# OBJECTS
+logger = logging.getLogger("App")
 
 ## -- FUNCTIONS -- ##
 
@@ -31,12 +37,12 @@ def preflight_response():
     return response
 
 
-def validate_user_token(user_token: str) -> typing.Tuple[int, dict | None, ApiUser | None]:
+def validate_user_token(token: str) -> typing.Tuple[int, dict | None, ApiUser | None]:
     try:
         key = jwk.JWK.from_password(current_app.config["SECRET"])
         decrypted = jwe.JWE()
 
-        decrypted.deserialize(raw_jwe=user_token, key=key)
+        decrypted.deserialize(raw_jwe=token, key=key)
 
         data = json.loads(decrypted.payload)
         user_id = data["sub"]
@@ -84,12 +90,12 @@ def user_endpoint(method: typing.Callable):
         if method == "OPTIONS":
             return preflight_response()
 
-        user_token = request.cookies.get("token", request.headers.get("x-access-tokens"))
+        token = request.cookies.get("token", request.headers.get("x-access-tokens"))
 
-        if user_token is None:
+        if token is None:
             return {"message": "User token is missing", "error": "invalid_input"}, 400
 
-        status_code, _, user_data_obj = validate_user_token(user_token)
+        status_code, _, user_data_obj = validate_user_token(token)
 
         if status_code == 200:
             return method(*args, user_data_obj, **kwargs)
@@ -107,17 +113,17 @@ def guild_endpoint(method: typing.Callable):
     def decorated_function(*args, **kwargs):
         guild_id = kwargs.get("guild_id")
 
-        user_token = request.cookies.get("token", request.headers.get("x-access-tokens"))
-        status_code, _, user_data_obj = validate_user_token(user_token)
+        token = request.cookies.get("token", request.headers.get("x-access-tokens"))
+        status_code, _, user_data_obj = validate_user_token(token)
 
         if guild_id is None:
             return {"message": "Guild ID is missing", "error": "invalid_input"}, 400
-        elif user_token is None:
+        elif token is None:
             return {"message": "User token is missing", "error": "invalid_input"}, 400
 
         try:
             guild_id = int(guild_id)
-        except:
+        except Exception:
             return {"message": "Guild ID has to be a valid integer", "error": "invalid_input"}, 400
 
         guild_data_obj = GuildData(guild_id)

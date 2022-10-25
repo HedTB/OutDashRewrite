@@ -3,25 +3,33 @@
 import asyncio
 import datetime
 import json
-import typing
-import disnake
+import logging
+import multiprocessing
 import os
+import time
+import typing
 import certifi
-import requests
 import dictdiffer
+import disnake
+import requests
 
 from functools import wraps
+from threading import Thread
+from uuid import uuid4
 from dotenv import load_dotenv
 from pymongo import MongoClient, collection
-from uuid import uuid4
-from threading import Thread
-from pprint import pprint
 
-from utils.webhooks import *
-from utils.database_types import *
-
-from utils import config, functions, colors, enums, converters
-from web.utils.exceptions import *
+from utils import config, functions
+from utils.database_types import (
+    guild_data,
+    log_types,
+    member_data,
+    user_data,
+    warns_data,
+    youtube_channel_data,
+    youtube_channels_data,
+)
+from web.utils.exceptions import InvalidAccessToken, InvalidOauthCode
 
 ## -- VARIABLES -- ##
 
@@ -33,12 +41,13 @@ Data = typing.Dict[str, DataType]
 
 # CONSTANTS
 BASE_DISCORD_URL = "https://discord.com/api/{}{}"
-DATA_REFRESH_DELAY = 180
+DATA_REFRESH_DELAY = 300
 
 SERVER_URL = "http://127.0.0.1:8080" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com"
 REDIRECT_URI = SERVER_URL + "/callback"
 
-LIFETIME = 30
+LIFETIME = 300
+FETCH_INTERVAL = 15
 
 OBJECTS = {
     "guild": {},
@@ -49,17 +58,21 @@ OBJECTS = {
     "youtube": {},
 }
 
-# VARIABLES
+# ENV VARIABLES
 bot_token = os.environ.get("BOT_TOKEN" if config.IS_SERVER else "TEST_BOT_TOKEN")
 bot_id = os.environ.get("BOT_ID" if config.IS_SERVER else "TEST_BOT_ID")
 bot_secret = os.environ.get("BOT_SECRET" if config.IS_SERVER else "TEST_BOT_SECRET")
 
+# OBJECTS
 client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
 logger = logging.getLogger("Database")
 logger.level = logging.DEBUG if not config.IS_SERVER else logging.INFO
 
+pool = multiprocessing.Pool(processes=os.cpu_count())
+
+# COLLECTIONS
 guild_data_col = db["guild_data"]
 warns_col = db["warns"]
 user_data_col = db["user_data"]
@@ -68,7 +81,7 @@ youtube_data_col = db["youtube_data"]
 access_codes_col = db["access_codes"]
 api_data_col = db["api_data"]
 
-
+# OTHER
 request_headers = {
     "Authorization": "Bot {}".format(os.environ.get("BOT_TOKEN" if config.IS_SERVER else "TEST_BOT_TOKEN")),
     "User-Agent": "OutDash (https://outdash.ga, v0.1)",
@@ -91,7 +104,7 @@ def reconcicle_dict(base: Data, current: Data) -> Data:
         if isinstance(key, str) and key.startswith("_"):
             continue
 
-        if key in base and type(value) != type(base_value) and base_value != None:
+        if key in base and type(value) != type(base_value) and base_value is not None:
             data[key] = base_value
         elif base_value is not None and isinstance(value, dict):
             data[key] = reconcicle_dict(base_value, value)
@@ -108,13 +121,13 @@ def clean_dict(base: Data, current: Data) -> typing.Dict[str, str]:
         value = current[key]
         base_value = base.get(key)
 
-        if not key in base:
+        if key not in base:
             continue
         elif type(value) != type(base_value):
             data[key] = base_value
         elif isinstance(value, dict):
             data[key] = clean_dict(base_value, value)
-        elif value == None or value == "None":
+        elif value is None or value == "None":
             data[key] = None
         else:
             data[key] = value
@@ -138,16 +151,6 @@ def get_all_documents(collection_name: str) -> list:
 
 
 ## -- CLASSES -- ##
-
-# TYPES
-
-
-class OauthData(typing.TypedDict):
-    code: str | None
-    user_token: str | None
-    access_token: str | None
-    refresh_token: str | None
-    expires_at: float
 
 
 # EXCEPTIONS
@@ -178,52 +181,61 @@ class DatabaseObjectBase:
     query: str | int
     data: Data = None
 
-    _query: typing.Dict[str, typing.Union[str, int]] = None
-    _insert_data: Data = None
-    _collection: collection.Collection = None
+    _query: typing.Dict[str, typing.Union[str, int]]
+    _insert_data: Data
+    _collection: collection.Collection
 
     _last_use: float = 0
+    _last_fetch: float = 0
 
     def __init__(self, life_time: int = LIFETIME) -> None:
         self.life_time = life_time
         self._last_use = time.time()
 
+    def run_asynchronously(self, f: typing.Callable, args: dict):
+        return pool.apply_async(f, {"self": self, **args})
+
     def fetch_data(self, *, can_insert=True) -> Data:
-        data = self._collection.find_one(self._query)
+        start = time.time()
 
-        if not data and can_insert is True:
-            self.insert_data()
-            return self.fetch_data(can_insert=False)
-        elif data and self._insert_data:
-            cleaned_data = reconcicle_dict(self._insert_data, data)
+        self.data = self._collection.find_one(self._query)  # .limit(1).explain()
 
-            if not are_dicts_identical(cleaned_data, data):
+        print(f"[data fetch] Fetched, took: {(time.time() - start) * 1000} ms")
+        start = time.time()
+
+        if not self.data and can_insert is True:
+            return self.insert_data()
+        elif self.data and self._insert_data:
+            cleaned_data = reconcicle_dict(self._insert_data, self.data)
+
+            if not are_dicts_identical(cleaned_data, self.data):
                 logger.debug("Updated database for object of type {} with cleaned data".format(self.__class__.__name__))
-                self.update_data(cleaned_data)
+
+                self.data.update(cleaned_data)
+                self.run_asynchronously(self.update_data, (cleaned_data))
             else:
-                data.pop("_id")
-                self.data = data
-        else:
-            self.data = data
+                self.data.pop("_id")
 
         self._last_use = time.time()
+        self._last_fetch = time.time()
+
         return self.data
 
     def get_data(self, *, can_insert=True) -> Data:
         self._last_use = time.time()
 
-        if not self.data:
+        if self.data is None or time.time() - self._last_fetch > FETCH_INTERVAL:
             return self.fetch_data(can_insert=can_insert)
         else:
             return self.data
 
-    def insert_data(self) -> Data:
+    def insert_data(self, *, force: bool = False) -> Data:
+        if self.fetch_data(can_insert=False) is not None and force:
+            return self.get_data()
+
         self._collection.insert_one(self._insert_data)
         self._last_use = time.time()
         self.data = self._insert_data
-
-        if self.data.get("_id"):
-            self.data.pop("_id")
 
         logger.debug(f"Inserted data for data object of type {self.__class__.__name__}")
         return self.data
@@ -235,7 +247,6 @@ class DatabaseObjectBase:
         self.data.update(data)
         self._last_use = time.time()
 
-        # result = self._collection.update_one(self._query, {"$set": data})
         result = self._collection.replace_one(self._query, self.data)
 
         if result.modified_count == 0:
@@ -249,7 +260,7 @@ class DatabaseObjectBase:
                 "Updated {} documents for data object of type {}".format(result.modified_count, self.__class__.__name__)
             )
 
-        return self.fetch_data(can_insert=False)
+        return self.data
 
     def delete_data(self):
         self._collection.delete_one(self._query)
@@ -269,7 +280,6 @@ class DatabaseObjectBase:
 
 class Guild(DatabaseObjectBase):
     def __init__(self, guild_id: int):
-
         self.guild_id = guild_id
         self.query = guild_id
 
@@ -284,13 +294,20 @@ class Guild(DatabaseObjectBase):
 
         super().__init__()
 
+    @staticmethod
+    def create(guild_id: int):
+        if guild_id in OBJECTS["guild"]:
+            return OBJECTS["guild"][guild_id]
+        else:
+            return Guild(guild_id)
+
     def get_log_webhooks(self) -> typing.Dict[str, DataType]:
         data = self.get_data()
 
         return data["webhooks"]
 
     def get_log_webhook(self, log_type: str):
-        if not log_type in log_types:
+        if log_type not in log_types:
             raise InvalidLogType
 
         return self.get_log_webhooks()[log_type]
@@ -299,7 +316,7 @@ class Guild(DatabaseObjectBase):
         webhooks = self.get_log_webhooks()
 
         for log_type in data:
-            if not log_type in log_types:
+            if log_type not in log_types:
                 continue
 
             webhook = data[log_type]
@@ -308,7 +325,7 @@ class Guild(DatabaseObjectBase):
         self.update_data({"webhooks": webhooks})
 
     def update_log_webhook(self, log_type: str, data: dict):
-        if not log_type in log_types:
+        if log_type not in log_types:
             raise InvalidLogType(f"{log_type} is not a valid logging type")
 
         self.update_log_webhooks({log_type: data})
@@ -330,6 +347,13 @@ class Warns(DatabaseObjectBase):
         self.__class__.__name__ = "warns"
         OBJECTS["warns"][guild_id] = self
 
+    @staticmethod
+    def create(guild_id: int):
+        if guild_id in OBJECTS["warns"]:
+            return OBJECTS["warns"][guild_id]
+        else:
+            return Warns(guild_id)
+
     def update_warnings(self, member: disnake.Member, data: dict):
         self.update_data({str(member.id): data})
 
@@ -337,7 +361,7 @@ class Warns(DatabaseObjectBase):
         data = self.get_data()
         member_warnings = data.get(str(member.id))
 
-        if member_warnings == None:
+        if member_warnings is None:
             self.update_warnings(member, {})
             return self.get_member_warnings(member)
 
@@ -384,6 +408,13 @@ class User(DatabaseObjectBase):
 
         super().__init__(life_time=life_time)
 
+    @staticmethod
+    def create(user_id: int):
+        if user_id in OBJECTS["user"]:
+            return OBJECTS["user"][user_id]
+        else:
+            return User(user_id)
+
 
 class Member(DatabaseObjectBase):
     def __init__(self, member_id: int, guild_id: int):
@@ -402,7 +433,14 @@ class Member(DatabaseObjectBase):
 
         super().__init__()
 
-    def get_guild_data(self, can_insert: bool = True) -> dict:
+    @staticmethod
+    def create(member_id: int, guild_id: int):
+        if member_id in OBJECTS["member"]:
+            return OBJECTS["member"][member_id]
+        else:
+            return Member(member_id, guild_id)
+
+    def get_guild_data(self, can_insert: bool = True) -> Data:
         data = self.get_data(can_insert=can_insert)
 
         guild_id = str(self.guild_id)
@@ -435,6 +473,13 @@ class YouTube(DatabaseObjectBase):
         OBJECTS["youtube"][guild_id] = self
 
         super().__init__()
+
+    @staticmethod
+    def create(guild_id: int):
+        if guild_id in OBJECTS["youtube"]:
+            return OBJECTS["youtube"][guild_id]
+        else:
+            return YouTube(guild_id)
 
     def get_youtube_channels(self, can_insert: bool = True) -> list:
         data = self.get_data(can_insert=can_insert)
@@ -488,14 +533,7 @@ class YouTube(DatabaseObjectBase):
 
 
 # API
-class BotObject(DatabaseObjectBase):
-    def __init__(self) -> None:
-        self._query = {"bot_document": True}
-        self._collection = api_data_col
-        self._insert_data = bot_api_data()
-
-        super().__init__()
-
+class BotObject:
     def get_guild_count(self) -> int:
         return len(list(guild_data_col.find({})))
 
@@ -514,14 +552,6 @@ class BotObject(DatabaseObjectBase):
             params=params,
         )
 
-    def get_token_from_code(self, oauth_code: str) -> str | None:
-        user_data = user_data_col.find_one({"oauth.code": oauth_code})
-
-        if not user_data:
-            return None
-        else:
-            return user_data["oauth"]["user_token"]
-
     def get_guild(self, guild_id: int) -> dict | None:
         guilds = self.get_guilds()
 
@@ -532,24 +562,33 @@ class BotObject(DatabaseObjectBase):
         return None
 
 
-class ApiUser(User):
+bot_object = BotObject()
+
+
+class ApiUser(DatabaseObjectBase):
     def __init__(
         self,
         user_id: int,
         *,
         oauth_code: str,
-        user_token: str | None = None,
         access_token: str | None = None,
         refresh_token: str | None = None,
         expires_at: float,
     ):
-        super().__init__(user_id, life_time=60)
+        start = time.time()
+        super().__init__(life_time=600)
 
-        self._bot_object = BotObject()
+        print(f"[api user] Initialized superclass, took: {(time.time() - start) * 1000} ms")
+        start = time.time()
+
+        self.user_id = user_id
+        self.query = user_id
+
+        self._query = {"user_id": user_id}
         self._insert_data = user_data(user_id)
+        self._collection = user_data_col
 
         self._oauth_code = oauth_code
-        self._user_token = user_token
         self._access_token = access_token
         self._refresh_token = refresh_token
         self._expires_at = expires_at
@@ -558,6 +597,68 @@ class ApiUser(User):
 
         OBJECTS["user"].pop(user_id, None)
         OBJECTS["api_user"][user_id] = self
+
+    @staticmethod
+    def create(
+        user_id: int | None = None,
+        oauth_code: str | None = None,
+        access_token: str | None = None,
+        refresh_token: str | None = None,
+        expires_at: float | None = None,
+    ):
+        if not user_id and not oauth_code and not access_token:
+            raise AttributeError("Either the user ID or at least one token needs to be specified")
+
+        if not user_id and oauth_code and not access_token:
+            response = requests.post(
+                url=BASE_DISCORD_URL.format("v10", "/oauth2/token"),
+                data={
+                    "client_id": bot_id,
+                    "client_secret": bot_secret,
+                    "grant_type": "authorization_code",
+                    "code": oauth_code,
+                    "redirect_uri": REDIRECT_URI,
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+
+            if response.status_code == 400:
+                raise InvalidOauthCode
+            elif response.status_code != 200:
+                raise requests.HTTPError
+
+            data = functions.convert_strings(response.json())
+            access_token = data["access_token"]
+            refresh_token = data["refresh_token"]
+            expires_at = time.time() + data["expires_in"]
+
+        if not user_id and access_token:
+            response = requests.get(
+                url=BASE_DISCORD_URL.format("v10", "/oauth2/@me"),
+                headers={
+                    "Authorization": "Bearer " + access_token,
+                    "Content-Type": "application/json",
+                },
+            )
+
+            if response.status_code == 400:
+                raise InvalidAccessToken
+            elif response.status_code != 200:
+                raise requests.HTTPError
+
+            data = functions.convert_strings(response.json())
+            user_id = data["user"]["id"]
+
+        if user_id in OBJECTS["api_user"]:
+            return OBJECTS["api_user"][user_id]
+        else:
+            return ApiUser(
+                user_id,
+                oauth_code=oauth_code,
+                access_token=access_token,
+                refresh_token=refresh_token,
+                expires_at=expires_at,
+            )
 
     @staticmethod
     def requires_access_token(method: typing.Callable):
@@ -672,7 +773,7 @@ class ApiUser(User):
 
         return data
 
-    def get_guilds(self) -> dict:
+    def get_guilds(self, *, fetch: bool = False) -> dict:
         guilds = None
 
         with open("data/users.json", "r") as file:
@@ -680,10 +781,10 @@ class ApiUser(User):
             user = data.get(str(self.user_id), {})
 
         if user:
-            guilds = user.get("guilds")
-            last_refresh = user.get("last_refresh")
+            guilds = user.get("guilds", None)
+            last_refresh = user.get("last_refresh", 0)
 
-        if guilds is None or len(guilds) == 0 or time.time() - last_refresh > DATA_REFRESH_DELAY:
+        if guilds is None or len(guilds) == 0 or time.time() - last_refresh > DATA_REFRESH_DELAY or fetch:
             logger.debug("Fetching user guilds")
 
             response = self.token_request("get", "/users/@me/guilds")
@@ -692,7 +793,7 @@ class ApiUser(User):
             if response.status_code == 401:
                 raise InvalidAccessToken
             elif response.status_code != 200:
-                raise
+                raise RequestFailed
 
             for guild in guilds:
                 guild.pop("features")
@@ -705,8 +806,8 @@ class ApiUser(User):
 
             data[self.user_id] = user
 
-        with open("data/users.json", "w") as file:
-            json.dump(data, file)
+            with open("data/users.json", "w") as file:
+                json.dump(data, file)
 
         return guilds
 
@@ -724,97 +825,51 @@ class ApiUser(User):
 
 
 def GuildData(guild_id: int) -> Guild:
-    return OBJECTS["guild"].get(guild_id, Guild(guild_id))
+    return Guild.create(guild_id)
 
 
 def WarnsData(guild_id: int) -> Warns:
-    return OBJECTS["warns"].get(guild_id, Warns(guild_id))
+    return Warns.create(guild_id)
 
 
 def UserData(user_id: int) -> User:
-    return OBJECTS["user"].get(user_id, User(user_id))
+    return User.create(user_id)
+
+
+def BotObject():
+    return bot_object
 
 
 def ApiUserData(
     *,
     user_id: int | None = None,
     oauth_code: str | None = None,
-    user_token: str | None = None,
     access_token: str | None = None,
     refresh_token: str | None = None,
     expires_at: float | None = None,
 ) -> ApiUser:
-    if not user_id and not oauth_code and not access_token:
-        raise AttributeError("Either the user ID or at least one token needs to be specified")
-
-    if not user_id and oauth_code and not access_token:
-        response = requests.post(
-            url=BASE_DISCORD_URL.format("v10", "/oauth2/token"),
-            data={
-                "client_id": bot_id,
-                "client_secret": bot_secret,
-                "grant_type": "authorization_code",
-                "code": oauth_code,
-                "redirect_uri": REDIRECT_URI,
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )
-
-        if response.status_code == 400:
-            raise InvalidOauthCode
-        elif response.status_code != 200:
-            raise requests.HTTPError
-
-        data = functions.convert_strings(response.json())
-        access_token = data["access_token"]
-        refresh_token = data["refresh_token"]
-        expires_at = time.time() + data["expires_in"]
-
-    if not user_id and access_token:
-        response = requests.get(
-            url=BASE_DISCORD_URL.format("v10", "/oauth2/@me"),
-            headers={
-                "Authorization": "Bearer " + access_token,
-                "Content-Type": "application/json",
-            },
-        )
-
-        if response.status_code == 400:
-            raise InvalidAccessToken
-        elif response.status_code != 200:
-            raise requests.HTTPError
-
-        data = functions.convert_strings(response.json())
-        user_id = data["user"]["id"]
-
-    user_id = int(user_id)
-
-    return OBJECTS["api_user"].get(
-        user_id,
-        ApiUser(
-            user_id=user_id,
-            oauth_code=oauth_code,
-            user_token=user_token,
-            access_token=access_token,
-            refresh_token=refresh_token,
-            expires_at=expires_at,
-        ),
+    return ApiUser.create(
+        user_id=int(user_id),
+        oauth_code=oauth_code,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_at=expires_at,
     )
 
 
 def MemberData(member_id: int, guild_id: int) -> Member:
-    return OBJECTS["member"].get(member_id) or Member(member_id, guild_id)
+    return Member.create(member_id, guild_id)
 
 
 def YouTubeData(guild_id: int) -> YouTube:
-    return OBJECTS["youtube"].get(guild_id) or YouTube(guild_id)
+    return YouTube.create(guild_id)
 
 
 async def update_loop():
     last_cache_clear = 0
 
     while True:
-        await asyncio.sleep(1)
+        await asyncio.sleep(5)
 
         for objects in OBJECTS.values():
             if len(objects) == 0:
@@ -837,7 +892,7 @@ async def update_loop():
                 to_pop = []
 
                 for user_id, user in data.items():
-                    if time.time() - user["last_refresh"] > 180:
+                    if time.time() - user["last_refresh"] > 300:
                         to_pop.append(user_id)
 
                 for user_id in to_pop:

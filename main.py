@@ -3,20 +3,19 @@
 # MODULE
 import os
 import datetime
+import time
 import disnake
 import logging
+import typing
 
 from disnake.ext import commands
 from dotenv import load_dotenv
-from threading import Thread
 
 # FILES
 
-from utils import config, functions, colors, enums, converters
-from utils.checks import *
-from utils.data import *
+from utils import config, colors, enums
+from utils.data import GuildData, MemberData
 
-from app import run_api
 
 ## -- VARIABLES -- ##
 
@@ -51,7 +50,7 @@ extension_files = [
     "help",
     "moderation",
     "music",
-    "forms"
+    "forms",
 ]
 
 test_extensions = ["buttons"]
@@ -126,7 +125,7 @@ class Bot(commands.InteractionBot):
         self.run(bot_token if config.IS_SERVER else test_bot_token)
 
     async def on_ready(self):
-        if self.started == True:
+        if self.started is True:
             return
 
         self.avatar = await self.user.avatar.read()
@@ -136,13 +135,21 @@ class Bot(commands.InteractionBot):
             STATUS_CHANNEL = self.get_channel(config.STATUS_CHANNEL)
             embed = disnake.Embed(
                 title=f"Singed In As: {self.user.name} ({self.user.id})",
-                description=f"Bot started in `{str(len(self.guilds))}` servers, with total of `{len(self.users)}` users, on an average latency of `{round(self.latency * 1000)} ms`.",
+                description=f"Bot started in `{str(len(self.guilds))}` servers, "
+                "with total of `{len(self.users)}` users,"
+                "on an average latency of `{round(self.latency * 1000)} ms`.",
                 color=colors.success_embed_color,
             )
 
             await STATUS_CHANNEL.send(embed=embed)
 
-        print(
+        logger.info("Inserting missing data for bot's guilds")
+
+        async for guild in self.fetch_guilds(limit=None):
+            logger.debug(f"Fetching data for {guild.name} ({guild.id})")
+            GuildData(guild.id).fetch_data()
+
+        logger.info(
             f"""
             Singed in as {self.user}
 
@@ -189,7 +196,7 @@ class Bot(commands.InteractionBot):
                 after=datetime.datetime.fromtimestamp(time.time() - 10),
                 action=action,
             ).flatten()
-        except:
+        except Exception:
             entries = []
 
         for entry in entries:
@@ -258,7 +265,7 @@ class Bot(commands.InteractionBot):
         for case_num in member_data.get("moderation_logs"):
             try:
                 case = cases[case_num - 1]
-            except:
+            except Exception:
                 continue
 
             member_cases.append(case)
@@ -311,7 +318,7 @@ async def reload_extensions(inter: disnake.ApplicationCommandInteraction):
         except Exception as error:
             logger.warning(f"Failed to reload extension {extension} | {error}")
 
-    await inter.edit_original_message(content=f"All extensions have been reloaded (?)")
+    await inter.edit_original_message(content="All extensions have been reloaded (?)")
 
 
 @reload.sub_command(name="extension", description="Reload one specific extension.")
@@ -332,8 +339,8 @@ async def reload_extension(
 ## -- RUNNING BOT -- ##
 
 if __name__ == "__main__":
-    if not config.IS_SERVER:
-        Thread(target=run_api).start()
+    # if not config.IS_SERVER:
+    #     Thread(target=run_api).start()
 
     bot.loop.create_task(load_extensions(bot))
     bot.start_bot()

@@ -3,7 +3,7 @@
 import json
 import time
 
-from utils import config, functions, colors, enums, converters
+from utils import colors
 
 ## -- VARIABLES -- ##
 
@@ -174,7 +174,7 @@ def member_data(member_id: int, guild_id: int):
         "user_id": member_id,
         "timezone": "Europe/Belfast",
         "message_content_privacy": False,
-        str(guild_id): {"level": 0, "xp": 0, "total_xp": 0},
+        str(guild_id): {"level": 0, "xp": 0, "total_xp": 0, "moderation_logs": [], "moderation_action_logs": []},
     }
 
 
@@ -199,7 +199,3 @@ def user_api_data(access_token: str, refresh_token: str, access_code: str, user:
         "access_code": access_code,
         "user": json.dumps(user),
     }
-
-
-def bot_api_data():
-    return {"bot_document": True, "last_refresh": time.time(), "guilds": []}
