@@ -7,10 +7,8 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors, enums, converters, converters
-from utils.checks import *
-from utils.data import *
-from utils.emojis import *
+from utils.checks import is_staff
+from utils.data import GuildData
 
 
 ## -- VARIABLES -- ##
@@ -33,6 +31,7 @@ class Forms(commands.Cog):
     async def forms(self, inter: disnake.ApplicationCommandInteraction):
         pass
 
+    @is_staff(type="administrator", manage_guild=True, administrator=True)
     @forms.sub_command(name="create")
     async def forms_create(
         self,
@@ -48,6 +47,7 @@ class Forms(commands.Cog):
         """
         pass
 
+    @is_staff(type="administrator", manage_guild=True, administrator=True)
     @forms.sub_command(name="edit")
     async def forms_edit(self, inter: disnake.ApplicationCommandInteraction, form: str):
         """Edit the given form.
@@ -57,6 +57,7 @@ class Forms(commands.Cog):
         """
         pass
 
+    @is_staff(type="administrator", manage_guild=True, administrator=True)
     @forms.sub_command(name="delete")
     async def forms_delete(self, inter: disnake.ApplicationCommandInteraction, form: str):
         """Delete a form of the given name.
@@ -75,6 +76,7 @@ class Forms(commands.Cog):
         """
         pass
 
+    @is_staff(type="administrator", manage_guild=True, administrator=True)
     @forms.sub_command(name="enable")
     async def forms_enable(self, inter: disnake.ApplicationCommandInteraction, form: str):
         """Enables a disabled form, allowing it to be done.
@@ -84,6 +86,7 @@ class Forms(commands.Cog):
         """
         pass
 
+    @is_staff(type="administrator", manage_guild=True, administrator=True)
     @forms.sub_command(name="disable")
     async def forms_disable(self, inter: disnake.ApplicationCommandInteraction, form: str):
         """Disables a form temporarily, preventing it from being done.
@@ -106,6 +109,7 @@ class Forms(commands.Cog):
     async def forms_limits(self, inter: disnake.ApplicationCommandInteraction):
         pass
 
+    @is_staff(type="administrator", manage_guild=True, administrator=True)
     @forms_limits.sub_command(name="add")
     async def forms_limits_add(
         self, inter: disnake.ApplicationCommandInteraction, form: str, limiter: disnake.Role | disnake.Member
@@ -118,8 +122,11 @@ class Forms(commands.Cog):
         """
         pass
 
+    @is_staff(type="administrator", manage_guild=True, administrator=True)
     @forms_limits.sub_command(name="remove")
-    async def forms_limits_remove(self, inter: disnake.ApplicationCommandInteraction, form: str, limiter: disnake.Role | disnake.Member):
+    async def forms_limits_remove(
+        self, inter: disnake.ApplicationCommandInteraction, form: str, limiter: disnake.Role | disnake.Member
+    ):
         """Limits a form to the specified role or member.
         Parameters
         ----------
@@ -128,10 +135,12 @@ class Forms(commands.Cog):
         """
         pass
 
+    @is_staff(type="administrator", manage_guild=True, administrator=True)
     @forms_limits.sub_command(name="clear")
     async def forms_limits_clear(self, inter: disnake.ApplicationCommandInteraction, form: str):
         pass
 
+    @is_staff(type="administrator", manage_guild=True, administrator=True)
     @forms_limits.sub_command(name="view")
     async def forms_limits_view(self, inter: disnake.ApplicationCommandInteraction, form: str):
         pass

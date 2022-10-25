@@ -1,7 +1,5 @@
 import disnake
 
-from disnake.ext import commands
-
 
 def convert_time(inter: disnake.ApplicationCommandInteraction, input: str) -> int:
     try:

@@ -1,6 +1,7 @@
 ## -- IMPORTING -- ##
 
 # MODULES
+from datetime import datetime
 import typing
 import disnake
 import os
@@ -9,12 +10,10 @@ from disnake.ext import commands, menus
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors, enums, converters
-from utils.checks import *
-from utils.data import *
-from utils.emojis import *
+from utils import config, colors
+from utils.emojis import no
 
-from . import fun, leveling, miscellaneous, moderation, music, settings
+from extensions import fun, leveling, miscellaneous, moderation, music, settings
 
 ## -- VARIABLES -- ##
 
@@ -43,13 +42,13 @@ empty_group_bases = [
 
 permissions = os.environ.get("PERMISSIONS")
 
-help_description = """
+help_description = f"""
     The prefix for this bot is `/`.
-    
+
     For module help, use `/help category <Module>`.
     For command help, use `/help command <command>`.
 
-    [**Invite OutDash!**](https://discord.com/api/oauth2/authorize?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands)
+    [**Invite OutDash!**]({config.INVITE_URL})
 """
 
 ## -- FUNCTIONS -- ##
@@ -182,7 +181,8 @@ class HelpPaginator(disnake.ui.View, menus.MenuPages):
         self.add_item(
             disnake.ui.Button(
                 label="Invite me!",
-                url=f"https://discord.com/api/oauth2/authorize?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands",
+                url="https://discord.com/api/oauth2/authorize"
+                f"?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands",
                 row=0,
             )
         )
@@ -262,7 +262,8 @@ class HelpView(disnake.ui.View):
         self.add_item(
             disnake.ui.Button(
                 label="Invite me!",
-                url=f"https://discord.com/api/oauth2/authorize?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands",
+                url="https://discord.com/api/oauth2/authorize"
+                f"?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands",
             )
         )
 
@@ -284,7 +285,8 @@ class CommandHelpView(disnake.ui.View):
         self.add_item(
             disnake.ui.Button(
                 label="Invite me!",
-                url=f"https://discord.com/api/oauth2/authorize?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands",
+                url="https://discord.com/api/oauth2/authorize"
+                f"?client_id=836494578135072778&permissions={permissions}&scope=bot%20applications.commands",
                 row=2,
             )
         )

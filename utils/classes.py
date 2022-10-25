@@ -5,11 +5,10 @@ import requests
 
 from dotenv import load_dotenv
 
-from utils.webhooks import *
-from utils.database_types import *
-from utils.data import *
+from utils.webhooks import InvalidWebhook, InvalidLogType, Webhook
+from utils.database_types import log_types
+from utils.data import GuildData
 
-from utils import config, functions, colors, enums, converters
 
 ## -- VARIABLES -- ##
 
@@ -22,7 +21,7 @@ class LoggingWebhook:
     def __init__(self, avatar: disnake.Asset, guild: disnake.Guild, log_type: str):
         self._data_obj = GuildData(guild.id)
 
-        if not log_type in log_types:
+        if log_type not in log_types:
             raise InvalidLogType
 
         webhook = self._data_obj.get_log_webhook(log_type)

@@ -2,21 +2,16 @@
 
 # MODULES
 import disnake
-import os
-import certifi
 
 from disnake import utils
 from disnake.ext import commands
-from pymongo import MongoClient
 from dotenv import load_dotenv
 from utils.DiscordUtils import Music as MusicManager
 
 # FILES
-from utils import config, functions, colors, enums, converters
+from utils import colors
 
-from utils.checks import *
-from utils.data import *
-from utils.emojis import *
+from utils.emojis import yes, no, loading
 
 ## -- VARIABLES -- ##
 
@@ -37,9 +32,7 @@ class Music(commands.Cog):
     ## -- SLASH COMMANDS -- ##
 
     @commands.slash_command(name="play")
-    async def play(
-        self, inter: disnake.ApplicationCommandInteraction, query: str
-    ):
+    async def play(self, inter: disnake.ApplicationCommandInteraction, query: str):
         """Play some music!
         Parameters
         ----------
@@ -77,9 +70,7 @@ class Music(commands.Cog):
                 return await inter.send(embed=embed, ephemeral=True)
 
         if not voice_client.is_playing():
-            embed = disnake.Embed(
-                description=f"{loading} Retreiving video..", color=colors.embed_color
-            )
+            embed = disnake.Embed(description=f"{loading} Retreiving video..", color=colors.embed_color)
             await inter.send(embed=embed)
 
             song = await player.queue(query, bettersearch=True)
@@ -93,9 +84,7 @@ class Music(commands.Cog):
 
             await inter.edit_original_message(embed=embed)
         else:
-            embed = disnake.Embed(
-                description=f"{loading} Retreiving video..", color=colors.embed_color
-            )
+            embed = disnake.Embed(description=f"{loading} Retreiving video..", color=colors.embed_color)
             await inter.send(embed=embed)
 
             song = await player.queue(query, bettersearch=True)
@@ -338,9 +327,7 @@ class Music(commands.Cog):
 
     @join
     @play.error
-    async def play_error(
-        self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError
-    ):
+    async def play_error(self, inter: disnake.ApplicationCommandInteraction, error: commands.CommandError):
         if isinstance(error, disnake.errors.Forbidden):
             embed = disnake.Embed(
                 description=f"{no} I don't have permission to join your voice channel!",

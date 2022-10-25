@@ -10,15 +10,14 @@ class InvalidWebhook(Exception):
     pass
 
 
+class InvalidLogType(Exception):
+    """Raised if the given log type is invalid."""
+
+    pass
+
+
 class Webhook:
-    def __init__(
-        self,
-        url=None,
-        content=None,
-        username="OutDash Logging",
-        avatar_url=None,
-        **kwargs
-    ):
+    def __init__(self, url=None, content=None, username="OutDash Logging", avatar_url=None, **kwargs):
 
         self.url = url
         self.content = content
@@ -38,15 +37,11 @@ class Webhook:
         self.embeds = []
         for embed in embeds:
             self.add_embed(embed, dict=True)
-        data = {
-            key: value
-            for key, value in self.__dict__.items()
-            if value and key not in {"url", "files", "filename"}
-        }
+        data = {key: value for key, value in self.__dict__.items() if value and key not in {"url", "files", "filename"}}
         return data
 
     def add_embed(self, embed, dict=False):
-        if dict == True:
+        if dict is True:
             self.embeds.append(embed)
         else:
             embed_dict = embed.to_dict()

@@ -3,21 +3,14 @@
 # MODULES
 import re
 import disnake
-import os
-import certifi
 
 from disnake.ext import commands
-from pymongo import MongoClient
 from dotenv import load_dotenv
-from typing import (
-    List,
-)
 
 # FILES
-from utils import config, functions, colors, enums, converters
-from utils.checks import *
-from utils.data import *
-from utils.emojis import *
+from utils import functions, colors
+from utils.data import GuildData
+from utils.emojis import moderator
 
 ## -- VARIABLES -- ##
 
@@ -44,13 +37,11 @@ class Automod(commands.Cog):
         data = data_obj.get_data()
 
         embed = disnake.Embed(
-            description=moderator
-            + " "
-            + automod_type_warnings[automod_type].format(ctx.author.mention),
+            description=moderator + " " + automod_type_warnings[automod_type].format(ctx.author.mention),
             color=colors.embed_color,
         )
 
-        if not ctx.author.id in self.bot.automod_warnings:
+        if ctx.author.id not in self.bot.automod_warnings:
             self.bot.automod_warnings[ctx.author.id] = []
 
         self.bot.automod_warnings[ctx.author.id].append(data)
@@ -65,10 +56,7 @@ class Automod(commands.Cog):
 
         automod_warning_rules = data["automod_warning_rules"][automod_type]
 
-        if (
-            len(self.bot.automod_warnings[ctx.author.id])
-            >= automod_warning_rules["warnings"]
-        ):
+        if len(self.bot.automod_warnings[ctx.author.id]) >= automod_warning_rules["warnings"]:
             action = automod_warning_rules["action"]
 
             if action == "mute":
@@ -102,8 +90,7 @@ class Automod(commands.Cog):
             return False
 
         search = re.match(
-            pattern=r"^.*(?:{}).*$".format(
-                "|".join(automod_filters["wildcard"])),
+            pattern=r"^.*(?:{}).*$".format("|".join(automod_filters["wildcard"])),
             string=ctx.message.content,
             flags=re.IGNORECASE,
         )
@@ -146,9 +133,7 @@ class Automod(commands.Cog):
         await self.all_caps(ctx, data)
 
     @commands.Cog.listener("on_message_edit")
-    async def automod_edit_trigger(
-        self, _: disnake.Message, after: disnake.Message
-    ):
+    async def automod_edit_trigger(self, _: disnake.Message, after: disnake.Message):
         await self.automod_trigger(after)
 
     ## -- SPAM FILTERS -- ##
@@ -162,10 +147,7 @@ class Automod(commands.Cog):
 
         if message.id in self.bot.moderated_messages:
             return
-        elif (
-            not data["automod_toggle"]["global"]
-            or not data["automod_toggle"]["fast_spam"]
-        ):
+        elif not data["automod_toggle"]["global"] or not data["automod_toggle"]["fast_spam"]:
             return
 
     @commands.Cog.listener("on_message_flood")
@@ -177,10 +159,7 @@ class Automod(commands.Cog):
 
         if message.id in self.bot.moderated_messages:
             return
-        elif (
-            not data["automod_toggle"]["global"]
-            or not data["automod_toggle"]["text_flood"]
-        ):
+        elif not data["automod_toggle"]["global"] or not data["automod_toggle"]["text_flood"]:
             return
 
     @commands.Cog.listener("on_message")

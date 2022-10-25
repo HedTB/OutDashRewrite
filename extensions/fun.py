@@ -1,21 +1,17 @@
 ## -- IMPORTING -- ##
 
 # MODULES
+from datetime import datetime
 import random
 import disnake
 import os
-import certifi
 import praw
 
 from disnake.ext import commands
-from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors, enums, converters, functions, colors
-from utils.checks import *
-from utils.data import *
-from utils.emojis import *
+from utils import config, colors
 
 ## -- VARIABLES -- ##
 

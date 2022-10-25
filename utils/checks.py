@@ -1,7 +1,4 @@
-from utils.data import *
-from utils import config, functions, colors, enums, converters
 import time
-import disnake
 import os
 import certifi
 import json
@@ -10,9 +7,10 @@ from disnake.ext import commands
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
-load_dotenv()
+from utils.data import GuildData
+from utils import config
 
-# FILES
+load_dotenv()
 
 
 ## -- VARIABLES -- ##
@@ -120,7 +118,7 @@ def server_setting():
         data_obj = GuildData(ctx.guild.id)
         data = data_obj.get_data()
 
-        if data.get("settings_locked") == True:
+        if data.get("settings_locked") is True:
             raise SettingsLocked
         else:
             return True

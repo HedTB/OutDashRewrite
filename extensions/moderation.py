@@ -1,16 +1,18 @@
 ## -- IMPORTING -- ##
 
 # MODULES
+import datetime
 import disnake
+import typing
 
 from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors, enums, converters, converters
-from utils.checks import *
-from utils.data import *
-from utils.emojis import *
+from utils import config, functions, colors, enums, converters
+from utils.data import WarnsData
+from utils.checks import is_staff
+from utils.emojis import yes, no, info, moderator
 
 ## -- VARIABLES -- ##
 
@@ -61,7 +63,7 @@ class MemberCasesPaginator(disnake.ui.View):
 
         description = (
             f"{info} For more information on a case, run `/moderation case <case>`\n"
-            + "To view more pages, use the buttons or run `/moderation cases <member> <page>`\n"
+            "To view more pages, use the buttons or run `/moderation cases <member> <page>`\n"
         )
         page_cases = self.pages[self.page - 1]
 
@@ -73,7 +75,6 @@ class MemberCasesPaginator(disnake.ui.View):
             offender = inter.guild.get_member(offender) or inter.bot.get_user(offender)
 
             moderator_mention = moderator.mention if isinstance(moderator, disnake.Member) else str(moderator)
-            offender_mention = offender.mention if isinstance(offender, disnake.Member) else str(offender)
 
             action = enums.Moderation(case["action"])
             reason = case["reason"]
@@ -127,14 +128,14 @@ class Moderation(commands.Cog):
     async def is_banned(self, guild: disnake.Guild, user: disnake.User):
         try:
             return True if await guild.fetch_ban(user) else False
-        except:
+        except Exception:
             return False
 
     ## -- SLASH COMMANDS -- ##
 
     """
     ! WARNINGS
-    
+
     The warning system, such as viewing warnings, and obviously adding warnings.
     """
 
@@ -170,9 +171,8 @@ class Moderation(commands.Cog):
                 ),
                 ephemeral=True,
             )
-        elif (
-            functions.is_role_above_role(member.top_role, inter.author.top_role)
-            or member.top_role == inter.author.top_role
+        elif member.top_role == inter.author.top_role or functions.is_role_above_role(
+            member.top_role, inter.author.top_role
         ):
             return await inter.send(
                 embed=disnake.Embed(
@@ -227,9 +227,8 @@ class Moderation(commands.Cog):
                 ephemeral=True,
             )
 
-        elif (
-            functions.is_role_above_role(member.top_role, inter.author.top_role)
-            or member.top_role == inter.author.top_role
+        elif member.top_role == inter.author.top_role or functions.is_role_above_role(
+            member.top_role, inter.author.top_role
         ):
             return await inter.send(
                 embed=disnake.Embed(
@@ -297,7 +296,7 @@ class Moderation(commands.Cog):
 
                 description += (
                     f"**{warning['id']} | Moderator: {self.bot.get_user(moderator)}**\n"
-                    + f"{reason} | {warn_time[:16]} UTC\n"
+                    f"{reason} | {warn_time[:16]} UTC\n"
                 )
 
             embed = disnake.Embed(
@@ -346,7 +345,7 @@ class Moderation(commands.Cog):
 
     """
     ! PUNISH COMMANDS
-    
+
     Commands for punishment, such as banning and kicking.
     """
 
@@ -387,7 +386,7 @@ class Moderation(commands.Cog):
         description = f"""
             {moderator} You have been softbanned from **{inter.guild.name}**.
             You're not banned, but your messages have been deleted.
-            
+
             **Reason:** {reason}
         """
 
@@ -607,7 +606,8 @@ class Moderation(commands.Cog):
         if not seconds:
             await inter.send(
                 embed=disnake.Embed(
-                    description=f"{no} Please provide a valid time format. \nExample:\n```10s = 10 seconds\n1m = 1 minute\n3h = 3 hours\n2d = 2 days```",
+                    description=f"{no} Please provide a valid time format."
+                    f"\nExample:\n```10s = 10 seconds\n1m = 1 minute\n3h = 3 hours\n2d = 2 days```",
                     color=colors.error_embed_color,
                 ),
                 ephemeral=True,
@@ -655,7 +655,7 @@ class Moderation(commands.Cog):
 
     """
     ! CHANNEL MANAGEMENT
-    
+
     These commands manages all channels.
     """
 
@@ -698,7 +698,7 @@ class Moderation(commands.Cog):
 
     """
     ! MODERATOR MANAGEMENT
-    
+
     Manage the moderators of the server.
     """
 
@@ -759,8 +759,7 @@ class Moderation(commands.Cog):
 
     """
     ! MODERATION DATA
-    
-    
+
     """
 
     @commands.slash_command(name="moderation", description="")
@@ -787,7 +786,7 @@ class Moderation(commands.Cog):
 
         description = (
             f"{info} For more information on a case, run `/moderation case <case>`\n"
-            + "To view more pages, use the buttons or run `/moderation cases <member> <page>`\n"
+            "To view more pages, use the buttons or run `/moderation cases <member> <page>`\n"
         )
 
         if len(pages) == 0:
@@ -811,7 +810,6 @@ class Moderation(commands.Cog):
             offender = inter.guild.get_member(offender) or self.bot.get_user(offender)
 
             moderator_mention = moderator.mention if isinstance(moderator, disnake.Member) else str(moderator)
-            offender_mention = offender.mention if isinstance(offender, disnake.Member) else str(offender)
 
             action = enums.Moderation(case["action"])
             reason = case["reason"]
@@ -835,7 +833,7 @@ class Moderation(commands.Cog):
 
     """
     ! OTHER MODERATION
-    
+
     All other moderation commands.
     """
 

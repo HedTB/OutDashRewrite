@@ -9,20 +9,18 @@ import logging
 import random
 import disnake
 import os
-import requests
-import json
 import aiohttp
 
 from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors, enums, converters
-from utils.data import *
-from utils.emojis import *
+from utils import config, colors
+from utils.data import GuildData, MemberData
+from utils.emojis import no, info
 
-from .. import leveling
-from . import errors
+from extensions import leveling
+from extensions.events import errors
 
 ## -- VARIABLES	-- ##
 
@@ -164,7 +162,8 @@ class Events(commands.Cog):
                 color=colors.error_embed_color,
             )
             error_embed = disnake.Embed(
-                description=f"{no} Oh no! Something	went wrong while running the command! Please join our [support server](https://discord.com/invite/4pfUqEufUm) and report the bug.",
+                description=f"{no} Oh no! Something	went wrong while running the command! "
+                "Please join our [support server](https://discord.com/invite/4pfUqEufUm) and report the bug.",
                 color=colors.error_embed_color,
             )
 
@@ -185,7 +184,7 @@ class Events(commands.Cog):
 
             try:
                 await inter.response.send_message(embed=error_embed, ephemeral=True)
-            except:
+            except Exception:
                 await inter.channel.send(embed=error_embed)
 
     @commands.Cog.listener()
@@ -197,7 +196,8 @@ class Events(commands.Cog):
 
         elif isinstance(error, commands.CommandOnCooldown):
             embed = disnake.Embed(
-                description=f"{no} You're on a cooldown. Please	try	again after	**{str(round(error.retry_after,	1))} seconds.**",
+                description=f"{no} You're on a cooldown. "
+                "Please	try	again after	**{str(round(error.retry_after,	1))} seconds.**",
                 color=colors.error_embed_color,
             )
             await ctx.send(embed=embed)
@@ -209,7 +209,8 @@ class Events(commands.Cog):
                 color=colors.error_embed_color,
             )
             error_embed = disnake.Embed(
-                description=f"{no} Oh no! Something	went wrong while running the command! Please join our [support server](https://discord.com/invite/4pfUqEufUm) and report the bug.",
+                description=f"{no} Oh no! Something	went wrong while running the command! "
+                "Please join our [support server](https://discord.com/invite/4pfUqEufUm) and report the bug.",
                 color=colors.error_embed_color,
             )
 
@@ -276,7 +277,8 @@ class Events(commands.Cog):
             elif not self.bot.chatbot_status:
                 return await message.channel.send(
                     embed=disnake.Embed(
-                        description=f"{no} The API we're using to fetch	responses is currently down. Please	try	again later.",
+                        description=f"{no} The API we're using to fetch	responses is currently down. "
+                        "Please	try	again later.",
                         color=colors.error_embed_color,
                         timestamp=datetime.datetime.utcnow(),
                     ).set_footer(
@@ -292,7 +294,8 @@ class Events(commands.Cog):
             else:
                 await message.channel.send(
                     embed=disnake.Embed(
-                        description=f"{no} The API we're using to fetch	responses is currently down. Please	try	again later.",
+                        description=f"{no} The API we're using to fetch	responses is currently down. "
+                        "Please	try	again later.",
                         color=colors.error_embed_color,
                         timestamp=datetime.datetime.utcnow(),
                     ).set_footer(
@@ -316,7 +319,7 @@ class Events(commands.Cog):
 
         try:
             last_award = self.bot.leveling_awards[message.guild.id][message.author.id]
-        except:
+        except Exception:
             last_award = None
 
         if not last_award or last_award and time.time() - last_award["awarded_at"] > last_award["cooldown_time"]:
@@ -342,7 +345,6 @@ class Events(commands.Cog):
                 variables=variables,
                 member=message.author,
             )
-
 
             if not level_up:
                 return
@@ -470,7 +472,7 @@ class Events(commands.Cog):
         voice_client = member.guild.voice_client
         humans = []
 
-        if not voice_client or after.channel != None or before.channel != voice_client.channel:
+        if not voice_client or after.channel is not None or before.channel != voice_client.channel:
             return
 
         if voice_client and voice_client.is_connected():

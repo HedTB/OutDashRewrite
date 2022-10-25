@@ -1,16 +1,12 @@
 ## -- IMPORTS -- ##
 
-import re
-import disnake
-import string
 import random
+import re
+import string
 
+import disnake
 from captcha.image import ImageCaptcha
 from dotenv import load_dotenv
-from disnake.ext import commands
-
-from utils import config, functions, colors, enums, converters
-from utils.data import *
 
 ## -- VARIABLES -- ##
 
@@ -42,7 +38,7 @@ def to_number(s: str, just_try=False):
     if decimal_filter.match(s):
         try:
             return float(s)
-        except:
+        except Exception:
             if just_try:
                 return s
             else:
@@ -50,7 +46,7 @@ def to_number(s: str, just_try=False):
     else:
         try:
             return int(s)
-        except:
+        except Exception:
             if just_try:
                 return s
             else:
@@ -172,14 +168,14 @@ async def get_or_make_invite(guild: disnake.Guild) -> str | None:
         for invite in await guild.invites():
             if invite.max_age == 0 and invite.max_uses == 0:
                 return invite.url
-    except:
+    except Exception:
         pass
 
     try:
         channel = guild.text_channels[0]
         invite_obj = await channel.create_invite(max_uses=1)
         invite = invite_obj.url
-    except:
+    except Exception:
         invite = None
 
     return invite

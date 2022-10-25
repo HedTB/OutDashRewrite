@@ -1,29 +1,29 @@
 ## -- IMPORTING -- ##
 
 # MODULES
-from typing import Dict
+import logging
 import disnake
 import os
 import datetime
-import certifi
 
 from disnake.ext import commands
-from pymongo import MongoClient
 
 # from googleapiclient import discovery
 from dotenv import load_dotenv
+from typing import Dict
 
 # FILES
-from utils import config, functions, colors, enums, converters
+from utils import config, functions, colors
 
-from utils.checks import *
-from utils.webhooks import *
-from utils.classes import *
-from utils.data import *
+from utils.webhooks import InvalidWebhook
+from utils.classes import LoggingWebhook
+from utils.data import UserData
 
 ## -- VARIABLES -- ##
 
 load_dotenv()
+
+logger = logging.getLogger("OutDash")
 
 Channel = disnake.TextChannel | disnake.VoiceChannel | disnake.NewsChannel | disnake.ForumChannel | disnake.StageChannel
 
@@ -163,7 +163,8 @@ class LoggingEvents(commands.Cog):
 
         if not message_content_privacy:
             embed = disnake.Embed(
-                description=f"**Message edited in <#{before.channel.id}>**\n[Jump to message](https://discordapp.com/channels/{after.guild.id}/{after.channel.id}/{after.id})",
+                description=f"**Message edited in <#{before.channel.id}>**"
+                "\n[Jump to message](https://discordapp.com/channels/{after.guild.id}/{after.channel.id}/{after.id})",
                 color=colors.logs_embed_color,
             )
             embed.add_field(name="Before", value=before_text, inline=False)
@@ -177,7 +178,8 @@ class LoggingEvents(commands.Cog):
             embed.timestamp = datetime.datetime.utcnow()
         else:
             embed = disnake.Embed(
-                description=f"**Message edited in <#{before.channel.id}>** \n[Jump to message](https://discordapp.com/channels/{after.guild.id}/{after.channel.id}/{after.id})",
+                description=f"**Message edited in <#{before.channel.id}>**"
+                "\n[Jump to message](https://discordapp.com/channels/{after.guild.id}/{after.channel.id}/{after.id})",
                 color=colors.logs_embed_color,
             )
             embed.add_field(name="Notice", value="`This user has message content privacy enabled.`")
@@ -290,7 +292,7 @@ class LoggingEvents(commands.Cog):
 
         embed = (
             disnake.Embed(
-                description=f"**Member left**",
+                description="**Member left**",
                 color=colors.logs_delete_embed_color,
                 timestamp=datetime.datetime.utcnow(),
             )
@@ -321,7 +323,7 @@ class LoggingEvents(commands.Cog):
 
         embed = (
             disnake.Embed(
-                description=f"**Member kicked**",
+                description="**Member kicked**",
                 color=colors.logs_delete_embed_color,
                 timestamp=datetime.datetime.utcnow(),
             )
@@ -358,7 +360,7 @@ class LoggingEvents(commands.Cog):
 
         embed = (
             disnake.Embed(
-                description=f"**Member banned**",
+                description="**Member banned**",
                 color=colors.logs_delete_embed_color,
                 timestamp=datetime.datetime.utcnow(),
             )
@@ -395,7 +397,7 @@ class LoggingEvents(commands.Cog):
 
         embed = (
             disnake.Embed(
-                description=f"**Member unbanned**",
+                description="**Member unbanned**",
                 color=colors.logs_embed_color,
                 timestamp=datetime.datetime.utcnow(),
             )
@@ -432,7 +434,7 @@ class LoggingEvents(commands.Cog):
         removed_roles = list(filter(lambda r: r not in after.roles, before.roles))
 
         embed = disnake.Embed(
-            description=f"**Roles updated**",
+            description="**Roles updated**",
             color=colors.logs_embed_color,
             timestamp=datetime.datetime.utcnow(),
         ).set_author(
@@ -549,7 +551,7 @@ class LoggingEvents(commands.Cog):
 
         embed = (
             disnake.Embed(
-                description=f"**Role created**",
+                description="**Role created**",
                 color=colors.logs_add_embed_color,
                 timestamp=datetime.datetime.utcnow(),
             )
@@ -573,7 +575,7 @@ class LoggingEvents(commands.Cog):
 
         embed = (
             disnake.Embed(
-                description=f"**Role deleted**",
+                description="**Role deleted**",
                 color=colors.logs_delete_embed_color,
                 timestamp=datetime.datetime.utcnow(),
             )
@@ -591,7 +593,7 @@ class LoggingEvents(commands.Cog):
 
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, after.guild, "guild_role_update")
-        except:
+        except Exception:
             logger.debug(f"Invalid role update webhook for {after.guild.name}")
             return
 
@@ -600,7 +602,7 @@ class LoggingEvents(commands.Cog):
         if before.name != after.name:
             embeds.append(
                 disnake.Embed(
-                    description=f"**Role name updated**",
+                    description="**Role name updated**",
                 )
                 .add_field(name="Before", value=before.name, inline=False)
                 .add_field(
@@ -666,13 +668,13 @@ class LoggingEvents(commands.Cog):
 
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, channel.guild, "guild_channel_create")
-        except:
+        except Exception:
             logger.debug(f"Invalid channel creation webhook in {channel.guild.name}")
             return
 
         embed = (
             disnake.Embed(
-                description=f"**Channel created**",
+                description="**Channel created**",
                 color=colors.logs_add_embed_color,
                 timestamp=datetime.datetime.utcnow(),
             )
@@ -690,13 +692,13 @@ class LoggingEvents(commands.Cog):
 
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, channel.guild, "guild_channel_delete")
-        except:
+        except InvalidWebhook:
             logger.debug(f"Invalid channel deletion webhook in {channel.guild.name}")
             return
 
         embed = (
             disnake.Embed(
-                description=f"**Channel deleted**",
+                description="**Channel deleted**",
                 color=colors.logs_delete_embed_color,
                 timestamp=datetime.datetime.utcnow(),
             )
@@ -714,7 +716,7 @@ class LoggingEvents(commands.Cog):
 
         try:
             webhook = LoggingWebhook(self.bot.user.avatar, after.guild, "guild_channel_update")
-        except:
+        except InvalidWebhook:
             logger.debug(f"Invalid channel creation webhook in {after.guild.name}")
             return
 
@@ -722,31 +724,31 @@ class LoggingEvents(commands.Cog):
 
         if before.category != after.category:
             embeds.append(
-                disnake.Embed(description=f"**Channel category updated**")
+                disnake.Embed(description="**Channel category updated**")
                 .add_field(name="Before", value=before.category.name if before.category else "None", inline=False)
                 .add_field(name="After", value=after.category.name if after.category else "None", inline=False)
             )
         if before.name != after.name:
             embeds.append(
-                disnake.Embed(description=f"**Channel name updated**")
+                disnake.Embed(description="**Channel name updated**")
                 .add_field(name="Before", value=before.name, inline=False)
                 .add_field(name="After", value=after.name, inline=False)
             )
         if before.nsfw != after.nsfw:
             embeds.append(
-                disnake.Embed(description=f"**Channel NSFW state updated**")
+                disnake.Embed(description="**Channel NSFW state updated**")
                 .add_field(name="Before", value=before.nsfw, inline=False)
                 .add_field(name="After", value=after.nsfw, inline=False)
             )
         if before.topic != after.topic:
             embeds.append(
-                disnake.Embed(description=f"**Channel description updated**")
+                disnake.Embed(description="**Channel description updated**")
                 .add_field(name="Before", value=before.topic or "None", inline=False)
                 .add_field(name="After", value=after.topic or "None", inline=False)
             )
         if before.slowmode_delay != after.slowmode_delay:
             embeds.append(
-                disnake.Embed(description=f"**Channel slowmode updated**")
+                disnake.Embed(description="**Channel slowmode updated**")
                 .add_field(name="Before", value=functions.seconds_to_text(before.slowmode_delay), inline=False)
                 .add_field(name="After", value=functions.seconds_to_text(after.slowmode_delay), inline=False)
             )
@@ -761,7 +763,7 @@ class LoggingEvents(commands.Cog):
             removed_members = [member.mention for member, _ in removed_overwrites["members"].items()]
 
             embeds.append(
-                disnake.Embed(description=f"**Channel permission overwrites updated**")
+                disnake.Embed(description="**Channel permission overwrites updated**")
                 .add_field(name="Roles Added", value=", ".join(added_roles), inline=False)
                 .add_field(name="Roles Removed", value=", ".join(removed_roles), inline=False)
                 .add_field(name="Members Added", value=", ".join(added_members), inline=False)

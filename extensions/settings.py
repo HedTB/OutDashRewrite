@@ -2,19 +2,16 @@
 
 # MODULES
 import disnake
-import os
-import certifi
 
 from disnake.ext import commands
-from pymongo import MongoClient
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors, enums, converters
+from utils import colors
 
-from utils.checks import *
-from utils.data import *
-from utils.emojis import *
+from utils.checks import is_staff, server_setting
+from utils.data import GuildData, UserData
+from utils.emojis import yes, no
 
 ## -- VARIABLES -- ##
 
@@ -176,7 +173,7 @@ async def get_webhook(
 
 
 class Settings(commands.Cog):
-    name = f":gear: Settings"
+    name = ":gear: Settings"
     description = "These commands allow you to change how OutDash behaves."
     emoji = "⚙️"
 
@@ -187,7 +184,7 @@ class Settings(commands.Cog):
 
     """
     ! SETTING LOCKING
-    
+
     These commands locks/unlocks the settings for the server.
     """
 
@@ -203,7 +200,7 @@ class Settings(commands.Cog):
         data_obj = GuildData(inter.guild.id)
         guild_data = data_obj.get_data()
 
-        if guild_data.get("settings_locked") == True:
+        if guild_data.get("settings_locked") is True:
             embed = disnake.Embed(
                 description=f"{no} The server's settings are already locked!",
                 color=colors.error_embed_color,
@@ -225,7 +222,7 @@ class Settings(commands.Cog):
         data_obj = GuildData(inter.guild.id)
         guild_data = data_obj.get_data()
 
-        if guild_data.get("settings_locked") == False:
+        if guild_data.get("settings_locked") is False:
             embed = disnake.Embed(
                 description=f"{no} The server's settings aren't locked!",
                 color=colors.error_embed_color,
@@ -242,13 +239,13 @@ class Settings(commands.Cog):
 
     """
     ! SERVER SETTINGS
-    
+
     These commands changes the way OutDash behaves in servers.
     """
 
     """
     ! LOGS SETTINGS
-    
+
     These commands changes how OutDash logs events in servers.
     """
 
@@ -333,7 +330,7 @@ class Settings(commands.Cog):
 
     """
     ! WELCOME/GOODBYE SETTINGS
-    
+
     These commands manages the welcome/goodbye features
     """
 
@@ -415,7 +412,6 @@ class Settings(commands.Cog):
         """Set the channel where welcome messages should be sent."""
 
         data_obj = GuildData(inter.guild.id)
-        embed_part = embed_part.lower()
 
         embed = disnake.Embed(
             description=f"{yes} Welcome messages will now be sent in <#{channel.id}>.",
@@ -445,7 +441,7 @@ class Settings(commands.Cog):
 
     """
     ! CHATBOT SETTINGS
-    
+
     These settings manages the chatbot feature.
     """
 
@@ -528,7 +524,8 @@ class Settings(commands.Cog):
 
         data_obj = UserData(inter.author.id)
         embed = disnake.Embed(
-            description=f"{yes} The {message_settings_description[type]} privacy setting has been {'enabled' if toggle else 'disabled'}.",
+            description=f"{yes} The {message_settings_description[type]} privacy setting has been "
+            f"{'enabled' if toggle else 'disabled'}.",
             color=colors.success_embed_color,
         )
 

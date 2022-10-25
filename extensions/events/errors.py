@@ -5,15 +5,16 @@ import functools
 import typing
 import disnake
 import re
+import logging
 
 from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors, enums, converters
-from utils.checks import *
-from utils.data import *
-from utils.emojis import *
+from utils import config, colors
+
+from utils.checks import SettingsLocked, NotAdministrator, NotModerator
+from utils.emojis import no
 
 ## -- VARIABLES -- ##
 
@@ -22,8 +23,7 @@ load_dotenv()
 logger = logging.getLogger("OutDash")
 
 IGNORED_ERRORS = (commands.NotOwner, commands.CommandNotFound)
-ERROR_TITLE_REGEX = re.compile(
-    r"((?<=[a-z])[A-Z]|(?<=[a-zA-Z])[A-Z](?=[a-z]))")
+ERROR_TITLE_REGEX = re.compile(r"((?<=[a-z])[A-Z]|(?<=[a-zA-Z])[A-Z](?=[a-z]))")
 
 command_types = {
     "member": [
@@ -50,14 +50,10 @@ argument_descriptions = {
     "warnings_clear": {"member": "whose warnings to clear"},
     # BOT SETTINGS
     "chatbot_channel": {"channel": "where the chatbot should respond to messages"},
-    "editwelcome_content": {
-        "content": "what the welcome message content should be set to"
-    },
+    "editwelcome_content": {"content": "what the welcome message content should be set to"},
     # LEVELING
     "leveling_message_deletion": {"delay": "the levelup message deletion delay"},
-    "leveling_message_content": {
-        "content": "what the levelup message content should be set to"
-    },
+    "leveling_message_content": {"content": "what the levelup message content should be set to"},
     "level_set": {
         "member": "whose level to set",
         "level": "what the level should be set to",
@@ -78,9 +74,7 @@ class Errors(commands.Cog):
 
     @staticmethod
     def error_embed(description: str) -> disnake.Embed:
-        return disnake.Embed(
-            description=f"{no} {description}", color=colors.error_embed_color
-        )
+        return disnake.Embed(description=f"{no} {description}", color=colors.error_embed_color)
 
     @staticmethod
     def get_argument_description(command: str, argument: str) -> typing.Optional[str]:
@@ -137,28 +131,19 @@ class Errors(commands.Cog):
     ) -> disnake.Embed:
         bot_permissions = inter.channel.permissions_for(inter.me)
 
-        if inter.invoked_with != None:
-            partial_command_name, command_type = self.get_partial_command(
-                inter)
+        if inter.invoked_with is not None:
+            partial_command_name, command_type = self.get_partial_command(inter)
 
             if command_type == "member":
-                embed = self.error_embed(
-                    description=f"I don't have permission to {partial_command_name} this member."
-                )
+                embed = self.error_embed(description=f"I don't have permission to {partial_command_name} this member.")
             else:
-                embed = self.error_embed(
-                    description="I don't have the required permission to run this command."
-                )
+                embed = self.error_embed(description="I don't have the required permission to run this command.")
 
-        if bot_permissions >= disnake.Permissions(
-            send_messages=True, embed_links=True, external_emojis=True
-        ):
+        if bot_permissions >= disnake.Permissions(send_messages=True, embed_links=True, external_emojis=True):
             await inter.send(embed=embed)
 
         elif bot_permissions >= disnake.Permissions(send_messages=True):
-            await inter.send(
-                f"{no} Please give me the `Embed Links` permission, otherwise I won't work properly."
-            )
+            await inter.send(f"{no} Please give me the `Embed Links` permission, otherwise I won't work properly.")
 
             logger.warning(
                 f"Missing partial required permissions for {inter.channel.id}. "
@@ -187,9 +172,7 @@ class Errors(commands.Cog):
             else:
                 missing_permissions = ""
                 for missing_permission in error.missing_permissions:
-                    missing_permissions += (
-                        f"{missing_permission.title().replace('_', ' ')}, "
-                    )
+                    missing_permissions += f"{missing_permission.title().replace('_', ' ')}, "
 
                 missing_permissions = missing_permissions[:-2]
                 description = f"You're missing the `{missing_permissions}` permissions."
@@ -203,13 +186,9 @@ class Errors(commands.Cog):
 
         return self.error_embed(description)
 
-    async def on_command_error(
-        self, inter: disnake.Interaction, error: commands.CommandError
-    ) -> None:
+    async def on_command_error(self, inter: disnake.Interaction, error: commands.CommandError) -> None:
         if getattr(error, "handled", False):
-            return logging.debug(
-                f"Command {inter.command} had its error handled locally, ignoring."
-            )
+            return logging.debug(f"Command {inter.command} had its error handled locally, ignoring.")
         elif isinstance(error, IGNORED_ERRORS):
             return
 
@@ -253,10 +232,7 @@ class Errors(commands.Cog):
             )
 
         if embed is None:
-            embed = self.error_embed(
-                self.get_title_from_name(error),
-                str(error)
-            )
+            embed = self.error_embed(self.get_title_from_name(error), str(error))
 
         print(inter.response.is_done())
 
@@ -268,8 +244,7 @@ class Errors(commands.Cog):
     async def on_error(self, inter: disnake.Interaction, error: Exception) -> None:
         if isinstance(inter, disnake.Interaction):
             if inter.response.is_done():
-                inter.send = functools.partial(
-                    inter.followup.send, ephemeral=True)
+                inter.send = functools.partial(inter.followup.send, ephemeral=True)
             else:
                 inter.send = functools.partial(inter.send, ephemeral=True)
 
@@ -282,9 +257,7 @@ class Errors(commands.Cog):
                 ),
             ):
                 inter.command = inter.application_command
-            elif isinstance(
-                inter, (disnake.MessageInteraction, disnake.ModalInteraction)
-            ):
+            elif isinstance(inter, (disnake.MessageInteraction, disnake.ModalInteraction)):
                 inter.command = inter.message
             else:
                 inter.command = inter

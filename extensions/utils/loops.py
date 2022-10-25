@@ -1,17 +1,17 @@
 ## -- IMPORTING -- ##
 
 # MODULES
-import disnake
 import os
+import disnake
 import requests
+import logging
 
 from disnake.ext import commands, tasks
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors, enums, converters
-
-from utils.checks import *
+from utils import config
+from utils.data import YouTubeData, get_all_documents
 from utils.statcord import StatcordClient
 
 ## -- VARIABLES -- ##
@@ -29,8 +29,7 @@ logger = logging.getLogger("OutDash")
 class Loops(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.statcord_client = StatcordClient(
-            bot, statcord_api_key, lambda: 1 + 2 + 3)
+        self.statcord_client = StatcordClient(bot, statcord_api_key, lambda: 1 + 2 + 3)
 
         self.presence_loop.start()
         self.youtube_upload_loop.start()
@@ -57,14 +56,14 @@ class Loops(commands.Cog):
                 ping_channel = self.bot.get_channel(config.MESSAGES_CHANNEL)
 
                 response = requests.get(
-                    f"https://youtube.googleapis.com/youtube/v3/channels?part=contentDetails&id={channel_id}&key={GOOGLE_API_KEY}"
+                    f"https://youtube.googleapis.com/youtube/v3/channels"
+                    f"?part=contentDetails&id={channel_id}&key={GOOGLE_API_KEY}"
                 ).json()
-                playlist_id = response.get("items")[0]["contentDetails"][
-                    "relatedPlaylists"
-                ]["uploads"]
+                playlist_id = response.get("items")[0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
                 videos_response = requests.get(
-                    url=f"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults={config.MAX_VIDEOS_STORED}&playlistId={playlist_id}&key={GOOGLE_API_KEY}"
+                    url=f"https://www.googleapis.com/youtube/v3/playlistItems"
+                    f"?part=snippet&maxResults={config.MAX_VIDEOS_STORED}&playlistId={playlist_id}&key={GOOGLE_API_KEY}"
                 ).json()
                 videos = videos_response.get("items")
 
@@ -72,17 +71,15 @@ class Loops(commands.Cog):
                     video_id = videos[0]["snippet"]["resourceId"]["videoId"]
                     video_url = "https://youtube.com/watch?v=" + video_id
 
-                    if not video_id in posted_videos:
-                        logger.info(
-                            "New video found for channel of ID {}".format(channel_id))
+                    if video_id not in posted_videos:
+                        logger.info("New video found for channel of ID {}".format(channel_id))
 
                         await ping_channel.send(video_url)
                         posted_videos.append(video_id)
-                elif posted_videos == None:
+                elif posted_videos is None:
                     channel["posted_videos"] = []
                 else:
-                    logger.info(
-                        "No new video found for channel of ID {}".format(channel_id))
+                    logger.info("No new video found for channel of ID {}".format(channel_id))
 
                 for video in videos:
                     video_id = video["snippet"]["resourceId"]["videoId"]
@@ -104,7 +101,7 @@ class Loops(commands.Cog):
         presence_list = [
             f"{len(self.bot.guilds)} servers | /help",
             f"{len(self.bot.users)} users | /help",
-            f"you | /help",
+            "you | /help",
         ]
 
         if self.bot.presence_index + 1 > len(presence_list) - 1:

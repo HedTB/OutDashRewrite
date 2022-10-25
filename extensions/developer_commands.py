@@ -9,10 +9,9 @@ from disnake.ext import commands
 from dotenv import load_dotenv
 
 # FILES
-from utils import config, functions, colors, enums, converters
+from utils import config, functions, colors, converters
 
-from utils.checks import *
-from utils.emojis import *
+from utils.emojis import yes, no
 
 ## -- VARIABLES -- ##
 
@@ -146,7 +145,7 @@ class DeveloperCommands(commands.Cog):
 
             try:
                 await message.delete()
-            except:
+            except Exception:
                 pass
         except asyncio.TimeoutError:
             await inter.edit_original_message(f"{no} the captcha was: `" + captcha + "`")

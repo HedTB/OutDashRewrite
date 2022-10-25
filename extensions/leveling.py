@@ -9,15 +9,13 @@ import logging
 
 from disnake.ext import commands
 from dotenv import load_dotenv
-from typing import *
 
 # FILES
-from utils import config, functions, colors, enums, converters
+from utils import config, colors, rankcard
 
-from utils.checks import *
-from utils.data import *
-from utils.emojis import *
-from utils import rankcard
+from utils.checks import is_staff
+from utils.data import GuildData, MemberData
+from utils.emojis import yes, no, info
 
 ## -- VARIABLES -- ##
 
@@ -206,7 +204,7 @@ class Leveling(commands.Cog):
 
     """
     ! USER COMMANDS
-    
+
     The user commands, such as rank.
     """
 
@@ -247,7 +245,7 @@ class Leveling(commands.Cog):
 
     """
     ! LEVEL COMMANDS
-    
+
     Commands such as setting member's level.
     """
 
@@ -333,7 +331,8 @@ class Leveling(commands.Cog):
         data_obj.update_guild_data(data)
         await inter.send(
             embed=disnake.Embed(
-                description=f"{yes} {member.mention} has been given {levels} levels. They are now level {data['level']}.",
+                description=f"{yes} {member.mention} has been given {levels} levels. "
+                f"They are now level {data['level']}.",
                 color=colors.success_embed_color,
             )
         )
@@ -359,7 +358,8 @@ class Leveling(commands.Cog):
         if data["level"] - levels < 0:
             return await inter.send(
                 embed=disnake.Embed(
-                    description=f"{yes} {member.mention} has been given {levels} levels. They are now level {data['level']}.",
+                    description=f"{yes} {member.mention} has been given {levels} levels. "
+                    f"They are now level {data['level']}.",
                     color=colors.success_embed_color,
                 ),
                 ephemeral=True,
@@ -372,7 +372,8 @@ class Leveling(commands.Cog):
         data_obj.update_guild_data(data)
         await inter.send(
             embed=disnake.Embed(
-                description=f"{yes} {member.mention} has been given {levels} levels. They are now level {data['level']}.",
+                description=f"{yes} {member.mention} has been given {levels} levels. "
+                f"They are now level {data['level']}.",
                 color=colors.success_embed_color,
             )
         )
@@ -470,7 +471,7 @@ class Leveling(commands.Cog):
 
     """
     ! SETTING COMMANDS
-    
+
     The commands which manages the way OutDash levels users in guilds.
     """
 
@@ -558,7 +559,8 @@ class Leveling(commands.Cog):
 
         await inter.send(
             embed=disnake.Embed(
-                description=f"{yes} A levelup message would now look like:\n\n{self.get_levelup_message(inter, raw_message=content)}",
+                description=f"{yes} A levelup message would now look like:\n\n"
+                + self.get_levelup_message(inter, raw_message=content),
                 color=colors.success_embed_color,
             )
         )

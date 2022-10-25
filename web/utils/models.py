@@ -1,6 +1,7 @@
 ## -- IMPORTS -- ##
 
 import datetime
+import typing
 
 from pydantic import BaseModel
 
@@ -42,7 +43,7 @@ class VoteData(BaseModel):
     bot: str
     user: str
     type: str
-    isWeekend: bool
+    isWeekend: typing.Union[bool, None]
     query: str
 
 
