@@ -8,7 +8,7 @@ DEFAULT_AVATAR_URL = "https://cdn.discordapp.com/embed/avatars/0.png"
 COOLDOWN_TIME = 3
 
 # BOT INFORMATION
-CLIENT_ID = 844937957185159198 if IS_SERVER else 836494578135072778
+CLIENT_ID = 836494578135072778 if IS_SERVER else 844937957185159198
 PERMISSIONS = 1644972474367
 
 BOT_SERVER = 836495137651294258
@@ -22,6 +22,10 @@ INVITE_URL = (
     "https://discord.com/api/oauth2/authorize"
     f"?client_id={CLIENT_ID}&permissions={PERMISSIONS}&scope=bot%20applications.commands"
 )
+
+# API
+SERVER_URL = "https://outdash.ga" if not IS_SERVER else "https://outdash-beta2.herokuapp.com"
+REDIRECT_URI = SERVER_URL + "/callback"
 
 # LEVELING
 DEFAULT_MAX_LEVEL = 200

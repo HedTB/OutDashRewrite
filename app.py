@@ -3,11 +3,15 @@
 import json
 import logging
 import os
+import uvicorn
 
-from fastapi import APIRouter, Cookie, FastAPI
+from fastapi import APIRouter, Cookie, FastAPI, Request
 from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 
 from jwcrypto import jwe, jwk
+from threading import Thread
 
 from utils import config
 from utils.data import ApiUserData, BotObject
@@ -20,20 +24,18 @@ from web.extensions.v2.data import router as data
 
 ## -- VARIABLES -- ##
 
-# CONSTANTS
-BASE_DISCORD_URL = "https://discord.com/api{}"
-SERVER_URL = "http://127.0.0.1:8080" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com"
-REDIRECT_URI = SERVER_URL + "/callback"
-
-BOT_ID = os.environ.get("BOT_ID" if config.IS_SERVER else "TEST_BOT_ID")
-SECRET = os.environ.get("SECRET")
-
 # OBJECTS
 app = FastAPI()
+templating = Jinja2Templates("./web/templates")
 version2 = APIRouter(prefix="/api/v2")
 
 logger = logging.getLogger("App")
 bot = BotObject()
+
+# CONSTANTS
+BASE_DISCORD_URL = "https://discord.com/api{}"
+
+SECRET = os.environ.get("SECRET")
 
 logging.getLogger("Database").level = logging.DEBUG
 
@@ -44,7 +46,8 @@ logging.getLogger("Database").level = logging.DEBUG
 
 
 @app.api_route("/", methods=["GET", "HEAD"])
-async def index():
+async def index(request: Request):
+    return templating.TemplateResponse("dashboard.html", context={"request": request})
     return {
         "message": "Seems like you have found the API for OutDash. "
         "Well, there's nothing you can really do here, so you may aswell just exit this page and move on :)"
@@ -52,7 +55,7 @@ async def index():
 
 
 @app.get("/login")
-async def login(redirect: str = SERVER_URL, token: str = Cookie(default=None)):
+async def login(redirect: str = config.SERVER_URL, token: str = Cookie(default=None)):
     status_code, _, _ = validate_user_token(token)
 
     if status_code == 200:
@@ -61,8 +64,8 @@ async def login(redirect: str = SERVER_URL, token: str = Cookie(default=None)):
         return RedirectResponse(
             "{}?response_type=code&client_id={}&scope=identify&prompt=none&redirect_uri={}&state={}".format(
                 BASE_DISCORD_URL.format("/oauth2/authorize"),
-                BOT_ID,
-                REDIRECT_URI,
+                config.CLIENT_ID,
+                config.REDIRECT_URI,
                 redirect,
             )
         )
@@ -105,3 +108,20 @@ version2.include_router(webhooks)
 version2.include_router(data)
 
 app.include_router(version2)
+app.mount("/static", StaticFiles(directory="./web/static"), name="static")
+app.mount("/", StaticFiles(directory="./web/data"), name="data")
+
+## -- START -- ##
+
+
+def _start_app():
+    uvicorn.run(app="app:app", host="0.0.0.0", port=80, reload=True, reload_excludes=["./extensions"])
+
+
+# TODO fix multiprocessing pool issue
+def run_api():
+    Thread(target=_start_app).run()
+
+
+if __name__ == "__main__":
+    _start_app()

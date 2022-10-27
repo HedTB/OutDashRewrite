@@ -1,30 +1,29 @@
 const guildCountElement = document.getElementById("guild-count");
 
-let guilds = undefined;
-
 function sleep(seconds) {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
 async function updateBotData() {
-  while (true) {
-    await fetch("/dev/get-bot-data")
-      .then((response) => response.json())
-      .then((json) => {
-        if (json["message"]) {
-          location.href = "/login";
-        } else {
-          let responseGuilds = json["guilds"];
-          let guildCount = json["guild_count"];
+  await fetch("/api/v2/guilds/bot/count")
+    .then((response) => response.json())
+    .then((json) => {
+      if (json["message"]) {
+        location.href = "/login";
+      } else {
+        let guildCount = json["guild_count"];
 
-          guilds = responseGuilds;
-          guildCountElement.innerText =
-            "OutDash is in " + guildCount.toString() + " guilds";
-        }
-      });
-
-    await sleep(15);
-  }
+        console.log(`Guild count: ${guildCount}`)
+        guildCountElement.innerText = `OutDash is in ${guildCount.toString()} guilds`;
+      }
+    }
+    );
 }
 
-updateBotData();
+document.addEventListener("DOMContentLoaded", async () => {
+  await updateBotData()
+
+  setInterval(async () => {
+    await updateBotData()
+  }, 5000)
+})

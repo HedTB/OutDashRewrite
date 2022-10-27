@@ -43,9 +43,6 @@ Data = typing.Dict[str, DataType]
 BASE_DISCORD_URL = "https://discord.com/api/{}{}"
 DATA_REFRESH_DELAY = 300
 
-SERVER_URL = "http://127.0.0.1:8080" if not config.IS_SERVER else "https://outdash-beta2.herokuapp.com"
-REDIRECT_URI = SERVER_URL + "/callback"
-
 LIFETIME = 300
 FETCH_INTERVAL = 15
 
@@ -60,7 +57,6 @@ OBJECTS = {
 
 # ENV VARIABLES
 bot_token = os.environ.get("BOT_TOKEN" if config.IS_SERVER else "TEST_BOT_TOKEN")
-bot_id = os.environ.get("BOT_ID" if config.IS_SERVER else "TEST_BOT_ID")
 bot_secret = os.environ.get("BOT_SECRET" if config.IS_SERVER else "TEST_BOT_SECRET")
 
 # OBJECTS
@@ -69,8 +65,6 @@ db = client[config.DATABASE_COLLECTION]
 
 logger = logging.getLogger("Database")
 logger.level = logging.DEBUG if not config.IS_SERVER else logging.INFO
-
-pool = multiprocessing.Pool(processes=os.cpu_count())
 
 # COLLECTIONS
 guild_data_col = db["guild_data"]
@@ -192,8 +186,10 @@ class DatabaseObjectBase:
         self.life_time = life_time
         self._last_use = time.time()
 
+        self.pool = multiprocessing.Pool()
+
     def run_asynchronously(self, f: typing.Callable, args: dict):
-        return pool.apply_async(f, {"self": self, **args})
+        return self.pool.apply_async(f, {"self": self, **args})
 
     def fetch_data(self, *, can_insert=True) -> Data:
         start = time.time()
@@ -613,19 +609,20 @@ class ApiUser(DatabaseObjectBase):
             response = requests.post(
                 url=BASE_DISCORD_URL.format("v10", "/oauth2/token"),
                 data={
-                    "client_id": bot_id,
+                    "client_id": config.CLIENT_ID,
                     "client_secret": bot_secret,
                     "grant_type": "authorization_code",
                     "code": oauth_code,
-                    "redirect_uri": REDIRECT_URI,
+                    "redirect_uri": config.REDIRECT_URI,
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
             if response.status_code == 400:
+                print(response.json())
                 raise InvalidOauthCode
             elif response.status_code != 200:
-                raise requests.HTTPError
+                response.raise_for_status()
 
             data = functions.convert_strings(response.json())
             access_token = data["access_token"]
@@ -644,7 +641,7 @@ class ApiUser(DatabaseObjectBase):
             if response.status_code == 400:
                 raise InvalidAccessToken
             elif response.status_code != 200:
-                raise requests.HTTPError
+                response.raise_for_status()
 
             data = functions.convert_strings(response.json())
             user_id = data["user"]["id"]
@@ -709,18 +706,18 @@ class ApiUser(DatabaseObjectBase):
             "/oauth2/token",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data={
-                "client_id": bot_id,
+                "client_id": config.CLIENT_ID,
                 "client_secret": bot_secret,
                 "grant_type": "authorization_code",
                 "code": self._oauth_code,
-                "redirect_uri": REDIRECT_URI,
+                "redirect_uri": config.REDIRECT_URI,
             },
         )
 
         if response.status_code == 400:
             raise InvalidOauthCode
         elif response.status_code != 200:
-            raise requests.HTTPError
+            response.raise_for_status()
 
         data = functions.convert_strings(response.json())
 
@@ -736,7 +733,7 @@ class ApiUser(DatabaseObjectBase):
             "/oauth2/token",
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             data={
-                "client_id": bot_id,
+                "client_id": config.CLIENT_ID,
                 "client_secret": bot_secret,
                 "grant_type": "refresh_token",
                 "refresh_token": self._refresh_token,
@@ -849,7 +846,7 @@ def ApiUserData(
     expires_at: float | None = None,
 ) -> ApiUser:
     return ApiUser.create(
-        user_id=int(user_id),
+        user_id=int(user_id) if user_id else None,
         oauth_code=oauth_code,
         access_token=access_token,
         refresh_token=refresh_token,
