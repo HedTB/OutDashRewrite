@@ -49,7 +49,7 @@ extension_files = [
     "miscellaneous",
     "help",
     "moderation",
-    "music",
+    # "music",
     "forms",
 ]
 
@@ -79,7 +79,7 @@ class Bot(commands.InteractionBot):
             status=disnake.Status.idle,
             activity=disnake.Game(name="booting up.."),
             owner_id=config.OWNERS[0],
-            reconnect=True,
+            # reconnect=True,
             reload=config.IS_SERVER,
             max_messages=10000,
             test_guilds=[config.BOT_SERVER, 746363347829784646] if not config.IS_SERVER else None,
