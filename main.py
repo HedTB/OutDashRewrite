@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # FILES
 
 from utils import config, colors, enums
-from utils.data import GuildData, MemberData
+from utils.data import Guild, GuildData, MemberData
 
 
 ## -- VARIABLES -- ##
@@ -147,7 +147,7 @@ class Bot(commands.InteractionBot):
 
         async for guild in self.fetch_guilds(limit=None):
             logger.debug(f"Fetching data for {guild.name} ({guild.id})")
-            GuildData(guild.id).fetch_data()
+            Guild.create(guild.id, cache=False).fetch_data()
 
         logger.info(
             f"""

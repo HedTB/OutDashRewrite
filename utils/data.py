@@ -275,7 +275,7 @@ class DatabaseObjectBase:
 
 
 class Guild(DatabaseObjectBase):
-    def __init__(self, guild_id: int):
+    def __init__(self, guild_id: int, *, cache: bool = True):
         self.guild_id = guild_id
         self.query = guild_id
 
@@ -286,16 +286,18 @@ class Guild(DatabaseObjectBase):
         self._last_use = time.time()
 
         self.__class__.__name__ = "guild"
-        OBJECTS["guild"][guild_id] = self
+
+        if cache:
+            OBJECTS["guild"][guild_id] = self
 
         super().__init__()
 
     @staticmethod
-    def create(guild_id: int):
+    def create(guild_id: int, *, cache: bool = True):
         if guild_id in OBJECTS["guild"]:
             return OBJECTS["guild"][guild_id]
         else:
-            return Guild(guild_id)
+            return Guild(guild_id, cache=cache)
 
     def get_log_webhooks(self) -> typing.Dict[str, DataType]:
         data = self.get_data()
