@@ -145,9 +145,9 @@ class Bot(commands.InteractionBot):
 
         logger.info("Inserting missing data for bot's guilds")
 
-        async for guild in self.fetch_guilds(limit=None):
-            logger.debug(f"Fetching data for {guild.name} ({guild.id})")
-            GuildData(guild.id).fetch_data()
+        #async for guild in self.fetch_guilds(limit=None):
+            #logger.debug(f"Fetching data for {guild.name} ({guild.id})")
+            #GuildData(guild.id).fetch_data()
 
         logger.info(
             f"""
