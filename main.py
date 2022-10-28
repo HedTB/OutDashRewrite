@@ -80,7 +80,6 @@ class Bot(commands.InteractionBot):
             status=disnake.Status.idle,
             activity=disnake.Game(name="booting up.."),
             owner_id=config.OWNERS[0],
-            # reconnect=True,
             reload=config.IS_SERVER,
             max_messages=10000,
             test_guilds=[config.BOT_SERVER, 746363347829784646] if not config.IS_SERVER else None,
@@ -138,8 +137,8 @@ class Bot(commands.InteractionBot):
             embed = disnake.Embed(
                 title=f"Singed In As: {self.user.name} ({self.user.id})",
                 description=f"Bot started in `{str(len(self.guilds))}` servers, "
-                "with total of `{len(self.users)}` users, "
-                "on an average latency of `{round(self.latency * 1000)} ms`.",
+                f"with total of `{len(self.users)}` users, "
+                f"on an average latency of `{round(self.latency * 1000)} ms`.",
                 color=colors.success_embed_color,
             )
 
