@@ -1,6 +1,7 @@
 ## -- IMPORTING -- ##
 
 # MODULE
+import multiprocessing
 import os
 import datetime
 import time
@@ -122,6 +123,7 @@ class Bot(commands.InteractionBot):
         self.chatbot_status = True
 
     def start_bot(self):
+        self.pool = multiprocessing.Pool()
         self.run(bot_token if config.IS_SERVER else test_bot_token)
 
     async def on_ready(self):
@@ -136,7 +138,7 @@ class Bot(commands.InteractionBot):
             embed = disnake.Embed(
                 title=f"Singed In As: {self.user.name} ({self.user.id})",
                 description=f"Bot started in `{str(len(self.guilds))}` servers, "
-                "with total of `{len(self.users)}` users,"
+                "with total of `{len(self.users)}` users, "
                 "on an average latency of `{round(self.latency * 1000)} ms`.",
                 color=colors.success_embed_color,
             )
@@ -145,13 +147,9 @@ class Bot(commands.InteractionBot):
 
         logger.info("Inserting missing data for bot's guilds")
 
-        async for guild in self.fetch_guilds(limit=None):
+        for guild in self.guilds:
             logger.debug(f"Fetching data for {guild.name} ({guild.id})")
-            guild_data_obj = Guild.create(guild.id, cache=False)
-            
-            guild_data_obj.fetch_data()
-            guild_data_obj.destroy()
-            #Guild.create(guild.id, cache=False).fetch_data()
+            Guild.create(guild.id, cache=False).run_asynchronously(self.pool, Guild.fetch_data)
 
         logger.info(
             f"""

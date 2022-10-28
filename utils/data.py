@@ -63,8 +63,6 @@ bot_secret = os.environ.get("BOT_SECRET" if config.IS_SERVER else "TEST_BOT_SECR
 client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
-pool = multiprocessing.Pool()
-
 logger = logging.getLogger("Database")
 logger.level = logging.DEBUG if not config.IS_SERVER else logging.INFO
 
@@ -184,13 +182,14 @@ class DatabaseObjectBase:
     _last_use: float = 0
     _last_fetch: float = 0
 
+    def __del__(self):
+        print(f"destroying {self.__class__.__name__} object")
+
     def __init__(self, life_time: int = LIFETIME) -> None:
         self.life_time = life_time
         self._last_use = time.time()
 
-        #self.pool = multiprocessing.Pool()
-
-    def run_asynchronously(self, f: typing.Callable, args: dict):
+    def run_asynchronously(self, pool: multiprocessing.Pool, f: typing.Callable, args: dict = {}):
         return pool.apply_async(f, {"self": self, **args})
 
     def fetch_data(self, *, can_insert=True) -> Data:
@@ -289,7 +288,7 @@ class Guild(DatabaseObjectBase):
 
         self.__class__.__name__ = "guild"
 
-        if cache:
+        if cache is True:
             OBJECTS["guild"][guild_id] = self
 
         super().__init__()
@@ -889,7 +888,11 @@ async def update_loop():
             last_cache_clear = time.time()
 
             with open("data/users.json", "r") as file:
-                data = json.load(file)
+                try:
+                    data = json.load(file)
+                except json.JSONDecodeError:
+                    data = {}
+
                 to_pop = []
 
                 for user_id, user in data.items():
@@ -903,7 +906,7 @@ async def update_loop():
                 json.dump(data, file)
 
 
-def threaded_function(method: typing.Callable):
+def thread_function(method: typing.Callable):
     loop = asyncio.new_event_loop()
 
     asyncio.set_event_loop(loop)
@@ -911,4 +914,4 @@ def threaded_function(method: typing.Callable):
     loop.close()
 
 
-Thread(target=threaded_function, args=[update_loop]).start()
+Thread(target=thread_function, args=[update_loop]).start()
