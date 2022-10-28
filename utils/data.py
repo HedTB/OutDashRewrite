@@ -63,6 +63,8 @@ bot_secret = os.environ.get("BOT_SECRET" if config.IS_SERVER else "TEST_BOT_SECR
 client = MongoClient(os.environ.get("MONGO_LOGIN"), tlsCAFile=certifi.where())
 db = client[config.DATABASE_COLLECTION]
 
+pool = multiprocessing.Pool()
+
 logger = logging.getLogger("Database")
 logger.level = logging.DEBUG if not config.IS_SERVER else logging.INFO
 
@@ -186,10 +188,10 @@ class DatabaseObjectBase:
         self.life_time = life_time
         self._last_use = time.time()
 
-        self.pool = multiprocessing.Pool()
+        #self.pool = multiprocessing.Pool()
 
     def run_asynchronously(self, f: typing.Callable, args: dict):
-        return self.pool.apply_async(f, {"self": self, **args})
+        return pool.apply_async(f, {"self": self, **args})
 
     def fetch_data(self, *, can_insert=True) -> Data:
         start = time.time()
