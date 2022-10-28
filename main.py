@@ -345,3 +345,5 @@ if __name__ == "__main__":
 
     bot.loop.create_task(load_extensions(bot))
     bot.start_bot()
+else:
+    bot = None

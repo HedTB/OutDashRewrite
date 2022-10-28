@@ -2,7 +2,7 @@
 
 import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Body
+from fastapi import APIRouter, Depends, HTTPException, Path, Body, Request
 from fastapi.responses import JSONResponse
 
 
@@ -85,6 +85,7 @@ async def get_case(
     response_model=Message,
 )
 async def create_case(
+    request: Request,
     case_data: CaseData = Body(default=None, alias="case-data", title="Case data"),
     guild_id: int = Path(
         default=None,
@@ -137,11 +138,11 @@ async def create_case(
     moderation_action_logs.append(case_id)
     moderation_logs.append(case_id)
 
-    guild_data_obj.update_data(guild_data)
-    moderator_data_obj.update_guild_data(moderator_data)
-    offender_data_obj.update_guild_data(offender_data)
+    guild_data_obj.update_data(guild_data, pool=request.app.pool)
+    moderator_data_obj.update_guild_data(moderator_data, pool=request.app.pool)
+    offender_data_obj.update_guild_data(offender_data, pool=request.app.pool)
 
-    return {"message": "The case has been counted in the guild's data."}
+    return {"message": "The case is being counted in the guild's data."}
 
 
 @router.patch(
@@ -152,6 +153,7 @@ async def create_case(
     responses={400: {"model": Message}},
 )
 async def edit_case(
+    request: Request,
     case_data: CaseData = Body(default=None, alias="case-data", title="Case data"),
     case_id: int = Path(
         default=None,
@@ -190,8 +192,8 @@ async def edit_case(
 
         case[key] = value
 
-    guild_data_obj.update_data(guild_data)
-    return {"message": "The case has been updated."}
+    guild_data_obj.update_data(guild_data, pool=request.app.pool)
+    return JSONResponse(status_code=202, content={"message": "The case is being updated."})
 
 
 @router.delete(
@@ -201,6 +203,7 @@ async def edit_case(
     response_model=Message,
 )
 async def delete_case(
+    request: Request,
     case_id: int = Path(
         default=None,
         title="Case ID",
@@ -245,12 +248,12 @@ async def delete_case(
         offender_logs.pop(offender_logs.index(case_id))
 
     cases.pop(case_id - 1)
-    guild_data_obj.update_data(guild_data)
+    guild_data_obj.update_data(guild_data, pool=request.app.pool)
 
-    moderator_data_obj.update_guild_data(moderator_data)
-    offender_data_obj.update_guild_data(offender_data)
+    moderator_data_obj.update_guild_data(moderator_data, pool=request.app.pool)
+    offender_data_obj.update_guild_data(offender_data, pool=request.app.pool)
 
-    return {"message": "The case has been deleted."}
+    return JSONResponse(status_code=202, content={"message": "The case is being deleted."})
 
 
 @router.get(
@@ -271,8 +274,8 @@ async def get_settings_lock(guild_data_obj=Depends(get_guild_data)) -> SettingsL
     response_description="A JSON response describing whether the operation succeded or not.",
     response_model=Message,
 )
-async def set_settings_lock(toggle: bool, guild_data_obj: Guild = Depends(get_guild_data)) -> Message:
-    guild_data_obj.run_asynchronously(guild_data_obj.update_data, {"data": {"settings_locked": toggle}})
+async def set_settings_lock(request: Request, toggle: bool, guild_data_obj: Guild = Depends(get_guild_data)) -> Message:
+    guild_data_obj.update_data({"settings_locked": toggle}, pool=request.app.pool)
 
     return JSONResponse(
         status_code=202, content={"message": f"The settings are being {'locked' if toggle is True else 'unlocked'}."}

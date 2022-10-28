@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import multiprocessing
 import uvicorn
 
 from fastapi import APIRouter, Cookie, FastAPI, Request
@@ -43,6 +44,11 @@ logging.getLogger("Database").level = logging.DEBUG
 
 
 ## -- ROUTES -- ##
+
+
+@app.on_event("startup")
+async def on_startup():
+    app.pool = multiprocessing.Pool()
 
 
 @app.api_route("/", methods=["GET", "HEAD"])

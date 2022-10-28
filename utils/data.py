@@ -5,6 +5,7 @@ import datetime
 import json
 import logging
 import multiprocessing
+from multiprocessing.pool import Pool
 import os
 import time
 import typing
@@ -72,7 +73,6 @@ warns_col = db["warns"]
 user_data_col = db["user_data"]
 youtube_data_col = db["youtube_data"]
 
-access_codes_col = db["access_codes"]
 api_data_col = db["api_data"]
 
 # OTHER
@@ -192,7 +192,7 @@ class DatabaseObjectBase:
     def run_asynchronously(self, pool: multiprocessing.Pool, f: typing.Callable, args: dict = {}):
         return pool.apply_async(f, {"self": self, **args})
 
-    def fetch_data(self, *, can_insert=True) -> Data:
+    def fetch_data(self, *, can_insert=True, pool: Pool = None) -> Data:
         start = time.time()
 
         self.data = self._collection.find_one(self._query)  # .limit(1).explain()
@@ -209,7 +209,7 @@ class DatabaseObjectBase:
                 logger.debug("Updated database for object of type {} with cleaned data".format(self.__class__.__name__))
 
                 self.data.update(cleaned_data)
-                self.run_asynchronously(self.update_data, (cleaned_data))
+                self.update_data(cleaned_data)
             else:
                 self.data.pop("_id")
 
@@ -226,38 +226,46 @@ class DatabaseObjectBase:
         else:
             return self.data
 
-    def insert_data(self, *, force: bool = False) -> Data:
+    def insert_data(self, *, force: bool = False, pool: Pool = None) -> Data | None:
         if self.fetch_data(can_insert=False) is not None and force:
             return self.get_data()
 
-        self._collection.insert_one(self._insert_data)
-        self._last_use = time.time()
-        self.data = self._insert_data
+        if pool:
+            self.run_asynchronously(pool, self.insert_data)
+        else:
+            self._collection.insert_one(self._insert_data)
+            self._last_use = time.time()
+            self.data = self._insert_data
 
-        logger.debug(f"Inserted data for data object of type {self.__class__.__name__}")
-        return self.data
+            logger.debug(f"Inserted data for data object of type {self.__class__.__name__}")
+            return self.data
 
-    def update_data(self, data: Data) -> Data:
+    def update_data(self, data: Data, *, pool: Pool = None) -> Data | None:
         if not self.data:
             self.insert_data()
 
-        self.data.update(data)
-        self._last_use = time.time()
-
-        result = self._collection.replace_one(self._query, self.data)
-
-        if result.modified_count == 0:
-            logger.critical(
-                "No documents were updated for data object of type {}, result: {}".format(
-                    self.__class__.__name__, result.raw_result
-                )
-            )
+        if pool:
+            self.run_asynchronously(pool, self.update_data, (data))
         else:
-            logger.debug(
-                "Updated {} documents for data object of type {}".format(result.modified_count, self.__class__.__name__)
-            )
+            self.data.update(data)
+            self._last_use = time.time()
 
-        return self.data
+            result = self._collection.replace_one(self._query, self.data)
+
+            if result.modified_count == 0:
+                logger.critical(
+                    "No documents were updated for data object of type {}, result: {}".format(
+                        self.__class__.__name__, result.raw_result
+                    )
+                )
+            else:
+                logger.debug(
+                    "Updated {} documents for data object of type {}".format(
+                        result.modified_count, self.__class__.__name__
+                    )
+                )
+
+            return self.data
 
     def delete_data(self):
         self._collection.delete_one(self._query)
@@ -266,13 +274,13 @@ class DatabaseObjectBase:
         self.data = None
 
     def can_destroy(self) -> bool:
-        return self._last_use + self.life_time < time.time()
+        return self._last_use + self.life_time < time.time() and self.query in OBJECTS[self.__class__.__name__]
 
     def destroy(self) -> None:
         if not self.can_destroy():
             return None
 
-        OBJECTS[self.__class__.__name__].pop(self.query)
+        OBJECTS[self.__class__.__name__].pop(self.query, None)
 
 
 class Guild(DatabaseObjectBase):
@@ -451,11 +459,11 @@ class Member(DatabaseObjectBase):
 
         return guild_data
 
-    def update_guild_data(self, data: dict):
+    def update_guild_data(self, data: dict, *, pool: Pool = None):
         guild_data = self.get_guild_data()
 
         guild_data.update(data)
-        self.update_data({str(self.guild_id): guild_data})
+        self.update_data({str(self.guild_id): guild_data}, pool=pool)
 
 
 class YouTube(DatabaseObjectBase):
