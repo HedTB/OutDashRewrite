@@ -147,7 +147,11 @@ class Bot(commands.InteractionBot):
 
         async for guild in self.fetch_guilds(limit=None):
             logger.debug(f"Fetching data for {guild.name} ({guild.id})")
-            Guild.create(guild.id, cache=False).fetch_data()
+            guild_data_obj = Guild.create(guild.id, cache=False)
+            
+            guild_data_obj.fetch_data()
+            guild_data_obj.destroy()
+            #Guild.create(guild.id, cache=False).fetch_data()
 
         logger.info(
             f"""
