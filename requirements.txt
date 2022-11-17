@@ -4,7 +4,7 @@ pymongo
 python-dotenv
 disnake
 dnspython
-aiohttp<=3.8.0
+aiohttp
 flask
 youtube-dl
 pynacl
